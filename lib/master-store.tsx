@@ -40,6 +40,11 @@ type MasterContextValue = MasterState & {
 type Action =
 
   | {
+    type: 'EXECUTE_TASK';
+    payload: { taskId: string };
+  }
+
+  | {
     type: 'TOGGLE_SUBTASK';
     payload: {
       taskId: string;
@@ -222,6 +227,16 @@ case 'TOGGLE_SUBTASK': {
         ),
       };
     }
+    case 'EXECUTE_TASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.id === action.payload.taskId
+        ? { ...task, status: 'in_progress' }
+        : task
+    ),
+  };
+}
 
     default:
       return state;
