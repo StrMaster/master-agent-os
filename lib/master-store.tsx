@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useMemo, useReducer } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+} from 'react';
 import { AgentItem, TaskItem } from '@/lib/master-types';
 
 type MasterState = {
@@ -44,10 +50,32 @@ type Action =
       };
     };
 
-const initialState: MasterState = {
-  tasks: [],
-  agents: [],
-};
+function loadInitialState(): MasterState {
+  if (typeof window === 'undefined') {
+    return {
+      tasks: [],
+      agents: [],
+    };
+  }
+
+  try {
+    const raw = localStorage.getItem('master-store');
+
+    if (!raw) {
+      return {
+        tasks: [],
+        agents: [],
+      };
+    }
+
+    return JSON.parse(raw) as MasterState;
+  } catch {
+    return {
+      tasks: [],
+      agents: [],
+    };
+  }
+}
 
 const MasterStoreContext = createContext<MasterContextValue | null>(null);
 
@@ -109,7 +137,13 @@ export function MasterStoreProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('master-store', JSON.stringify(state));
+    } catch {}
+  }, [state]);
 
   const value = useMemo<MasterContextValue>(
     () => ({
