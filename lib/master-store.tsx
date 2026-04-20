@@ -29,6 +29,15 @@ type MasterContextValue = MasterState & {
 };
 
 type Action =
+
+  | {
+    type: 'BREAKDOWN_TASK';
+    payload: {
+      taskTitle: string;
+      subtasks: string[];
+    };
+  }
+
   | {
       type: 'CREATE_TASK';
       payload: {
@@ -82,18 +91,37 @@ const MasterStoreContext = createContext<MasterContextValue | null>(null);
 function reducer(state: MasterState, action: Action): MasterState {
   switch (action.type) {
     case 'CREATE_TASK': {
-      const newTask: TaskItem = {
-        id: crypto.randomUUID(),
-        title: action.payload.title,
-        priority: action.payload.priority,
-        status: 'todo',
-      };
+  const newTask: TaskItem = {
+    id: crypto.randomUUID(),
+    title: action.payload.title,
+    priority: action.payload.priority,
+    status: 'todo',
+    subtasks: [],
+  };
 
-      return {
-        ...state,
-        tasks: [newTask, ...state.tasks],
-      };
-    }
+  return {
+    ...state,
+    tasks: [newTask, ...state.tasks],
+  };
+}
+
+    case 'BREAKDOWN_TASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.title.toLowerCase() === action.payload.taskTitle.toLowerCase()
+        ? {
+            ...task,
+            subtasks: action.payload.subtasks.map((title) => ({
+              id: crypto.randomUUID(),
+              title,
+              done: false,
+            })),
+          }
+        : task
+    ),
+  };
+}
 
     case 'CREATE_AGENT': {
       const newAgent: AgentItem = {

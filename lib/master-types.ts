@@ -6,11 +6,18 @@ export type ChatMessage = {
   content: string;
 };
 
+export type SubtaskItem = {
+  id: string;
+  title: string;
+  done: boolean;
+};
+
 export type TaskItem = {
   id: string;
   title: string;
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'in_progress' | 'done';
+  subtasks: SubtaskItem[];
 };
 
 export type AgentItem = {
@@ -21,6 +28,13 @@ export type AgentItem = {
 };
 
 export type MasterAction =
+    | {
+      type: 'BREAKDOWN_TASK';
+      payload: {
+        taskTitle: string;
+        subtasks: string[];
+      };
+    }
   | {
       type: 'CREATE_TASK';
       payload: {
