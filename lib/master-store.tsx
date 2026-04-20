@@ -81,7 +81,33 @@ function loadInitialState(): MasterState {
       };
     }
 
-    return JSON.parse(raw) as MasterState;
+    const parsed = JSON.parse(raw) as Partial<MasterState>;
+
+    return {
+      tasks: Array.isArray(parsed.tasks)
+        ? parsed.tasks.map((task: any) => ({
+            id: task.id ?? crypto.randomUUID(),
+            title: task.title ?? 'Untitled Task',
+            priority: task.priority ?? 'medium',
+            status: task.status ?? 'todo',
+            subtasks: Array.isArray(task.subtasks)
+              ? task.subtasks.map((sub: any) => ({
+                  id: sub.id ?? crypto.randomUUID(),
+                  title: sub.title ?? 'Untitled Subtask',
+                  done: Boolean(sub.done),
+                }))
+              : [],
+          }))
+        : [],
+      agents: Array.isArray(parsed.agents)
+        ? parsed.agents.map((agent: any) => ({
+            id: agent.id ?? crypto.randomUUID(),
+            name: agent.name ?? 'Untitled Agent',
+            role: agent.role ?? 'general',
+            status: agent.status ?? 'idle',
+          }))
+        : [],
+    };
   } catch {
     return {
       tasks: [],
