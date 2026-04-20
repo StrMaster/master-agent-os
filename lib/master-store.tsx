@@ -35,13 +35,23 @@ type MasterContextValue = MasterState & {
   taskId: string;
   subtaskId: string;
 }) => void;
-assignTaskToAgent: (input: {
+autoAssignTask: (input: {
   taskId: string;
-  agentId: string;
 }) => void;
+assignTaskToAgent: (input: {
+    taskId: string;
+    agentId: string;
+  }) => void;
 };
 
 type Action =
+
+    | {
+      type: 'AUTO_ASSIGN_TASK';
+      payload: {
+        taskId: string;
+      };
+    }
 
   | {
     type: 'ASSIGN_TASK_TO_AGENT';
@@ -165,6 +175,44 @@ function reducer(state: MasterState, action: Action): MasterState {
   };
 }
 
+case 'AUTO_ASSIGN_TASK': {
+  const task = state.tasks.find((t) => t.id === action.payload.taskId);
+
+  if (!task) return state;
+
+  const title = task.title.toLowerCase();
+
+  const frontendKeywords = ['login', 'page', 'ui', 'dashboard', 'layout', 'frontend'];
+  const backendKeywords = ['api', 'auth', 'database', 'backend', 'server', 'db'];
+  const qaKeywords = ['test', 'qa', 'validation', 'bug', 'check'];
+
+  let preferredRole = 'general';
+
+  if (frontendKeywords.some((keyword) => title.includes(keyword))) {
+    preferredRole = 'frontend';
+  } else if (backendKeywords.some((keyword) => title.includes(keyword))) {
+    preferredRole = 'backend';
+  } else if (qaKeywords.some((keyword) => title.includes(keyword))) {
+    preferredRole = 'qa';
+  }
+
+  const preferredAgent =
+    state.agents.find((agent) =>
+      agent.role.toLowerCase().includes(preferredRole)
+    ) ?? state.agents[0];
+
+  if (!preferredAgent) return state;
+
+  return {
+    ...state,
+    tasks: state.tasks.map((t) =>
+      t.id === action.payload.taskId
+        ? { ...t, assignedAgentId: preferredAgent.id }
+        : t
+    ),
+  };
+}
+
 case 'ASSIGN_TASK_TO_AGENT': {
   return {
     ...state,
@@ -284,6 +332,11 @@ export function MasterStoreProvider({
         assignTaskToAgent: (input) =>
   dispatch({
     type: 'ASSIGN_TASK_TO_AGENT',
+    payload: input,
+  }),
+        autoAssignTask: (input) =>
+  dispatch({
+    type: 'AUTO_ASSIGN_TASK',
     payload: input,
   }),
         toggleSubtask: (input) =>

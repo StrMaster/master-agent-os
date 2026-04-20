@@ -15,10 +15,9 @@ export default function ExecutionPage() {
   const [isRunning, setIsRunning] = useState(false);
 
   async function runFirstTask() {
-    
     const task = tasks[0];
     if (!task || isRunning) return;
-     
+
     setIsRunning(true);
 
     try {
@@ -26,42 +25,41 @@ export default function ExecutionPage() {
 
       const availableAgent = agents[0];
 
-if (task && availableAgent && !task.assignedAgentId) {
-  assignTaskToAgent({
-    taskId: task.id,
-    agentId: availableAgent.id,
-  });
-}
+      if (task && availableAgent && !task.assignedAgentId) {
+        assignTaskToAgent({
+          taskId: task.id,
+          agentId: availableAgent.id,
+        });
+      }
 
       if (!task.subtasks || task.subtasks.length === 0) {
         return;
       }
 
       for (const subtask of task.subtasks) {
-  if (subtask.done) continue;
+        if (subtask.done) continue;
 
-  const res = await fetch('/api/master', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      mode: 'execute-subtask',
-      subtask: subtask.title,
-    }),
-  });
+        const res = await fetch('/api/master', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mode: 'execute-subtask',
+            subtask: subtask.title,
+          }),
+        });
 
-  const data = await res.json();
+        const data = await res.json();
+        console.log('AGENT RESPONSE', data);
 
-  console.log('AGENT RESPONSE', data);
+        toggleSubtask({
+          taskId: task.id,
+          subtaskId: subtask.id,
+        });
 
-  toggleSubtask({
-    taskId: task.id,
-    subtaskId: subtask.id,
-  });
-
-  await new Promise((r) => setTimeout(r, 500));
-}
+        await new Promise((r) => setTimeout(r, 500));
+      }
     } finally {
       setIsRunning(false);
     }
@@ -69,6 +67,8 @@ if (task && availableAgent && !task.assignedAgentId) {
 
   function activateFirstAgent() {
     if (isRunning) return;
+    if (agents.length === 0) return;
+
     sendToExecution({ targetType: 'agent' });
   }
 
@@ -112,9 +112,11 @@ if (task && availableAgent && !task.assignedAgentId) {
                     totalCount > 0
                       ? Math.round((completedCount / totalCount) * 100)
                       : 0;
-                      const assignedAgent = agents.find(
-  (a) => a.id === task.assignedAgentId
-);
+
+                  const assignedAgent = agents.find(
+                    (a) => a.id === task.assignedAgentId
+                  );
+
                   return (
                     <div
                       key={task.id}
@@ -124,12 +126,13 @@ if (task && availableAgent && !task.assignedAgentId) {
 
                       <div className="mt-1 text-sm text-white/60">
                         {task.priority} · {task.status}
-                        {assignedAgent && (
-  <div className="mt-1 text-sm text-white/50">
-    Assigned to: {assignedAgent.name}
-  </div>
-)}
                       </div>
+
+                      {assignedAgent && (
+                        <div className="mt-1 text-sm text-white/50">
+                          Assigned to: {assignedAgent.name}
+                        </div>
+                      )}
 
                       {totalCount > 0 && (
                         <div className="mt-3">
@@ -183,7 +186,6 @@ if (task && availableAgent && !task.assignedAgentId) {
                     <div className="font-medium">{agent.name}</div>
                     <div className="mt-1 text-sm text-white/60">
                       {agent.role} · {agent.status}
-                      
                     </div>
                   </div>
                 ))

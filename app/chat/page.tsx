@@ -17,16 +17,18 @@ export default function ChatPage() {
     },
   ]);
 
-  const {
-  tasks,
-  agents,
-  createTask,
-  createAgent,
-  sendToExecution,
-  breakdownTask,
-} = useMasterStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    tasks,
+    agents,
+    createTask,
+    createAgent,
+    sendToExecution,
+    breakdownTask,
+    autoAssignTask,
+  } = useMasterStore();
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -39,84 +41,129 @@ export default function ChatPage() {
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
+
     el.style.height = '0px';
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [input]);
 
+  useEffect(() => {
+    if (tasks.length === 0) return;
+    if (agents.length === 0) return;
+
+    const latestTask = tasks[0];
+
+    if (!latestTask.assignedAgentId) {
+      autoAssignTask({ taskId: latestTask.id });
+    }
+  }, [tasks, agents, autoAssignTask]);
+
+  function buildLocalSubtasks(taskTitle: string): string[] {
+    const lower = taskTitle.toLowerCase();
+
+    if (lower.includes('login')) {
+      return [
+        'Create login page layout',
+        'Add email and password inputs',
+        'Add validation states',
+        'Connect authentication flow',
+        'Add loading and error handling',
+      ];
+    }
+
+    if (lower.includes('dashboard')) {
+      return [
+        'Create dashboard layout',
+        'Add summary cards',
+        'Connect shared data source',
+        'Add responsive behavior',
+        'Polish visual hierarchy',
+      ];
+    }
+
+    if (
+      lower.includes('api') ||
+      lower.includes('auth') ||
+      lower.includes('backend')
+    ) {
+      return [
+        'Define API endpoints',
+        'Create request handlers',
+        'Add validation and auth checks',
+        'Handle errors and edge cases',
+        'Test integration flow',
+      ];
+    }
+
+    if (
+      lower.includes('test') ||
+      lower.includes('qa') ||
+      lower.includes('validation')
+    ) {
+      return [
+        'Define test cases',
+        'Cover happy path',
+        'Cover edge cases',
+        'Validate error states',
+        'Document expected behavior',
+      ];
+    }
+
+    return [
+      'Define scope',
+      'Create first UI version',
+      'Connect core logic',
+      'Test key flows',
+    ];
+  }
+
   function applyAction(action: MasterAction) {
-  console.log('APPLY ACTION', action);
+    console.log('APPLY ACTION', action);
 
-  switch (action.type) {
-    case 'BREAKDOWN_TASK': {
-  breakdownTask({
-    taskTitle: action.payload.taskTitle,
-    subtasks: action.payload.subtasks,
-  });
-  break;
-}
-    case 'CREATE_TASK': {
-  createTask({
-    title: action.payload.title,
-    priority: action.payload.priority,
-  });
+    switch (action.type) {
+      case 'CREATE_TASK': {
+        createTask({
+          title: action.payload.title,
+          priority: action.payload.priority,
+        });
 
-  const lower = action.payload.title.toLowerCase();
+        const subtasks = buildLocalSubtasks(action.payload.title);
 
-  let subtasks: string[] = [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
-  ];
+        breakdownTask({
+          taskTitle: action.payload.title,
+          subtasks,
+        });
 
-  if (lower.includes('login')) {
-    subtasks = [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
-    ];
-  }
+        break;
+      }
 
-  if (lower.includes('dashboard')) {
-    subtasks = [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
-    ];
-  }
+      case 'CREATE_AGENT': {
+        createAgent({
+          name: action.payload.name,
+          role: action.payload.role,
+        });
+        break;
+      }
 
-  breakdownTask({
-    taskTitle: action.payload.title,
-    subtasks,
-  });
+      case 'SEND_TO_EXECUTION': {
+        sendToExecution({
+          targetType: action.payload.targetType,
+        });
+        break;
+      }
 
-  break;
-}
+      case 'BREAKDOWN_TASK': {
+        breakdownTask({
+          taskTitle: action.payload.taskTitle,
+          subtasks: action.payload.subtasks,
+        });
+        break;
+      }
 
-    case 'CREATE_AGENT': {
-      createAgent({
-        name: action.payload.name,
-        role: action.payload.role,
-      });
-      break;
+      case 'NONE':
+      default:
+        break;
     }
-
-    case 'SEND_TO_EXECUTION': {
-      sendToExecution({
-        targetType: action.payload.targetType,
-      });
-      break;
-    }
-
-    case 'NONE':
-    default:
-      break;
   }
-}
 
   async function sendMessage() {
     const content = input.trim();
@@ -192,7 +239,7 @@ export default function ChatPage() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">Master Agent</h1>
-            <p className="text-sm text-white/60">Action system MVP</p>
+            <p className="text-sm text-white/60">Action system + auto assign</p>
           </div>
 
           <div className="rounded-full border border-white/10 px-3 py-1 text-xs text-white/70">
@@ -244,7 +291,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Pvz: sukurk task login page arba sukurk agentą testavimui"
+                placeholder="Pvz: sukurk task login page arba sukurk agentą frontend darbams"
                 rows={1}
                 className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-1 py-2 text-sm text-white outline-none placeholder:text-white/35"
               />
@@ -271,29 +318,43 @@ export default function ChatPage() {
               {tasks.length === 0 ? (
                 <p className="text-sm text-white/50">Kol kas taskų nėra.</p>
               ) : (
-                tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="rounded-xl border border-white/10 bg-neutral-900 p-3"
-                  >
-                    <div className="font-medium">{task.title}</div>
-                    <div className="mt-1 text-xs text-white/60">
-                      Priority: {task.priority} · Status: {task.status}
-                    {task.subtasks?.length > 0 && (
-  <div className="mt-3 space-y-2">
-    {task.subtasks?.map((subtask) => (
-      <div
-        key={subtask.id}
-        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70"
-      >
-        {subtask.done ? '✓' : '•'} {subtask.title}
-      </div>
-    ))}
-  </div>
-)}
+                tasks.map((task) => {
+                  const assignedAgent = agents.find(
+                    (a) => a.id === task.assignedAgentId
+                  );
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="rounded-xl border border-white/10 bg-neutral-900 p-3"
+                    >
+                      <div className="font-medium">{task.title}</div>
+
+                      <div className="mt-1 text-xs text-white/60">
+                        Priority: {task.priority} · Status: {task.status}
+                      </div>
+
+                      {assignedAgent && (
+                        <div className="mt-1 text-xs text-white/50">
+                          Assigned to: {assignedAgent.name}
+                        </div>
+                      )}
+
+                      {task.subtasks?.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {task.subtasks.map((subtask) => (
+                            <div
+                              key={subtask.id}
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white/70"
+                            >
+                              {subtask.done ? '✓' : '•'} {subtask.title}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </section>
