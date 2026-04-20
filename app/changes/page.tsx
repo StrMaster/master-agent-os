@@ -14,60 +14,77 @@ export default function ChangesPage() {
   const [error, setError] = useState<string>('');
 
   async function generateProposal() {
-    setIsLoading(true);
-    setError('');
-    setResult('');
+  setIsLoading(true);
+  setError('');
+  setResult('');
 
+  try {
+    const res = await fetch('/api/propose-changes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+  prompt,
+  targetFile: 'app/execution/page.tsx',
+}),
+    });
+
+    const text = await res.text();
+
+    let data: any;
     try {
-      const res = await fetch('/api/propose-changes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate proposal');
-      }
-
-      setProposal(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Server returned non-JSON response:\n\n${text}`);
     }
+
+    if (!res.ok) {
+      throw new Error(
+        data.error + (data.raw ? `\n\nRAW:\n${data.raw}` : '')
+      );
+    }
+
+    setProposal(data);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Unknown error');
+  } finally {
+    setIsLoading(false);
   }
+}
 
   async function applyProposal() {
-    if (!proposal) return;
+  if (!proposal) return;
 
-    setIsApplying(true);
-    setError('');
-    setResult('');
+  setIsApplying(true);
+  setError('');
+  setResult('');
 
+  try {
+    const res = await fetch('/api/apply-changes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(proposal),
+    });
+
+    const text = await res.text();
+
+    let data: any;
     try {
-      const res = await fetch('/api/apply-changes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(proposal),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to apply changes');
-      }
-
-      setResult(
-        `Applied to branch: ${data.branchName}\n${data.compareUrl}`
-      );
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsApplying(false);
+      data = JSON.parse(text);
+    } catch {
+      throw new Error(`Server returned non-JSON response:\n\n${text}`);
     }
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to apply changes');
+    }
+
+    setResult(`Applied to branch: ${data.branchName}\n${data.compareUrl}`);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Unknown error');
+  } finally {
+    setIsApplying(false);
   }
+}
 
   return (
     <div className="min-h-screen bg-neutral-950 p-6 text-white">
