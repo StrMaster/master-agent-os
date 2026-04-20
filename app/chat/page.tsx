@@ -2,12 +2,11 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import {
-  AgentItem,
   ChatMessage,
   MasterAction,
   MasterResponse,
-  TaskItem,
 } from '@/lib/master-types';
+import { useMasterStore } from '@/lib/master-store';
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -18,8 +17,8 @@ export default function ChatPage() {
     },
   ]);
 
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [agents, setAgents] = useState<AgentItem[]>([]);
+  const { tasks, agents, createTask, createAgent, sendToExecution } =
+  useMasterStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,55 +38,37 @@ export default function ChatPage() {
   }, [input]);
 
   function applyAction(action: MasterAction) {
-    console.log('APPLY ACTION', action);
-    
-    switch (action.type) {
-      case 'CREATE_TASK': {
-        const newTask: TaskItem = {
-          id: crypto.randomUUID(),
-          title: action.payload.title,
-          priority: action.payload.priority,
-          status: 'todo',
-        };
-        setTasks((prev) => [newTask, ...prev]);
-        break;
-      }
+  console.log('APPLY ACTION', action);
 
-      case 'CREATE_AGENT': {
-        const newAgent: AgentItem = {
-          id: crypto.randomUUID(),
-          name: action.payload.name,
-          role: action.payload.role,
-          status: 'idle',
-        };
-        setAgents((prev) => [newAgent, ...prev]);
-        break;
-      }
-
-      case 'SEND_TO_EXECUTION': {
-        if (action.payload.targetType === 'task') {
-          setTasks((prev) =>
-            prev.map((task, index) =>
-              index === 0 ? { ...task, status: 'in_progress' } : task
-            )
-          );
-        }
-
-        if (action.payload.targetType === 'agent') {
-          setAgents((prev) =>
-            prev.map((agent, index) =>
-              index === 0 ? { ...agent, status: 'active' } : agent
-            )
-          );
-        }
-        break;
-      }
-
-      case 'NONE':
-      default:
-        break;
+  switch (action.type) {
+    case 'CREATE_TASK': {
+      createTask({
+        title: action.payload.title,
+        priority: action.payload.priority,
+      });
+      break;
     }
+
+    case 'CREATE_AGENT': {
+      createAgent({
+        name: action.payload.name,
+        role: action.payload.role,
+      });
+      break;
+    }
+
+    case 'SEND_TO_EXECUTION': {
+      sendToExecution({
+        targetType: action.payload.targetType,
+      });
+      break;
+    }
+
+    case 'NONE':
+    default:
+      break;
   }
+}
 
   async function sendMessage() {
     const content = input.trim();

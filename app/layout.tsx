@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import './globals.css';
+import { MasterStoreProvider } from '@/lib/master-store';
 
 export const metadata: Metadata = {
   title: "Master Agent OS",
