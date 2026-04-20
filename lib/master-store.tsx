@@ -35,9 +35,21 @@ type MasterContextValue = MasterState & {
   taskId: string;
   subtaskId: string;
 }) => void;
+assignTaskToAgent: (input: {
+  taskId: string;
+  agentId: string;
+}) => void;
 };
 
 type Action =
+
+  | {
+    type: 'ASSIGN_TASK_TO_AGENT';
+    payload: {
+      taskId: string;
+      agentId: string;
+    };
+  }
 
   | {
     type: 'EXECUTE_TASK';
@@ -153,6 +165,17 @@ function reducer(state: MasterState, action: Action): MasterState {
   };
 }
 
+case 'ASSIGN_TASK_TO_AGENT': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.id === action.payload.taskId
+        ? { ...task, assignedAgentId: action.payload.agentId }
+        : task
+    ),
+  };
+}
+
 case 'TOGGLE_SUBTASK': {
   return {
     ...state,
@@ -258,6 +281,11 @@ export function MasterStoreProvider({
 
   const value = useMemo<MasterContextValue>(
     () => ({
+        assignTaskToAgent: (input) =>
+  dispatch({
+    type: 'ASSIGN_TASK_TO_AGENT',
+    payload: input,
+  }),
         toggleSubtask: (input) =>
   dispatch({
     type: 'TOGGLE_SUBTASK',

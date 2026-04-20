@@ -18,6 +18,7 @@ export type TaskItem = {
   priority: 'low' | 'medium' | 'high';
   status: 'todo' | 'in_progress' | 'done';
   subtasks: SubtaskItem[];
+  assignedAgentId?: string;
 };
 
 export type AgentItem = {
@@ -25,6 +26,7 @@ export type AgentItem = {
   name: string;
   role: string;
   status: 'idle' | 'active';
+  specialty?: 'frontend' | 'backend' | 'qa' | 'general';
 };
 
 export type MasterAction =
