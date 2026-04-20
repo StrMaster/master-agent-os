@@ -27,15 +27,30 @@ export default function ExecutionPage() {
       }
 
       for (const subtask of task.subtasks) {
-        if (subtask.done) continue;
+  if (subtask.done) continue;
 
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+  const res = await fetch('/api/master', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode: 'execute-subtask',
+      subtask: subtask.title,
+    }),
+  });
 
-        toggleSubtask({
-          taskId: task.id,
-          subtaskId: subtask.id,
-        });
-      }
+  const data = await res.json();
+
+  console.log('AGENT RESPONSE', data);
+
+  toggleSubtask({
+    taskId: task.id,
+    subtaskId: subtask.id,
+  });
+
+  await new Promise((r) => setTimeout(r, 500));
+}
     } finally {
       setIsRunning(false);
     }

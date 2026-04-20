@@ -90,6 +90,33 @@ function normalizeParsedResponse(raw: string): MasterResponse {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    // 🔥 EXECUTION MODE
+if (body.mode === 'execute-subtask') {
+  const subtask = body.subtask;
+
+  const completion = await client.responses.create({
+    model: 'gpt-4.1-mini',
+    input: `
+Tu esi agentas vykdantis užduotis.
+
+Subtask:
+"${subtask}"
+
+Atsakyk JSON formatu:
+{
+  "done": true,
+  "note": "trumpa pastaba"
+}
+`,
+  });
+
+  return new Response(
+    JSON.stringify({
+      result: completion.output_text,
+    }),
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+}
     const messagesRaw = Array.isArray(body?.messages) ? body.messages : [];
     const conversation: IncomingMessage[] = messagesRaw.filter(isIncomingMessage);
 
