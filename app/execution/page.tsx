@@ -9,18 +9,29 @@ export default function ExecutionPage() {
     agents,
     sendToExecution,
     toggleSubtask,
+    assignTaskToAgent,
   } = useMasterStore();
 
   const [isRunning, setIsRunning] = useState(false);
 
   async function runFirstTask() {
+    
     const task = tasks[0];
     if (!task || isRunning) return;
-
+     
     setIsRunning(true);
 
     try {
       sendToExecution({ targetType: 'task' });
+
+      const availableAgent = agents[0];
+
+if (task && availableAgent && !task.assignedAgentId) {
+  assignTaskToAgent({
+    taskId: task.id,
+    agentId: availableAgent.id,
+  });
+}
 
       if (!task.subtasks || task.subtasks.length === 0) {
         return;
@@ -101,7 +112,9 @@ export default function ExecutionPage() {
                     totalCount > 0
                       ? Math.round((completedCount / totalCount) * 100)
                       : 0;
-
+                      const assignedAgent = agents.find(
+  (a) => a.id === task.assignedAgentId
+);
                   return (
                     <div
                       key={task.id}
@@ -111,6 +124,11 @@ export default function ExecutionPage() {
 
                       <div className="mt-1 text-sm text-white/60">
                         {task.priority} · {task.status}
+                        {assignedAgent && (
+  <div className="mt-1 text-sm text-white/50">
+    Assigned to: {assignedAgent.name}
+  </div>
+)}
                       </div>
 
                       {totalCount > 0 && (
@@ -165,6 +183,7 @@ export default function ExecutionPage() {
                     <div className="font-medium">{agent.name}</div>
                     <div className="mt-1 text-sm text-white/60">
                       {agent.role} · {agent.status}
+                      
                     </div>
                   </div>
                 ))
