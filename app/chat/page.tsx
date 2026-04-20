@@ -17,8 +17,14 @@ export default function ChatPage() {
     },
   ]);
 
-  const { tasks, agents, createTask, createAgent, sendToExecution } =
-  useMasterStore();
+  const {
+  tasks,
+  agents,
+  createTask,
+  createAgent,
+  sendToExecution,
+  breakdownTask,
+} = useMasterStore();
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,13 +47,55 @@ export default function ChatPage() {
   console.log('APPLY ACTION', action);
 
   switch (action.type) {
+    case 'BREAKDOWN_TASK': {
+  breakdownTask({
+    taskTitle: action.payload.taskTitle,
+    subtasks: action.payload.subtasks,
+  });
+  break;
+}
     case 'CREATE_TASK': {
-      createTask({
-        title: action.payload.title,
-        priority: action.payload.priority,
-      });
-      break;
-    }
+  createTask({
+    title: action.payload.title,
+    priority: action.payload.priority,
+  });
+
+  const lower = action.payload.title.toLowerCase();
+
+  let subtasks: string[] = [
+    'Define scope',
+    'Create first UI version',
+    'Connect core logic',
+    'Test key flows',
+  ];
+
+  if (lower.includes('login')) {
+    subtasks = [
+      'Create login page layout',
+      'Add email and password inputs',
+      'Add validation states',
+      'Connect authentication flow',
+      'Add loading and error handling',
+    ];
+  }
+
+  if (lower.includes('dashboard')) {
+    subtasks = [
+      'Create dashboard layout',
+      'Add summary cards',
+      'Connect shared data source',
+      'Add responsive behavior',
+      'Polish visual hierarchy',
+    ];
+  }
+
+  breakdownTask({
+    taskTitle: action.payload.title,
+    subtasks,
+  });
+
+  break;
+}
 
     case 'CREATE_AGENT': {
       createAgent({
@@ -231,6 +279,18 @@ export default function ChatPage() {
                     <div className="font-medium">{task.title}</div>
                     <div className="mt-1 text-xs text-white/60">
                       Priority: {task.priority} · Status: {task.status}
+                    {task.subtasks.length > 0 && (
+  <div className="mt-3 space-y-2">
+    {task.subtasks.map((subtask) => (
+      <div
+        key={subtask.id}
+        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70"
+      >
+        {subtask.done ? '✓' : '•'} {subtask.title}
+      </div>
+    ))}
+  </div>
+)}
                     </div>
                   </div>
                 ))

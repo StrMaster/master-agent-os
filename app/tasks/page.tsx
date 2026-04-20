@@ -25,6 +25,18 @@ export default function TasksPage() {
                 <div className="text-lg font-medium">{task.title}</div>
                 <div className="mt-2 text-sm text-white/60">
                   Priority: {task.priority} · Status: {task.status}
+                  {task.subtasks.length > 0 && (
+  <div className="mt-3 space-y-2">
+    {task.subtasks.map((subtask) => (
+      <div
+        key={subtask.id}
+        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/70"
+      >
+        {subtask.done ? '✓' : '•'} {subtask.title}
+      </div>
+    ))}
+  </div>
+)}
                 </div>
               </div>
             ))

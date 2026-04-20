@@ -12,6 +12,46 @@ type IncomingMessage = {
   content: string;
 };
 
+function buildSubtasks(taskTitle: string): string[] {
+  const lower = taskTitle.toLowerCase();
+
+  if (lower.includes('login')) {
+    return [
+      'Create login page layout',
+      'Add email and password inputs',
+      'Add validation states',
+      'Connect authentication flow',
+      'Add loading and error handling',
+    ];
+  }
+
+  if (lower.includes('dashboard')) {
+    return [
+      'Create dashboard layout',
+      'Add summary cards',
+      'Connect shared data source',
+      'Add responsive behavior',
+      'Polish visual hierarchy',
+    ];
+  }
+
+  if (lower.includes('agent')) {
+    return [
+      'Define agent role',
+      'Define agent inputs and outputs',
+      'Add status handling',
+      'Connect agent to execution flow',
+    ];
+  }
+
+  return [
+    'Define scope',
+    'Create first UI version',
+    'Connect core logic',
+    'Test key flows',
+  ];
+}
+
 function isIncomingMessage(value: unknown): value is IncomingMessage {
   if (!value || typeof value !== 'object') return false;
 
@@ -176,17 +216,19 @@ Grąžink:
           .trim() || 'Naujas task';
 
       parsed.action = {
-        type: 'CREATE_TASK',
-        payload: {
-          title: cleanedTitle
-            .split(' ')
-            .map((word) =>
-              word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
-            )
-            .join(' '),
-          priority: 'medium',
-        },
-      };
+  type: 'CREATE_TASK',
+  payload: {
+  title: cleanedTitle
+    .split(' ')
+    .map((word) =>
+      word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
+    )
+    .join(' '),
+  priority: 'medium',
+},
+};
+
+parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
 
       parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
     } else if (lastUserMessage.includes('agent')) {

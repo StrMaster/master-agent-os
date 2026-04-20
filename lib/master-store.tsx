@@ -26,6 +26,10 @@ type MasterContextValue = MasterState & {
   sendToExecution: (input: {
     targetType: 'task' | 'agent';
   }) => void;
+    breakdownTask: (input: {
+    taskTitle: string;
+    subtasks: string[];
+  }) => void;
 };
 
 type Action =
@@ -175,6 +179,11 @@ export function MasterStoreProvider({
 
   const value = useMemo<MasterContextValue>(
     () => ({
+        breakdownTask: (input) =>
+  dispatch({
+    type: 'BREAKDOWN_TASK',
+    payload: input,
+  }),
       tasks: state.tasks,
       agents: state.agents,
       createTask: (input) =>
