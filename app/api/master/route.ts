@@ -11,6 +11,17 @@ type IncomingMessage = {
   content: string;
 };
 
+function isIncomingMessage(value: unknown): value is IncomingMessage {
+  if (!value || typeof value !== 'object') return false;
+
+  const v = value as Record<string, unknown>;
+
+  return (
+    (v.role === 'user' || v.role === 'assistant') &&
+    typeof v.content === 'string'
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -21,22 +32,9 @@ export async function POST(req: Request) {
       return new Response('Missing message', { status: 400 });
     }
 
-    const conversation: IncomingMessage[] = messages
-      .filter(
-        (m: unknown): m is IncomingMessage =>
-          !!m &&
-          typeof m === 'object' &&
-          'role' in m &&
-          'content' in m &&
-          (m as IncomingMessage).role !== undefined &&
-          typeof (m as IncomingMessage).content === 'string'
-      )
-      .map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+    const conversation: IncomingMessage[] = messages.filter(isIncomingMessage);
 
-    const stream = await client.responses.stream({
+    const stream = await client.responses.create({
       model: 'gpt-4.1-mini',
       input: [
         {
@@ -50,11 +48,9 @@ Tavo tikslas:
 - išlaikyti pokalbį app stiliaus, ne per daug formaliai
           `.trim(),
         },
-        ...conversation.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
+        ...conversation,
       ],
+      stream: true,
     });
 
     const encoder = new TextEncoder();
