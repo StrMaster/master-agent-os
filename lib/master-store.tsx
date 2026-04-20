@@ -15,6 +15,7 @@ type MasterState = {
 };
 
 type MasterContextValue = MasterState & {
+    
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
@@ -30,9 +31,21 @@ type MasterContextValue = MasterState & {
     taskTitle: string;
     subtasks: string[];
   }) => void;
+  toggleSubtask: (input: {
+  taskId: string;
+  subtaskId: string;
+}) => void;
 };
 
 type Action =
+
+  | {
+    type: 'TOGGLE_SUBTASK';
+    payload: {
+      taskId: string;
+      subtaskId: string;
+    };
+  }
 
   | {
     type: 'BREAKDOWN_TASK';
@@ -135,6 +148,31 @@ function reducer(state: MasterState, action: Action): MasterState {
   };
 }
 
+case 'TOGGLE_SUBTASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) => {
+      if (task.id !== action.payload.taskId) return task;
+
+      const updatedSubtasks = task.subtasks.map((subtask) =>
+        subtask.id === action.payload.subtaskId
+          ? { ...subtask, done: !subtask.done }
+          : subtask
+      );
+
+      const allDone =
+        updatedSubtasks.length > 0 &&
+        updatedSubtasks.every((s) => s.done);
+
+      return {
+        ...task,
+        subtasks: updatedSubtasks,
+        status: allDone ? 'done' : 'in_progress',
+      };
+    }),
+  };
+}
+
     case 'BREAKDOWN_TASK': {
   return {
     ...state,
@@ -205,6 +243,11 @@ export function MasterStoreProvider({
 
   const value = useMemo<MasterContextValue>(
     () => ({
+        toggleSubtask: (input) =>
+  dispatch({
+    type: 'TOGGLE_SUBTASK',
+    payload: input,
+  }),
         breakdownTask: (input) =>
   dispatch({
     type: 'BREAKDOWN_TASK',
