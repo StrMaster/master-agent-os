@@ -56,34 +56,34 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ProposeBody;
     const prompt = String(body?.prompt ?? '').trim();
-    const targetFile = String(body?.targetFile ?? '').trim();
+    const requestedTargetFile = String(body?.targetFile ?? '').trim();
+const targetFile = requestedTargetFile || '';
 
     if (!prompt) {
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
     }
 
-    if (!targetFile) {
-      return Response.json({ error: 'Missing targetFile' }, { status: 400 });
-    }
+    if (targetFile && !isAllowedFile(targetFile)) {
+  return Response.json(
+    { error: `Blocked targetFile: ${targetFile}` },
+    { status: 400 }
+  );
+}
 
-    if (!isAllowedFile(targetFile)) {
-      return Response.json(
-        { error: `Blocked targetFile: ${targetFile}` },
-        { status: 400 }
-      );
-    }
-
-    const targetFileContent = await readProjectFile(targetFile);
     const masterStoreContent = await readProjectFile('lib/master-store.tsx');
     const masterTypesContent = await readProjectFile('lib/master-types.ts');
     const layoutContent = await readProjectFile('app/layout.tsx');
 
-    if (!targetFileContent) {
-      return Response.json(
-        { error: `Could not read target file: ${targetFile}` },
-        { status: 400 }
-      );
-    }
+    const targetFileContent = targetFile
+  ? await readProjectFile(targetFile)
+  : null;
+
+if (targetFile && !targetFileContent) {
+  return Response.json(
+    { error: `Could not read target file: ${targetFile}` },
+    { status: 400 }
+  );
+}
 const repoContext = `
 Project structure:
 
@@ -100,31 +100,25 @@ IMPORTANT:
 - Page must start with: 'use client'
 `.trim();
     const systemPrompt = `
-    You are a senior software engineer.
+You are a senior software engineer.
 
-Return ONLY valid JSON.
-
-DO NOT write explanations.
-DO NOT write markdown.
-DO NOT write code blocks.
+Return ONLY valid JSON. DO NOT write explanations. DO NOT write markdown. DO NOT write code blocks.
 
 Format:
-
 {
   "summary": "...",
-  "branch": "...",
-  "commit": "...",
-  "files": [
-    {
-      "path": "...",
-      "content": "FULL FILE CONTENT"
-    }
+  "branchName": "agent/...",
+  "commitMessage": "feat: ...",
+  "changes": [
+    { "filePath": "...", "content": "FULL FILE CONTENT" }
   ]
 }
+
 You are a coding change planner for an existing Next.js project.
 
 YOUR JOB:
-- modify ONLY the target file
+- if TARGET FILE is provided, modify ONLY that file
+- if TARGET FILE is NOT provided, choose the single most relevant file
 - preserve the existing project architecture
 - use the existing store/types APIs exactly as provided
 - return ONLY valid JSON
@@ -133,79 +127,57 @@ YOUR JOB:
 STRICT RULES:
 - DO NOT create new files
 - DO NOT rename files
-- DO NOT modify any file except the target file
+- DO NOT modify more than one file
 - DO NOT invent new APIs
 - DO NOT invent new store methods
 - DO NOT replace real logic with mock data
 - DO NOT simplify away existing functionality
-- DO NOT wrap JSON in markdown
-- DO NOT output any text before or after JSON
-
-MODIFICATION RULES:
-- Modify ONLY the target file
-- Preserve existing logic
-- Do NOT rewrite unrelated parts
-- Do NOT create new files
-- Do NOT invent new store APIs
-- Use existing store API exactly as found in the provided project context
-- Return full file content for the target file only
 
 FORBIDDEN:
 - app/example/page.tsx
-- mock data
 - masterStore.getTasks
 - completed property
-
-JSON FORMAT:
-{
-  "summary": "short summary",
-  "branchName": "agent/...",
-  "commitMessage": "feat: ...",
-  "changes": [
-    {
-      "filePath": "target/file.tsx",
-      "content": "FULL FILE CONTENT HERE"
-    }
-  ]
-}
+- mock data
 
 IMPORTANT:
 - changes must contain EXACTLY ONE item
-- changes[0].filePath must be exactly the target file path
+- changes[0].filePath must be an allowed file under app/, lib/, or components/
 `.trim();
 
     const userPrompt = `
 USER REQUEST:
 ${prompt}
 
-TARGET FILE:
-${targetFile}
+${targetFile ? `TARGET FILE: ${targetFile}` : 'TARGET FILE: auto-select the single most relevant file'}
 
-CURRENT TARGET FILE CONTENT:
-<<<TARGET_FILE_START>>>
+${targetFileContent ? `CURRENT TARGET FILE CONTENT:
+<<>>
 ${targetFileContent}
-<<<TARGET_FILE_END>>>
+<<>>` : ''}
 
-RELEVANT PROJECT CONTEXT: lib/master-store.tsx
-<<<MASTER_STORE_START>>>
+RELEVANT PROJECT CONTEXT:
+lib/master-store.tsx
+<<>>
 ${masterStoreContent ?? 'FILE NOT AVAILABLE'}
-<<<MASTER_STORE_END>>>
+<<>>
 
-RELEVANT PROJECT CONTEXT: lib/master-types.ts
-<<<MASTER_TYPES_START>>>
+RELEVANT PROJECT CONTEXT:
+lib/master-types.ts
+<<>>
 ${masterTypesContent ?? 'FILE NOT AVAILABLE'}
-<<<MASTER_TYPES_END>>>
+<<>>
 
-RELEVANT PROJECT CONTEXT: app/layout.tsx
-<<<LAYOUT_START>>>
+RELEVANT PROJECT CONTEXT:
+app/layout.tsx
+<<>>
 ${layoutContent ?? 'FILE NOT AVAILABLE'}
-<<<LAYOUT_END>>>
+<<>>
 
 OUTPUT REQUIREMENTS:
-- modify ONLY ${targetFile}
-- keep existing logic unless the user explicitly asked to remove it
+- modify only one file
+- if target file is provided, that file must be used
+- if target file is not provided, choose the best single file
 - use the real project store/types
-- preserve current behavior and styling unless the request says otherwise
 - return a full valid JSON object only
 `.trim();
 
@@ -306,15 +278,24 @@ if (
       );
     }
 
-    if (parsed.changes[0]?.filePath !== targetFile) {
-      return Response.json(
-        {
-          error: `Model changed wrong file. Expected ${targetFile}, got ${parsed.changes[0]?.filePath}`,
-          parsed,
-        },
-        { status: 500 }
-      );
-    }
+    const changedFile = parsed.changes[0]?.filePath ?? '';
+
+if (!isAllowedFile(changedFile)) {
+  return Response.json(
+    { error: `Model changed blocked file: ${changedFile}`, parsed },
+    { status: 500 }
+  );
+}
+
+if (targetFile && changedFile !== targetFile) {
+  return Response.json(
+    {
+      error: `Model changed wrong file. Expected ${targetFile}, got ${changedFile}`,
+      parsed,
+    },
+    { status: 500 }
+  );
+}
 
     if (!parsed.branchName?.startsWith('agent/')) {
       parsed.branchName = buildBranchName(targetFile);
