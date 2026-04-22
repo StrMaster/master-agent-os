@@ -24,6 +24,7 @@ export default function ChangesPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
   prompt,
+        targetFile: 'app/changes/page.tsx',
 }),
     });
 
