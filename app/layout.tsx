@@ -26,10 +26,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <MasterStoreProvider>
-          <div className="flex min-h-screen bg-neutral-950 text-white">
-            
+          <div className="flex min-h-screen bg-neutral-950 text-white overflow-x-hidden">
             {/* Sidebar */}
-            <aside className="w-64 border-r border-white/10 p-4">
+            <aside className="fixed inset-y-0 left-0 z-20 w-64 border-r border-white/10 bg-neutral-950 p-4 transition-transform duration-300 ease-in-out sm:relative sm:translate-x-0 sm:flex-shrink-0">
               <div className="mb-6">
                 <h1 className="text-lg font-semibold">MASTER AGENT OS</h1>
               </div>
@@ -39,7 +38,7 @@ export default function RootLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="block rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white"
+                    className="block rounded-lg px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white break-words"
                   >
                     {item.label}
                   </Link>
@@ -48,8 +47,10 @@ export default function RootLayout({
             </aside>
 
             {/* Content */}
-            <main className="flex-1">
-              {children}
+            <main className="flex-1 min-w-0 px-4 py-6 sm:ml-64">
+              <div className="max-w-full space-y-4">
+                {children}
+              </div>
             </main>
           </div>
         </MasterStoreProvider>
