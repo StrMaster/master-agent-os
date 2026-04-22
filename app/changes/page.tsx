@@ -5,7 +5,7 @@ import { ChangeProposal } from '@/lib/github-types';
 
 export default function ChangesPage() {
   const [prompt, setPrompt] = useState(
-    'Sutvarkyk execution page taip, kad rodytų assigned agent ir execution progress.'
+    ''
   );
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
