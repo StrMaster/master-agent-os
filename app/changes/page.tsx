@@ -88,30 +88,30 @@ export default function ChangesPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 p-6 text-white">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-8">
         <div>
           <h1 className="text-3xl font-semibold">Changes</h1>
-          <p className="mt-2 text-white/60">
+          <p className="mt-3 text-white/60">
             Master Agent proposes repo changes. You approve before apply.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <label className="mb-2 block text-sm font-medium">
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <label className="mb-3 block text-sm font-medium">
             What should be changed?
           </label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             rows={6}
-            className="w-full rounded-xl border border-white/10 bg-neutral-900 p-3 text-sm text-white outline-none"
+            className="w-full rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white outline-none"
           />
 
-          <div className="mt-4 flex gap-3">
+          <div className="mt-6 flex gap-4">
             <button
               onClick={generateProposal}
               disabled={isLoading || !prompt.trim()}
-              className="rounded-xl bg-white px-4 py-2 text-black disabled:opacity-50"
+              className="rounded-xl bg-white px-5 py-2 text-black disabled:opacity-50"
             >
               {isLoading ? 'Generating...' : 'Generate proposal'}
             </button>
@@ -120,7 +120,7 @@ export default function ChangesPage() {
               <button
                 onClick={applyProposal}
                 disabled={isApplying}
-                className="rounded-xl border border-white/20 px-4 py-2 disabled:opacity-50"
+                className="rounded-xl border border-white/20 px-5 py-2 disabled:opacity-50"
               >
                 {isApplying ? 'Applying...' : 'Apply changes'}
               </button>
@@ -141,30 +141,30 @@ export default function ChangesPage() {
         )}
 
         {proposal && (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
               <div className="text-sm text-white/50">Summary</div>
-              <div className="mt-2 text-lg">{proposal.summary}</div>
+              <div className="mt-3 text-lg">{proposal.summary}</div>
 
-              <div className="mt-4 text-sm text-white/50">Branch</div>
-              <div className="mt-1">{proposal.branchName}</div>
+              <div className="mt-6 text-sm text-white/50">Branch</div>
+              <div className="mt-2">{proposal.branchName}</div>
 
-              <div className="mt-4 text-sm text-white/50">Commit</div>
-              <div className="mt-1">{proposal.commitMessage}</div>
+              <div className="mt-6 text-sm text-white/50">Commit</div>
+              <div className="mt-2">{proposal.commitMessage}</div>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="mb-4 text-lg font-medium">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <div className="mb-6 text-lg font-medium">
                 Proposed files ({proposal.changes.length})
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {proposal.changes.map((change) => (
                   <div
                     key={change.filePath}
-                    className="rounded-xl border border-white/10 bg-neutral-900 p-4"
+                    className="rounded-xl border border-white/10 bg-neutral-900 p-6"
                   >
-                    <div className="mb-2 text-sm font-medium text-white/80">
+                    <div className="mb-3 text-sm font-medium text-white/80">
                       {change.filePath}
                     </div>
                     <pre className="overflow-x-auto whitespace-pre-wrap text-xs text-white/60">
