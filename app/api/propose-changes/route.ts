@@ -270,13 +270,13 @@ for (const pattern of forbiddenPatterns) {
 }
 
 // privalomas check
-if (!content.includes('useMasterStore')) {
+if (
+  targetFile === 'app/execution/page.tsx' &&
+  !content.includes('useMasterStore')
+) {
   return Response.json(
-    {
-      error: 'Proposal does not use useMasterStore',
-      parsed,
-    },
-    { status: 500 }
+    { error: 'Proposal does not use useMasterStore' },
+    { status: 400 }
   );
 }
 
