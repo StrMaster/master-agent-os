@@ -26,7 +26,7 @@ export default function ExecutionPage() {
       for (const subtask of task.subtasks || []) {
         if (subtask.done) continue;
 
-        await fetch('/api/master', {
+        const response = await fetch('/api/master', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -37,6 +37,11 @@ export default function ExecutionPage() {
           }),
         });
 
+        if (!response.ok) {
+          console.error('Failed to execute subtask:', subtask.title);
+          break;
+        }
+
         toggleSubtask({
           taskId: task.id,
           subtaskId: subtask.id,
@@ -44,6 +49,8 @@ export default function ExecutionPage() {
 
         await new Promise((r) => setTimeout(r, 500));
       }
+    } catch (error) {
+      console.error('Error running first task:', error);
     } finally {
       setIsRunning(false);
     }
@@ -51,13 +58,14 @@ export default function ExecutionPage() {
 
   return (
     <div className="p-6 text-white">
-      <h1 className="text-2xl mb-4">TEST</h1>
+      <h1 className="text-2xl mb-4">Execution</h1>
 
       <button
         onClick={runFirstTask}
         className="bg-blue-500 px-4 py-2 rounded mb-4"
+        disabled={isRunning}
       >
-        Run First Task
+        {isRunning ? 'Running...' : 'Run First Task'}
       </button>
 
       {tasks.map((task) => {
