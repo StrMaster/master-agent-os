@@ -1,118 +1,145 @@
-import type { Agent, ExecutionRun, Goal, Task } from "./types";
+import { create } from 'zustand';
+import { Agent, Subtask, Task, TaskPriority } from './master-types';
 
-export const activeGoal: Goal = {
-  id: "goal_001",
-  title: "Build Master Agent OS MVP",
-  description:
-    "Create a responsive orchestration dashboard with screens for chat, agents, tasks, and execution flow.",
-  status: "active",
-  priority: "high",
-  currentPhase: "ui-foundation",
-  tags: ["mvp", "ui", "local-dev"],
-  successCriteria: [
-    "Dashboard works",
-    "Navigation works",
-    "Agents page works",
-    "Tasks page works",
-    "Execution page works",
-  ],
+type CreateTaskInput = {
+  title: string;
+  priority: TaskPriority;
+  subtasks?: string[];
 };
 
-export const agents: Agent[] = [
-  {
-    id: "agent_001",
-    name: "Master Agent",
-    type: "master",
-    role: "Orchestrates goals, tasks, and planning",
-    status: "active",
-    currentTask: "Coordinate MVP build",
-    lastOutput: "Created initial architecture",
-  },
-  {
-    id: "agent_002",
-    name: "Tool Builder",
-    type: "tool",
-    role: "Creates technical structure and tools",
-    status: "idle",
-    currentTask: "Waiting assignment",
-    lastOutput: "No recent output",
-  },
-  {
-    id: "agent_003",
-    name: "Chatbot Builder",
-    type: "builder",
-    role: "Designs chatbot logic and flow",
-    status: "waiting",
-    currentTask: "Pending future use",
-    lastOutput: "Template not started",
-  },
-  {
-    id: "agent_004",
-    name: "Analyst Agent",
-    type: "analyst",
-    role: "Tracks progress, bottlenecks, and next actions",
-    status: "idle",
-    currentTask: "Waiting for system data",
-    lastOutput: "No analysis yet",
-  },
-];
+type CreateAgentInput = {
+  name: string;
+  role: string;
+};
 
-export const tasks: Task[] = [
-  {
-    id: "task_001",
-    title: "Create data model mock file",
-    description: "Set up types and data source for the UI pages.",
-    status: "backlog",
-    priority: "high",
-    assignedAgent: "Tool Builder",
-  },
-  {
-    id: "task_002",
-    title: "Build page navigation structure",
-    description: "Unify layout and route navigation across all screens.",
-    status: "doing",
-    priority: "high",
-    assignedAgent: "Master Agent",
-  },
-  {
-    id: "task_003",
-    title: "Refine dashboard layout",
-    description: "Improve top-level stats and operating view.",
-    status: "doing",
-    priority: "medium",
-    assignedAgent: "Master Agent",
-  },
-  {
-    id: "task_004",
-    title: "Connect task actions to state",
-    description: "Prepare interactive task controls for next phase.",
-    status: "waiting",
-    priority: "medium",
-    assignedAgent: "Tool Builder",
-  },
-  {
-    id: "task_005",
-    title: "Initialize Next.js app",
-    description: "Create app and verify local dev server.",
-    status: "done",
-    priority: "high",
-    assignedAgent: "Master Agent",
-  },
-];
+type MasterStore = {
+  tasks: Task[];
+  agents: Agent[];
 
-export const executionRuns: ExecutionRun[] = [
-  {
-    id: "run_001",
-    source: "Master Agent",
-    status: "ready",
-    prompt: "Create a structured data model for Goal, Agent, Task, and ExecutionRun.",
-    response: "Waiting for model response...",
-  },
-  {
-    id: "run_002",
-    source: "Tool Builder",
-    status: "draft",
-    prompt: "Prepare component structure for dashboard and navigation.",
-    response: "Not sent yet.",
-  },
-];
+  createTask: (input: CreateTaskInput) => void;
+  createAgent: (input: CreateAgentInput) => void;
+
+  toggleSubtask: (taskId: string, subtaskId: string) => void;
+  assignTaskToAgent: (taskId: string, agentId: string) => void;
+  sendToExecution: (payload: { targetType: 'task' | 'agent'; note?: string }) => void;
+};
+
+function makeId(prefix: string) {
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function buildDefaultSubtasks(title: string): string[] {
+  const lower = title.toLowerCase();
+
+  if (lower.includes('login')) {
+    return [
+      'Create login page layout',
+      'Add email and password inputs',
+      'Add validation states',
+      'Connect authentication flow',
+      'Add loading and error handling',
+    ];
+  }
+
+  if (lower.includes('dashboard')) {
+    return [
+      'Create dashboard layout',
+      'Add summary cards',
+      'Connect shared data source',
+      'Add responsive behavior',
+      'Polish visual hierarchy',
+    ];
+  }
+
+  if (lower.includes('mobile') || lower.includes('navigation') || lower.includes('sidebar')) {
+    return [
+      'Analyze current mobile layout issues',
+      'Fix sidebar visibility and toggle behavior',
+      'Prevent horizontal overflow',
+      'Improve responsive layout and spacing',
+    ];
+  }
+
+  return [
+    'Define scope',
+    'Create first UI version',
+    'Connect core logic',
+    'Test key flows',
+  ];
+}
+
+function toSubtasks(input: string[]): Subtask[] {
+  return input.map((title) => ({
+    id: makeId('subtask'),
+    title,
+    done: false,
+  }));
+}
+
+export const useMasterStore = create<MasterStore>((set) => ({
+  tasks: [],
+  agents: [],
+
+  createTask: ({ title, priority, subtasks }) =>
+    set((state) => {
+      const finalSubtasks = subtasks && subtasks.length > 0
+        ? subtasks
+        : buildDefaultSubtasks(title);
+
+      const newTask: Task = {
+        id: makeId('task'),
+        title,
+        priority,
+        status: 'todo',
+        subtasks: toSubtasks(finalSubtasks),
+      };
+
+      return {
+        tasks: [...state.tasks, newTask],
+      };
+    }),
+
+  createAgent: ({ name, role }) =>
+    set((state) => {
+      const newAgent: Agent = {
+        id: makeId('agent'),
+        name,
+        role,
+      };
+
+      return {
+        agents: [...state.agents, newAgent],
+      };
+    }),
+
+  toggleSubtask: ({}, {} as never),
+
+  assignTaskToAgent: (taskId, agentId) =>
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task.id === taskId ? { ...task, assignedAgentId: agentId } : task
+      ),
+    })),
+
+  sendToExecution: () => {},
+
+  toggleSubtask: (taskId, subtaskId) =>
+    set((state) => ({
+      tasks: state.tasks.map((task) => {
+        if (task.id !== taskId) return task;
+
+        const updatedSubtasks = task.subtasks.map((subtask) =>
+          subtask.id === subtaskId ? { ...subtask, done: !subtask.done } : subtask
+        );
+
+        const allDone =
+          updatedSubtasks.length > 0 && updatedSubtasks.every((subtask) => subtask.done);
+
+        return {
+          ...task,
+          subtasks: updatedSubtasks,
+          status: allDone ? 'done' : 'todo',
+        };
+      }),
+    })),
+}));
