@@ -1,164 +1,76 @@
-import { create } from 'zustand';
-import {
-  Agent,
-  LearningLogEntry,
-  Subtask,
-  Task,
-  TaskPriority,
-} from './master-types';
-
-type CreateTaskInput = {
-  title: string;
-  priority: TaskPriority;
-  subtasks?: string[];
+export const activeGoal = {
+  id: 'goal-1',
+  title: 'Launch Master Agent OS MVP',
+  description: 'Stabilize the core workflow, mobile UI, and execution pipeline.',
+  status: 'active',
 };
 
-type CreateAgentInput = {
-  name: string;
-  role: string;
-};
+export const agents = [
+  {
+    id: 'agent-1',
+    name: 'Master Agent',
+    role: 'CEO / Orchestrator',
+    status: 'active',
+  },
+  {
+    id: 'agent-2',
+    name: 'Frontend Agent',
+    role: 'UI and UX implementation',
+    status: 'active',
+  },
+  {
+    id: 'agent-3',
+    name: 'Execution Agent',
+    role: 'Task execution and automation',
+    status: 'idle',
+  },
+];
 
-type MasterStore = {
-  tasks: Task[];
-  agents: Agent[];
-  learningLog: LearningLogEntry[];
+export const executionRuns = [
+  {
+    id: 'run-1',
+    title: 'Mobile UI stabilization',
+    status: 'running',
+  },
+  {
+    id: 'run-2',
+    title: 'Master API cleanup',
+    status: 'queued',
+  },
+  {
+    id: 'run-3',
+    title: 'Dashboard polish',
+    status: 'completed',
+  },
+];
 
-  createTask: (input: CreateTaskInput) => void;
-  createAgent: (input: CreateAgentInput) => void;
-  addLearningLog: (entry: Omit<LearningLogEntry, 'id' | 'timestamp'>) => void;
-
-  toggleSubtask: (taskId: string, subtaskId: string) => void;
-  assignTaskToAgent: (taskId: string, agentId: string) => void;
-  sendToExecution: (payload: { targetType: 'task' | 'agent'; note?: string }) => void;
-};
-
-function makeId(prefix: string) {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function buildDefaultSubtasks(title: string): string[] {
-  const lower = title.toLowerCase();
-
-  if (lower.includes('login')) {
-    return [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
-    ];
-  }
-
-  if (lower.includes('dashboard')) {
-    return [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
-    ];
-  }
-
-  if (lower.includes('mobile') || lower.includes('navigation') || lower.includes('sidebar')) {
-    return [
-      'Analyze current mobile layout issues',
-      'Fix sidebar visibility and toggle behavior',
-      'Prevent horizontal overflow',
-      'Improve responsive layout and spacing',
-    ];
-  }
-
-  return [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
-  ];
-}
-
-function toSubtasks(input: string[]): Subtask[] {
-  return input.map((title) => ({
-    id: makeId('subtask'),
-    title,
-    done: false,
-  }));
-}
-
-export const useMasterStore = create<MasterStore>((set) => ({
-  tasks: [],
-  agents: [],
-  learningLog: [],
-
-  createTask: ({ title, priority, subtasks }) =>
-    set((state) => {
-      const finalSubtasks =
-        subtasks && subtasks.length > 0 ? subtasks : buildDefaultSubtasks(title);
-
-      const newTask: Task = {
-        id: makeId('task'),
-        title,
-        priority,
-        status: 'todo',
-        subtasks: toSubtasks(finalSubtasks),
-      };
-
-      return {
-        tasks: [...state.tasks, newTask],
-      };
-    }),
-
-  createAgent: ({ name, role }) =>
-    set((state) => {
-      const newAgent: Agent = {
-        id: makeId('agent'),
-        name,
-        role,
-      };
-
-      return {
-        agents: [...state.agents, newAgent],
-      };
-    }),
-
-  addLearningLog: (entry) =>
-    set((state) => {
-      const next: LearningLogEntry = {
-        id: makeId('log'),
-        timestamp: new Date().toISOString(),
-        ...entry,
-      };
-
-      return {
-        learningLog: [next, ...state.learningLog].slice(0, 50),
-      };
-    }),
-
-  assignTaskToAgent: (taskId, agentId) =>
-    set((state) => ({
-      tasks: state.tasks.map((task) =>
-        task.id === taskId ? { ...task, assignedAgentId: agentId } : task
-      ),
-    })),
-
-  sendToExecution: () => {},
-
-  toggleSubtask: (taskId, subtaskId) =>
-    set((state) => ({
-      tasks: state.tasks.map((task) => {
-        if (task.id !== taskId) return task;
-
-        const updatedSubtasks = task.subtasks.map((subtask) =>
-          subtask.id === subtaskId ? { ...subtask, done: !subtask.done } : subtask
-        );
-
-        const allDone =
-          updatedSubtasks.length > 0 && updatedSubtasks.every((subtask) => subtask.done);
-
-        return {
-          ...task,
-          subtasks: updatedSubtasks,
-          status: allDone ? 'done' : 'todo',
-        };
-      }),
-    })),
-}));
+export const tasks = [
+  {
+    id: 'task-1',
+    title: 'Improve mobile navigation',
+    description: 'Fix sidebar behavior, overflow issues, and mobile usability.',
+    status: 'doing',
+    priority: 'high',
+  },
+  {
+    id: 'task-2',
+    title: 'Stabilize Master API intent detection',
+    description: 'Ensure questions do not create tasks and explicit commands do.',
+    status: 'backlog',
+    priority: 'high',
+  },
+  {
+    id: 'task-3',
+    title: 'Polish changes page UX',
+    description: 'Make proposal generation and apply flow easier on mobile.',
+    status: 'todo',
+    priority: 'medium',
+  },
+  {
+    id: 'task-4',
+    title: 'Prepare self-improving v1 safely',
+    description: 'Add logging and review without automatic self-modification.',
+    status: 'done',
+    priority: 'medium',
+  },
+];
