@@ -40,10 +40,10 @@ export type MasterAction =
   | {
       type: 'CREATE_TASK';
       payload: {
-        title: string;
-        priority: 'low' | 'medium' | 'high';
-      };
-    }
+  title: string;
+  priority: 'low' | 'medium' | 'high';
+  subtasks?: string[];
+}
   | {
       type: 'CREATE_AGENT';
       payload: {
