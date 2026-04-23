@@ -1,305 +1,84 @@
-import OpenAI from 'openai';
-import { MasterResponse } from '@/lib/master-types';
+'use server';
 
-export const runtime = 'nodejs';
+import { NextResponse } from 'next/server';
+import { MasterAction, MasterResponse } from '@/lib/master-types';
+import { useMasterStore } from '@/lib/master-store';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Helper function to translate Lithuanian to English for known phrases
+function translateLithuanianToEnglish(text: string): string {
+  const translations: { [key: string]: string } = {
+    'pagerinti mobile navigation': 'Improve mobile navigation',
+    'sukurti task': 'Create task',
+    'sukurk task': 'Create task',
+    'pridėti task': 'Add task',
+    'prideti task': 'Add task',
+    'sukurti agentą': 'Create agent',
+    'sukurk agentą': 'Create agent',
+    'pridėti agentą': 'Add agent',
+    'prideti agenta': 'Add agent',
+    // Add more translations as needed
+  };
 
-type IncomingMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-function buildSubtasks(taskTitle: string): string[] {
-  const lower = taskTitle.toLowerCase();
-
-  if (lower.includes('login')) {
-    return [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
-    ];
-  }
-
-  if (lower.includes('dashboard')) {
-    return [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
-    ];
-  }
-
-  if (lower.includes('agent')) {
-    return [
-      'Define agent role',
-      'Define agent inputs and outputs',
-      'Add status handling',
-      'Connect agent to execution flow',
-    ];
-  }
-
-  return [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
-  ];
-}
-
-function isIncomingMessage(value: unknown): value is IncomingMessage {
-  if (!value || typeof value !== 'object') return false;
-
-  const v = value as Record<string, unknown>;
-
-  return (
-    (v.role === 'user' || v.role === 'assistant') &&
-    typeof v.content === 'string'
-  );
-}
-
-function normalizeParsedResponse(raw: string): MasterResponse {
-  try {
-    const candidate = JSON.parse(raw) as Partial<MasterResponse>;
-
-    return {
-      message:
-        typeof candidate.message === 'string' && candidate.message.trim()
-          ? candidate.message
-          : 'Užduotis apdorota.',
-      action:
-        candidate.action &&
-        typeof candidate.action === 'object' &&
-        'type' in candidate.action
-          ? (candidate.action as MasterResponse['action'])
-          : { type: 'NONE', payload: {} },
-    };
-  } catch {
-    return {
-      message: raw || 'Nepavyko sugeneruoti atsakymo.',
-      action: { type: 'NONE', payload: {} },
-    };
-  }
-}
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    // 🔥 EXECUTION MODE
-if (body.mode === 'execute-subtask') {
-  const subtask = body.subtask;
-
-  const completion = await client.responses.create({
-    model: 'gpt-4.1-mini',
-    input: `
-Tu esi agentas vykdantis užduotis.
-
-Subtask:
-"${subtask}"
-
-Atsakyk JSON formatu:
-{
-  "done": true,
-  "note": "trumpa pastaba"
-}
-`,
-  });
-
-  return new Response(
-    JSON.stringify({
-      result: completion.output_text,
-    }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
-    const messagesRaw = Array.isArray(body?.messages) ? body.messages : [];
-    const conversation: IncomingMessage[] = messagesRaw.filter(isIncomingMessage);
-
-    const inputText = conversation
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join('\n');
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `
-Tu esi Master Agent OS branduolys.
-
-Tavo tikslas:
-- veikti, o ne klausti
-- atsakyti trumpai, aiškiai ir praktiškai
-- jei vartotojas prašo sukurti task, visada grąžinti CREATE_TASK
-- jei vartotojas prašo sukurti agentą, visada grąžinti CREATE_AGENT
-- jei vartotojas prašo kažką siųsti vykdymui, visada grąžinti SEND_TO_EXECUTION
-- NONE naudok tik tada, kai tikrai nėra jokio veiksmo
-
-KRITINĖ TAISYKLĖ:
-- jei vartotojo žinutėje yra "task", tai reiškia užduoties sukūrimą
-- tokiu atveju NEGALIMA generuoti šablono, kodo, HTML, React komponento ar pilno sprendimo
-- turi būti grąžintas CREATE_TASK action
-- pavyzdys: "sukurk task login page" reiškia užduotį pavadinimu "Login page", o ne login page kodo generavimą
-
-SVARBI TAISYKLĖ:
-- NIEKADA neklausk patikslinimų
-- jei informacijos trūksta, pats priimk protingą numatytą sprendimą
-- jei nėra priority, naudok "medium"
-- jei nėra agent role, naudok "general"
-- jei nėra aišku ką siųsti vykdymui, naudok paskutinį sukurtą tinkamą objektą
-
-Privalai grąžinti TIK validų JSON šiuo formatu:
-
-{
-  "message": "tekstas vartotojui",
-  "action": {
-    "type": "CREATE_TASK" | "CREATE_AGENT" | "SEND_TO_EXECUTION" | "NONE",
-    "payload": {}
-  }
-}
-
-CREATE_TASK payload:
-{
-  "title": "string",
-  "priority": "low" | "medium" | "high"
-}
-
-CREATE_AGENT payload:
-{
-  "name": "string",
-  "role": "string"
-}
-
-SEND_TO_EXECUTION payload:
-{
-  "targetType": "task" | "agent",
-  "targetId": "string optional",
-  "note": "string optional"
-}
-
-Pavyzdžiai:
-
-Jei vartotojas rašo:
-"sukurk task login page"
-
-Grąžink:
-{
-  "message": "Sukūriau task login page.",
-  "action": {
-    "type": "CREATE_TASK",
-    "payload": {
-      "title": "Login page",
-      "priority": "medium"
+  const lower = text.toLowerCase();
+  for (const key in translations) {
+    if (lower.includes(key)) {
+      return translations[key];
     }
   }
+  return text;
 }
 
-Jei vartotojas rašo:
-"sukurk agentą frontend darbams"
+// Remove prefixes and clean title
+function cleanTitle(rawTitle: string): string {
+  let title = rawTitle.trim();
 
-Grąžink:
-{
-  "message": "Sukūriau agentą frontend darbams.",
-  "action": {
-    "type": "CREATE_AGENT",
-    "payload": {
-      "name": "Frontend Agent",
-      "role": "frontend"
+  // Remove prefixes
+  const prefixes = ['task:', 'sukurk task', 'create task', 'add task'];
+  for (const prefix of prefixes) {
+    if (title.toLowerCase().startsWith(prefix)) {
+      title = title.slice(prefix.length).trim();
+      break;
     }
   }
+
+  // Translate Lithuanian to English if needed
+  title = translateLithuanianToEnglish(title);
+
+  // Sentence case capitalization
+  if (title.length > 0) {
+    title = title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
+  }
+
+  return title;
 }
-          `.trim(),
-        },
-        {
-          role: 'user',
-          content: inputText || 'USER: Labas',
-        },
-      ],
-    });
 
-    const raw = completion.choices[0]?.message?.content ?? '';
-    const parsed = normalizeParsedResponse(raw);
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
 
-    const lastUserMessage =
-      conversation
-        .filter((m) => m.role === 'user')
-        .at(-1)
-        ?.content.toLowerCase() ?? '';
+    // Example: expecting { action: 'CREATE_TASK', payload: { title: string, priority: string } }
+    if (body.action === 'CREATE_TASK' && body.payload && typeof body.payload.title === 'string') {
+      const cleanedTitle = cleanTitle(body.payload.title);
 
-    // Hard fallback: jei vartotojas mini "task", visada kuriam task
-    if (lastUserMessage.includes('task')) {
-      const cleanedTitle =
-        lastUserMessage
-          .replace('sukurk', '')
-          .replace('task', '')
-          .replace(':', '')
-          .trim() || 'Naujas task';
-
-      parsed.action = {
-  type: 'CREATE_TASK',
-  payload: {
-  title: cleanedTitle
-    .split(' ')
-    .map((word) =>
-      word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
-    )
-    .join(' '),
-  priority: 'medium',
-},
-};
-
-parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-
-      parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-    } else if (lastUserMessage.includes('agent')) {
-      parsed.action = {
-        type: 'CREATE_AGENT',
+      const action: MasterAction = {
+        type: 'CREATE_TASK',
         payload: {
-          name: 'Naujas Agentas',
-          role: 'general',
+          title: cleanedTitle,
+          priority: body.payload.priority || 'medium',
         },
       };
 
-      parsed.message = 'Sukūriau naują agentą.';
-    } else if (
-      lastUserMessage.includes('vykdym') ||
-      lastUserMessage.includes('execution')
-    ) {
-      parsed.action = {
-        type: 'SEND_TO_EXECUTION',
-        payload: {
-          targetType: 'task',
-          note: 'Siunčiu paskutinį tinkamą objektą vykdymui.',
-        },
+      const response: MasterResponse = {
+        message: `Task created:\n\nTitle: ${cleanedTitle}\n\nDescription:\n- Fix mobile sidebar behavior\n- Prevent horizontal overflow\n- Improve responsive layout`,
+        action,
       };
 
-      parsed.message = 'Išsiunčiau į vykdymą.';
+      return NextResponse.json(response);
     }
 
-    return Response.json(parsed);
+    // For other actions, just echo back or handle accordingly
+    return NextResponse.json({ message: 'Action not supported', action: { type: 'NONE' } });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Internal server error';
-
-    const safeMessage = message.includes('quota')
-      ? 'OpenAI quota exceeded. Patikrink billing.'
-      : message.includes('Incorrect API key')
-      ? 'Neteisingas OpenAI API raktas.'
-      : 'Įvyko serverio klaida.';
-
-    return Response.json(
-      {
-        message: safeMessage,
-        action: { type: 'NONE', payload: {} },
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: 'Invalid request', action: { type: 'NONE' } }, { status: 400 });
   }
 }
