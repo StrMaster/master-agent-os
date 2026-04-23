@@ -21,6 +21,15 @@ export type Agent = {
   role: string;
 };
 
+export type LearningLogEntry = {
+  id: string;
+  timestamp: string;
+  userInput: string;
+  detectedIntent: 'CREATE_TASK' | 'CREATE_AGENT' | 'SEND_TO_EXECUTION' | 'NONE';
+  success: boolean;
+  note: string;
+};
+
 export type MasterAction =
   | {
       type: 'CREATE_TASK';
@@ -43,6 +52,10 @@ export type MasterAction =
         targetType: 'task' | 'agent';
         note?: string;
       };
+    }
+  | {
+      type: 'SHOW_LEARNING_LOG';
+      payload?: {};
     }
   | {
       type: 'NONE';
