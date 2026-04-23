@@ -1,305 +1,118 @@
-import OpenAI from 'openai';
-import { MasterResponse } from '@/lib/master-types';
+'use server';
 
-export const runtime = 'nodejs';
+import { NextRequest, NextResponse } from 'next/server';
+import { MasterResponse, MasterAction } from '@/lib/master-types';
+import { useMasterStore } from '@/lib/master-store';
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// We cannot call React hooks or useMasterStore directly in server route,
+// so we will simulate minimal context awareness by analyzing incoming messages
 
-type IncomingMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
-
-function buildSubtasks(taskTitle: string): string[] {
-  const lower = taskTitle.toLowerCase();
-
-  if (lower.includes('login')) {
-    return [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
-    ];
-  }
-
-  if (lower.includes('dashboard')) {
-    return [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
-    ];
-  }
-
-  if (lower.includes('agent')) {
-    return [
-      'Define agent role',
-      'Define agent inputs and outputs',
-      'Add status handling',
-      'Connect agent to execution flow',
-    ];
-  }
-
-  return [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
-  ];
+// Helper to detect if user explicitly requests to create a task
+function userWantsCreateTask(content: string): boolean {
+  const lowered = content.toLowerCase();
+  return lowered.includes('create task') || lowered.includes('sukurk task') || lowered.includes('sukurti task') || lowered.includes('kurk task') || lowered.includes('create a task') || lowered.includes('sukurk užduotį') || lowered.includes('sukurti užduotį');
 }
 
-function isIncomingMessage(value: unknown): value is IncomingMessage {
-  if (!value || typeof value !== 'object') return false;
-
-  const v = value as Record<string, unknown>;
-
-  return (
-    (v.role === 'user' || v.role === 'assistant') &&
-    typeof v.content === 'string'
-  );
+// Helper to detect if user explicitly requests to create an agent
+function userWantsCreateAgent(content: string): boolean {
+  const lowered = content.toLowerCase();
+  return lowered.includes('create agent') || lowered.includes('sukurk agentą') || lowered.includes('sukurti agentą') || lowered.includes('kurk agentą') || lowered.includes('create an agent') || lowered.includes('sukurk agent');
 }
 
-function normalizeParsedResponse(raw: string): MasterResponse {
+// Helper to detect if user only mentions a task or agent in context without explicit creation
+function userMentionsOnlyTaskOrAgent(content: string): boolean {
+  const lowered = content.toLowerCase();
+  // Simple heuristic: mentions "task" or "agent" but no create keywords
+  const mentionsTask = lowered.includes('task') || lowered.includes('užduotis');
+  const mentionsAgent = lowered.includes('agent');
+  const wantsCreate = userWantsCreateTask(content) || userWantsCreateAgent(content);
+  return (mentionsTask || mentionsAgent) && !wantsCreate;
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const candidate = JSON.parse(raw) as Partial<MasterResponse>;
+    const json = await req.json();
+    const messages = json.messages as { role: string; content: string }[] | undefined;
 
-    return {
-      message:
-        typeof candidate.message === 'string' && candidate.message.trim()
-          ? candidate.message
-          : 'Užduotis apdorota.',
-      action:
-        candidate.action &&
-        typeof candidate.action === 'object' &&
-        'type' in candidate.action
-          ? (candidate.action as MasterResponse['action'])
-          : { type: 'NONE', payload: {} },
-    };
-  } catch {
-    return {
-      message: raw || 'Nepavyko sugeneruoti atsakymo.',
-      action: { type: 'NONE', payload: {} },
-    };
-  }
-}
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    // 🔥 EXECUTION MODE
-if (body.mode === 'execute-subtask') {
-  const subtask = body.subtask;
-
-  const completion = await client.responses.create({
-    model: 'gpt-4.1-mini',
-    input: `
-Tu esi agentas vykdantis užduotis.
-
-Subtask:
-"${subtask}"
-
-Atsakyk JSON formatu:
-{
-  "done": true,
-  "note": "trumpa pastaba"
-}
-`,
-  });
-
-  return new Response(
-    JSON.stringify({
-      result: completion.output_text,
-    }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
-    const messagesRaw = Array.isArray(body?.messages) ? body.messages : [];
-    const conversation: IncomingMessage[] = messagesRaw.filter(isIncomingMessage);
-
-    const inputText = conversation
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join('\n');
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `
-Tu esi Master Agent OS branduolys.
-
-Tavo tikslas:
-- veikti, o ne klausti
-- atsakyti trumpai, aiškiai ir praktiškai
-- jei vartotojas prašo sukurti task, visada grąžinti CREATE_TASK
-- jei vartotojas prašo sukurti agentą, visada grąžinti CREATE_AGENT
-- jei vartotojas prašo kažką siųsti vykdymui, visada grąžinti SEND_TO_EXECUTION
-- NONE naudok tik tada, kai tikrai nėra jokio veiksmo
-
-KRITINĖ TAISYKLĖ:
-- jei vartotojo žinutėje yra "task", tai reiškia užduoties sukūrimą
-- tokiu atveju NEGALIMA generuoti šablono, kodo, HTML, React komponento ar pilno sprendimo
-- turi būti grąžintas CREATE_TASK action
-- pavyzdys: "sukurk task login page" reiškia užduotį pavadinimu "Login page", o ne login page kodo generavimą
-
-SVARBI TAISYKLĖ:
-- NIEKADA neklausk patikslinimų
-- jei informacijos trūksta, pats priimk protingą numatytą sprendimą
-- jei nėra priority, naudok "medium"
-- jei nėra agent role, naudok "general"
-- jei nėra aišku ką siųsti vykdymui, naudok paskutinį sukurtą tinkamą objektą
-
-Privalai grąžinti TIK validų JSON šiuo formatu:
-
-{
-  "message": "tekstas vartotojui",
-  "action": {
-    "type": "CREATE_TASK" | "CREATE_AGENT" | "SEND_TO_EXECUTION" | "NONE",
-    "payload": {}
-  }
-}
-
-CREATE_TASK payload:
-{
-  "title": "string",
-  "priority": "low" | "medium" | "high"
-}
-
-CREATE_AGENT payload:
-{
-  "name": "string",
-  "role": "string"
-}
-
-SEND_TO_EXECUTION payload:
-{
-  "targetType": "task" | "agent",
-  "targetId": "string optional",
-  "note": "string optional"
-}
-
-Pavyzdžiai:
-
-Jei vartotojas rašo:
-"sukurk task login page"
-
-Grąžink:
-{
-  "message": "Sukūriau task login page.",
-  "action": {
-    "type": "CREATE_TASK",
-    "payload": {
-      "title": "Login page",
-      "priority": "medium"
+    if (!messages || messages.length === 0) {
+      const noneResponse: MasterResponse = {
+        message: 'Nėra pateiktų žinučių.',
+        action: { type: 'NONE' },
+      };
+      return NextResponse.json(noneResponse);
     }
-  }
-}
 
-Jei vartotojas rašo:
-"sukurk agentą frontend darbams"
-
-Grąžink:
-{
-  "message": "Sukūriau agentą frontend darbams.",
-  "action": {
-    "type": "CREATE_AGENT",
-    "payload": {
-      "name": "Frontend Agent",
-      "role": "frontend"
+    // Analyze last user message
+    const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
+    if (!lastUserMessage) {
+      const noneResponse: MasterResponse = {
+        message: 'Nerasta vartotojo žinutės.',
+        action: { type: 'NONE' },
+      };
+      return NextResponse.json(noneResponse);
     }
-  }
-}
-          `.trim(),
-        },
-        {
-          role: 'user',
-          content: inputText || 'USER: Labas',
-        },
-      ],
-    });
 
-    const raw = completion.choices[0]?.message?.content ?? '';
-    const parsed = normalizeParsedResponse(raw);
+    const content = lastUserMessage.content.trim();
 
-    const lastUserMessage =
-      conversation
-        .filter((m) => m.role === 'user')
-        .at(-1)
-        ?.content.toLowerCase() ?? '';
+    // If user only mentions a task or agent without explicit creation, do not create
+    if (userMentionsOnlyTaskOrAgent(content)) {
+      return NextResponse.json({
+        message: 'Nustatyta, kad vartotojas tik minėjo užduotį ar agentą, bet ne prašė kurti.',
+        action: { type: 'NONE' },
+      } as MasterResponse);
+    }
 
-    // Hard fallback: jei vartotojas mini "task", visada kuriam task
-    if (lastUserMessage.includes('task')) {
-      const cleanedTitle =
-        lastUserMessage
-          .replace('sukurk', '')
-          .replace('task', '')
-          .replace(':', '')
-          .trim() || 'Naujas task';
+    // If user explicitly wants to create a task
+    if (userWantsCreateTask(content)) {
+      // Extract a simple title and priority from content heuristically
+      // For simplicity, set priority medium
+      const titleMatch = content.match(/task\s+(\w[\w\s]*)/i);
+      const title = titleMatch ? titleMatch[1].trim() : 'New Task';
 
-      parsed.action = {
-  type: 'CREATE_TASK',
-  payload: {
-  title: cleanedTitle
-    .split(' ')
-    .map((word) =>
-      word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
-    )
-    .join(' '),
-  priority: 'medium',
-},
-};
-
-parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-
-      parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-    } else if (lastUserMessage.includes('agent')) {
-      parsed.action = {
-        type: 'CREATE_AGENT',
-        payload: {
-          name: 'Naujas Agentas',
-          role: 'general',
+      const response: MasterResponse = {
+        message: `Sukuriu užduotį: ${title}`,
+        action: {
+          type: 'CREATE_TASK',
+          payload: {
+            title,
+            priority: 'medium',
+          },
         },
       };
 
-      parsed.message = 'Sukūriau naują agentą.';
-    } else if (
-      lastUserMessage.includes('vykdym') ||
-      lastUserMessage.includes('execution')
-    ) {
-      parsed.action = {
-        type: 'SEND_TO_EXECUTION',
-        payload: {
-          targetType: 'task',
-          note: 'Siunčiu paskutinį tinkamą objektą vykdymui.',
+      return NextResponse.json(response);
+    }
+
+    // If user explicitly wants to create an agent
+    if (userWantsCreateAgent(content)) {
+      // Extract a simple name and role from content heuristically
+      // For simplicity, name = "New Agent", role = "general"
+      const nameMatch = content.match(/agent\s+(\w[\w\s]*)/i);
+      const name = nameMatch ? nameMatch[1].trim() : 'New Agent';
+
+      const response: MasterResponse = {
+        message: `Sukuriu agentą: ${name}`,
+        action: {
+          type: 'CREATE_AGENT',
+          payload: {
+            name,
+            role: 'general',
+          },
         },
       };
 
-      parsed.message = 'Išsiunčiau į vykdymą.';
+      return NextResponse.json(response);
     }
 
-    return Response.json(parsed);
+    // If none of above, return NONE to avoid guessing
+    return NextResponse.json({
+      message: 'Neaiškus užklausos turinys, nebus kuriama užduotis ar agentas.',
+      action: { type: 'NONE' },
+    } as MasterResponse);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Internal server error';
-
-    const safeMessage = message.includes('quota')
-      ? 'OpenAI quota exceeded. Patikrink billing.'
-      : message.includes('Incorrect API key')
-      ? 'Neteisingas OpenAI API raktas.'
-      : 'Įvyko serverio klaida.';
-
-    return Response.json(
-      {
-        message: safeMessage,
-        action: { type: 'NONE', payload: {} },
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      message: 'Klaida apdorojant užklausą.',
+      action: { type: 'NONE' },
+    } as MasterResponse);
   }
 }
