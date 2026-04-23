@@ -42,6 +42,7 @@ export type MasterAction =
       payload: {
         title: string;
         priority: 'low' | 'medium' | 'high';
+        subtasks?: string[];
       };
     }
   | {
