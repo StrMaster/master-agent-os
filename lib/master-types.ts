@@ -18,7 +18,7 @@ export type MasterAction =
   | {
       type: 'BREAKDOWN_TASK';
       payload: {
-        title: string;
+        taskTitle: string;
         subtasks: string[];
       };
     }
