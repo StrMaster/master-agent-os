@@ -1,42 +1,55 @@
-export type GoalStatus = "draft" | "active" | "paused" | "completed" | "archived";
-export type AgentStatus = "idle" | "active" | "working" | "waiting" | "blocked" | "archived";
-export type TaskStatus = "backlog" | "doing" | "waiting" | "done" | "cancelled";
-export type RunStatus = "draft" | "ready" | "sent" | "completed" | "failed";
+export type TaskPriority = 'low' | 'medium' | 'high';
 
-export interface Goal {
+export type Subtask = {
   id: string;
   title: string;
-  description: string;
-  status: GoalStatus;
-  priority: "low" | "medium" | "high";
-  currentPhase: string;
-  tags: string[];
-  successCriteria: string[];
-}
+  done: boolean;
+};
 
-export interface Agent {
+export type Task = {
+  id: string;
+  title: string;
+  priority: TaskPriority;
+  status: 'todo' | 'in_progress' | 'done';
+  subtasks: Subtask[];
+  assignedAgentId?: string;
+};
+
+export type Agent = {
   id: string;
   name: string;
-  type: "master" | "sales" | "builder" | "analyst" | "tool" | "custom";
   role: string;
-  status: AgentStatus;
-  currentTask: string;
-  lastOutput: string;
-}
+};
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: "low" | "medium" | "high";
-  assignedAgent: string;
-}
+export type MasterAction =
+  | {
+      type: 'CREATE_TASK';
+      payload: {
+        title: string;
+        priority: TaskPriority;
+        subtasks?: string[];
+      };
+    }
+  | {
+      type: 'CREATE_AGENT';
+      payload: {
+        name: string;
+        role: string;
+      };
+    }
+  | {
+      type: 'SEND_TO_EXECUTION';
+      payload: {
+        targetType: 'task' | 'agent';
+        note?: string;
+      };
+    }
+  | {
+      type: 'NONE';
+      payload?: {};
+    };
 
-export interface ExecutionRun {
-  id: string;
-  source: string;
-  status: RunStatus;
-  prompt: string;
-  response: string;
-}
+export type MasterResponse = {
+  message: string;
+  action: MasterAction;
+};
