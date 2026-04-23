@@ -1,6 +1,7 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
 
 export type ChatMessage = {
+  id: string;
   role: 'user' | 'assistant';
   content: string;
 };
