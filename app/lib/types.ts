@@ -1,68 +1,45 @@
-export type TaskPriority = 'low' | 'medium' | 'high';
+export type GoalStatus = "draft" | "active";
 
-export type Subtask = {
+export type AgentStatus = "idle" | "active" | "waiting";
+
+export type TaskStatus = "backlog" | "doing" | "done" | "waiting";
+
+export type RunStatus = "draft" | "ready";
+
+export interface Goal {
   id: string;
   title: string;
-  done: boolean;
-};
+  description: string;
+  status: GoalStatus;
+  priority: "low" | "medium" | "high";
+  currentPhase: string;
+  tags: string[];
+  successCriteria: string[];
+}
 
-export type Task = {
-  id: string;
-  title: string;
-  priority: TaskPriority;
-  status: 'todo' | 'in_progress' | 'done';
-  subtasks: Subtask[];
-  assignedAgentId?: string;
-};
-
-export type Agent = {
+export interface Agent {
   id: string;
   name: string;
+  type: "master" | "tool" | "builder" | "analyst";
   role: string;
-};
+  status: AgentStatus;
+  currentTask: string;
+  lastOutput: string;
+}
 
-export type LearningLogEntry = {
+export interface Task {
   id: string;
-  timestamp: string;
-  userInput: string;
-  detectedIntent: 'CREATE_TASK' | 'CREATE_AGENT' | 'SEND_TO_EXECUTION' | 'NONE';
-  success: boolean;
-  note: string;
-};
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: "low" | "medium" | "high";
+  assignedAgent: string;
+}
 
-export type MasterAction =
-  | {
-      type: 'CREATE_TASK';
-      payload: {
-        title: string;
-        priority: TaskPriority;
-        subtasks?: string[];
-      };
-    }
-  | {
-      type: 'CREATE_AGENT';
-      payload: {
-        name: string;
-        role: string;
-      };
-    }
-  | {
-      type: 'SEND_TO_EXECUTION';
-      payload: {
-        targetType: 'task' | 'agent';
-        note?: string;
-      };
-    }
-  | {
-      type: 'SHOW_LEARNING_LOG';
-      payload?: {};
-    }
-  | {
-      type: 'NONE';
-      payload?: {};
-    };
-
-export type MasterResponse = {
-  message: string;
-  action: MasterAction;
-};
+export interface ExecutionRun {
+  id: string;
+  source: string;
+  status: RunStatus;
+  prompt: string;
+  response: string;
+}
