@@ -1,305 +1,144 @@
-import OpenAI from 'openai';
+'use server';
+
+import { NextRequest, NextResponse } from 'next/server';
 import { MasterResponse } from '@/lib/master-types';
 
-export const runtime = 'nodejs';
+// Helper to clean task title by removing common prefixes and translating to English
+function cleanTitle(rawTitle: string): string {
+  let title = rawTitle.trim();
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+  // Remove common prefixes in Lithuanian and English
+  const prefixes = [
+    /^sukurk task:\s*/i,
+    /^create task:\s*/i,
+    /^sukurk užduotį:\s*/i,
+    /^kurti užduotį:\s*/i,
+    /^kurti taską:\s*/i,
+    /^sukurk užduotį:\s*/i,
+  ];
 
-type IncomingMessage = {
-  role: 'user' | 'assistant';
-  content: string;
-};
+  for (const prefix of prefixes) {
+    if (prefix.test(title)) {
+      title = title.replace(prefix, '');
+      break;
+    }
+  }
 
-function buildSubtasks(taskTitle: string): string[] {
-  const lower = taskTitle.toLowerCase();
+  // Simple keyword-based English translations for Lithuanian words
+  // Only for demonstration, can be extended
+  const translations: Record<string, string> = {
+    'pagerinti': 'improve',
+    'mobile': 'mobile',
+    'navigation': 'navigation',
+    'prisijungimo': 'login',
+    'puslapį': 'page',
+    'pagrindinį': 'main',
+    'dashboard': 'dashboard',
+    'vartotojo': 'user',
+    'sąsaja': 'interface',
+    'klaidų': 'errors',
+    'taisymas': 'fix',
+    'patobulinimas': 'enhancement',
+  };
 
-  if (lower.includes('login')) {
+  // Replace Lithuanian words with English equivalents if found
+  const words = title.split(/\s+/).map((word) => translations[word.toLowerCase()] ?? word);
+
+  return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+
+// Generate developer-focused actionable steps based on task title
+function generateSteps(title: string): string[] {
+  const lower = title.toLowerCase();
+
+  // Detect if task is UI or mobile related
+  const isMobileOrUI = ['mobile', 'ui', 'user interface', 'navigation', 'layout', 'responsive', 'sidebar', 'dashboard', 'page'].some(keyword => lower.includes(keyword));
+
+  if (isMobileOrUI) {
     return [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
+      'Analyze current mobile layout issues',
+      'Fix sidebar visibility and toggle behavior',
+      'Prevent horizontal overflow (overflow-x hidden)',
+      'Improve responsive Tailwind classes (sm, md, lg)',
+      'Test on real mobile screen sizes',
     ];
   }
 
-  if (lower.includes('dashboard')) {
+  // Backend/API related
+  if (['api', 'auth', 'backend', 'server', 'database', 'db'].some(k => lower.includes(k))) {
     return [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
+      'Define API endpoints',
+      'Implement request handlers',
+      'Add validation and authentication checks',
+      'Handle errors and edge cases',
+      'Write integration tests',
     ];
   }
 
-  if (lower.includes('agent')) {
+  // QA/Test related
+  if (['test', 'qa', 'validation', 'bug', 'check'].some(k => lower.includes(k))) {
     return [
-      'Define agent role',
-      'Define agent inputs and outputs',
-      'Add status handling',
-      'Connect agent to execution flow',
+      'Define detailed test cases',
+      'Cover happy path scenarios',
+      'Cover edge cases and error states',
+      'Validate error handling and recovery',
+      'Document expected behavior and results',
     ];
   }
 
+  // Default generic developer steps
   return [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
+    'Define scope and requirements',
+    'Implement core functionality',
+    'Write unit and integration tests',
+    'Perform code review and refactoring',
+    'Deploy and monitor in staging environment',
   ];
 }
 
-function isIncomingMessage(value: unknown): value is IncomingMessage {
-  if (!value || typeof value !== 'object') return false;
-
-  const v = value as Record<string, unknown>;
-
-  return (
-    (v.role === 'user' || v.role === 'assistant') &&
-    typeof v.content === 'string'
-  );
-}
-
-function normalizeParsedResponse(raw: string): MasterResponse {
+export async function POST(req: NextRequest) {
   try {
-    const candidate = JSON.parse(raw) as Partial<MasterResponse>;
+    const json = await req.json();
 
-    return {
-      message:
-        typeof candidate.message === 'string' && candidate.message.trim()
-          ? candidate.message
-          : 'Užduotis apdorota.',
-      action:
-        candidate.action &&
-        typeof candidate.action === 'object' &&
-        'type' in candidate.action
-          ? (candidate.action as MasterResponse['action'])
-          : { type: 'NONE', payload: {} },
-    };
-  } catch {
-    return {
-      message: raw || 'Nepavyko sugeneruoti atsakymo.',
-      action: { type: 'NONE', payload: {} },
-    };
-  }
-}
+    // Extract task title from input messages or direct input
+    let rawTitle = '';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    // 🔥 EXECUTION MODE
-if (body.mode === 'execute-subtask') {
-  const subtask = body.subtask;
-
-  const completion = await client.responses.create({
-    model: 'gpt-4.1-mini',
-    input: `
-Tu esi agentas vykdantis užduotis.
-
-Subtask:
-"${subtask}"
-
-Atsakyk JSON formatu:
-{
-  "done": true,
-  "note": "trumpa pastaba"
-}
-`,
-  });
-
-  return new Response(
-    JSON.stringify({
-      result: completion.output_text,
-    }),
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
-    const messagesRaw = Array.isArray(body?.messages) ? body.messages : [];
-    const conversation: IncomingMessage[] = messagesRaw.filter(isIncomingMessage);
-
-    const inputText = conversation
-      .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-      .join('\n');
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'system',
-          content: `
-Tu esi Master Agent OS branduolys.
-
-Tavo tikslas:
-- veikti, o ne klausti
-- atsakyti trumpai, aiškiai ir praktiškai
-- jei vartotojas prašo sukurti task, visada grąžinti CREATE_TASK
-- jei vartotojas prašo sukurti agentą, visada grąžinti CREATE_AGENT
-- jei vartotojas prašo kažką siųsti vykdymui, visada grąžinti SEND_TO_EXECUTION
-- NONE naudok tik tada, kai tikrai nėra jokio veiksmo
-
-KRITINĖ TAISYKLĖ:
-- jei vartotojo žinutėje yra "task", tai reiškia užduoties sukūrimą
-- tokiu atveju NEGALIMA generuoti šablono, kodo, HTML, React komponento ar pilno sprendimo
-- turi būti grąžintas CREATE_TASK action
-- pavyzdys: "sukurk task login page" reiškia užduotį pavadinimu "Login page", o ne login page kodo generavimą
-
-SVARBI TAISYKLĖ:
-- NIEKADA neklausk patikslinimų
-- jei informacijos trūksta, pats priimk protingą numatytą sprendimą
-- jei nėra priority, naudok "medium"
-- jei nėra agent role, naudok "general"
-- jei nėra aišku ką siųsti vykdymui, naudok paskutinį sukurtą tinkamą objektą
-
-Privalai grąžinti TIK validų JSON šiuo formatu:
-
-{
-  "message": "tekstas vartotojui",
-  "action": {
-    "type": "CREATE_TASK" | "CREATE_AGENT" | "SEND_TO_EXECUTION" | "NONE",
-    "payload": {}
-  }
-}
-
-CREATE_TASK payload:
-{
-  "title": "string",
-  "priority": "low" | "medium" | "high"
-}
-
-CREATE_AGENT payload:
-{
-  "name": "string",
-  "role": "string"
-}
-
-SEND_TO_EXECUTION payload:
-{
-  "targetType": "task" | "agent",
-  "targetId": "string optional",
-  "note": "string optional"
-}
-
-Pavyzdžiai:
-
-Jei vartotojas rašo:
-"sukurk task login page"
-
-Grąžink:
-{
-  "message": "Sukūriau task login page.",
-  "action": {
-    "type": "CREATE_TASK",
-    "payload": {
-      "title": "Login page",
-      "priority": "medium"
-    }
-  }
-}
-
-Jei vartotojas rašo:
-"sukurk agentą frontend darbams"
-
-Grąžink:
-{
-  "message": "Sukūriau agentą frontend darbams.",
-  "action": {
-    "type": "CREATE_AGENT",
-    "payload": {
-      "name": "Frontend Agent",
-      "role": "frontend"
-    }
-  }
-}
-          `.trim(),
-        },
-        {
-          role: 'user',
-          content: inputText || 'USER: Labas',
-        },
-      ],
-    });
-
-    const raw = completion.choices[0]?.message?.content ?? '';
-    const parsed = normalizeParsedResponse(raw);
-
-    const lastUserMessage =
-      conversation
-        .filter((m) => m.role === 'user')
-        .at(-1)
-        ?.content.toLowerCase() ?? '';
-
-    // Hard fallback: jei vartotojas mini "task", visada kuriam task
-    if (lastUserMessage.includes('task')) {
-      const cleanedTitle =
-        lastUserMessage
-          .replace('sukurk', '')
-          .replace('task', '')
-          .replace(':', '')
-          .trim() || 'Naujas task';
-
-      parsed.action = {
-  type: 'CREATE_TASK',
-  payload: {
-  title: cleanedTitle
-    .split(' ')
-    .map((word) =>
-      word.length ? word.charAt(0).toUpperCase() + word.slice(1) : word
-    )
-    .join(' '),
-  priority: 'medium',
-},
-};
-
-parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-
-      parsed.message = `Sukūriau task: ${parsed.action.payload.title}.`;
-    } else if (lastUserMessage.includes('agent')) {
-      parsed.action = {
-        type: 'CREATE_AGENT',
-        payload: {
-          name: 'Naujas Agentas',
-          role: 'general',
-        },
-      };
-
-      parsed.message = 'Sukūriau naują agentą.';
-    } else if (
-      lastUserMessage.includes('vykdym') ||
-      lastUserMessage.includes('execution')
-    ) {
-      parsed.action = {
-        type: 'SEND_TO_EXECUTION',
-        payload: {
-          targetType: 'task',
-          note: 'Siunčiu paskutinį tinkamą objektą vykdymui.',
-        },
-      };
-
-      parsed.message = 'Išsiunčiau į vykdymą.';
+    if (Array.isArray(json.messages)) {
+      // Find last user message content
+      const userMsg = [...json.messages].reverse().find(m => m.role === 'user');
+      if (userMsg) rawTitle = userMsg.content;
+    } else if (typeof json.title === 'string') {
+      rawTitle = json.title;
     }
 
-    return Response.json(parsed);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Internal server error';
+    if (!rawTitle) {
+      return NextResponse.json<MasterResponse>({
+        message: 'No task title provided.',
+        action: { type: 'NONE' },
+      });
+    }
 
-    const safeMessage = message.includes('quota')
-      ? 'OpenAI quota exceeded. Patikrink billing.'
-      : message.includes('Incorrect API key')
-      ? 'Neteisingas OpenAI API raktas.'
-      : 'Įvyko serverio klaida.';
+    const cleanedTitle = cleanTitle(rawTitle);
+    const steps = generateSteps(cleanedTitle);
 
-    return Response.json(
-      {
-        message: safeMessage,
-        action: { type: 'NONE', payload: {} },
+    const message = `Task: ${cleanedTitle}\n\nSteps:\n- ${steps.join('\n- ')}`;
+
+    const action = {
+      type: 'CREATE_TASK',
+      payload: {
+        title: cleanedTitle,
+        priority: 'medium',
       },
-      { status: 500 }
-    );
+    };
+
+    return NextResponse.json<MasterResponse>({
+      message,
+      action,
+    });
+  } catch (error) {
+    return NextResponse.json<MasterResponse>({
+      message: 'Failed to process request.',
+      action: { type: 'NONE' },
+    });
   }
 }
