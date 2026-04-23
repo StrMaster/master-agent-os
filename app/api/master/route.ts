@@ -24,6 +24,55 @@ function isIncomingMessage(value: unknown): value is IncomingMessage {
   );
 }
 
+function buildSubtasks(taskTitle: string): string[] {
+  const lower = taskTitle.toLowerCase();
+
+  if (lower.includes('login')) {
+    return [
+      'Create login page layout',
+      'Add email and password inputs',
+      'Add validation states',
+      'Connect authentication flow',
+      'Add loading and error handling',
+    ];
+  }
+
+  if (lower.includes('dashboard')) {
+    return [
+      'Create dashboard layout',
+      'Add summary cards',
+      'Connect shared data source',
+      'Add responsive behavior',
+      'Polish visual hierarchy',
+    ];
+  }
+
+  if (lower.includes('mobile') || lower.includes('navigation') || lower.includes('sidebar')) {
+    return [
+      'Analyze current mobile layout issues',
+      'Fix sidebar visibility and toggle behavior',
+      'Prevent horizontal overflow',
+      'Improve responsive layout and spacing',
+    ];
+  }
+
+  if (lower.includes('agent')) {
+    return [
+      'Define agent role',
+      'Define agent inputs and outputs',
+      'Add status handling',
+      'Connect agent to execution flow',
+    ];
+  }
+
+  return [
+    'Define scope',
+    'Create first UI version',
+    'Connect core logic',
+    'Test key flows',
+  ];
+}
+
 function isQuestion(text: string): boolean {
   const t = text.trim().toLowerCase();
 
@@ -40,38 +89,33 @@ function isQuestion(text: string): boolean {
   );
 }
 
-function isExplicitCreateTask(text: string): boolean {
+function detectIntent(text: string): Intent {
   const t = text.trim().toLowerCase();
 
-  return (
+  if (!t) return 'NONE';
+  if (isQuestion(t)) return 'NONE';
+
+  if (
     t.includes('sukurk task') ||
     t.includes('sukurk naują task') ||
     t.includes('create task') ||
     t.includes('add task')
-  );
-}
+  ) {
+    return 'CREATE_TASK';
+  }
 
-function isExplicitCreateAgent(text: string): boolean {
-  const t = text.trim().toLowerCase();
-
-  return (
+  if (
     t.includes('sukurk agent') ||
     t.includes('sukurk agentą') ||
     t.includes('create agent') ||
     t.includes('add agent')
-  );
-}
-
-function detectIntent(text: string): Intent {
-  if (isQuestion(text)) return 'NONE';
-  if (isExplicitCreateTask(text)) return 'CREATE_TASK';
-  if (isExplicitCreateAgent(text)) return 'CREATE_AGENT';
-
-  const t = text.trim().toLowerCase();
+  ) {
+    return 'CREATE_AGENT';
+  }
 
   if (
-    t.includes('execution') ||
     t.includes('vykdym') ||
+    t.includes('execution') ||
     t.includes('send to execution') ||
     t.includes('siųsk į vykdymą')
   ) {
@@ -88,9 +132,12 @@ function normalizeTaskTitle(rawText: string): string {
   cleaned = cleaned.replace(/^sukurk\s+task[:\s-]*/i, '');
   cleaned = cleaned.replace(/^create\s+task[:\s-]*/i, '');
   cleaned = cleaned.replace(/^add\s+task[:\s-]*/i, '');
+
   cleaned = cleaned.trim();
 
   if (!cleaned) return 'New Task';
+
+  const lower = cleaned.toLowerCase();
 
   const dictionary: Array<[RegExp, string]> = [
     [/^pagerinti mobile navigation$/i, 'Improve mobile navigation'],
@@ -99,13 +146,13 @@ function normalizeTaskTitle(rawText: string): string {
     [/^pagerinti mobile ui$/i, 'Improve mobile UI'],
     [/^sutvarkyti mobile navigation$/i, 'Fix mobile navigation'],
     [/^sutvarkyti mobile ui$/i, 'Fix mobile UI'],
+    [/^login page$/i, 'Login page'],
+    [/^dashboard$/i, 'Dashboard'],
   ];
 
   for (const [pattern, replacement] of dictionary) {
     if (pattern.test(cleaned)) return replacement;
   }
-
-  const lower = cleaned.toLowerCase();
 
   return lower
     .split(/\s+/)
@@ -126,6 +173,7 @@ function normalizeAgentName(rawText: string): string {
   cleaned = cleaned.replace(/^sukurk\s+agent[:\s-]*/i, '');
   cleaned = cleaned.replace(/^create\s+agent[:\s-]*/i, '');
   cleaned = cleaned.replace(/^add\s+agent[:\s-]*/i, '');
+
   cleaned = cleaned.trim();
 
   if (!cleaned) return 'General Agent';
@@ -159,46 +207,6 @@ function inferPriority(taskTitle: string): 'low' | 'medium' | 'high' {
   return 'medium';
 }
 
-function buildSubtasks(taskTitle: string): string[] {
-  const lower = taskTitle.toLowerCase();
-
-  if (lower.includes('mobile') || lower.includes('navigation') || lower.includes('sidebar')) {
-    return [
-      'Analyze current mobile layout issues',
-      'Fix sidebar visibility and toggle behavior',
-      'Prevent horizontal overflow',
-      'Improve responsive layout and spacing',
-    ];
-  }
-
-  if (lower.includes('login')) {
-    return [
-      'Create login page layout',
-      'Add email and password inputs',
-      'Add validation states',
-      'Connect authentication flow',
-      'Add loading and error handling',
-    ];
-  }
-
-  if (lower.includes('dashboard')) {
-    return [
-      'Create dashboard layout',
-      'Add summary cards',
-      'Connect shared data source',
-      'Add responsive behavior',
-      'Polish visual hierarchy',
-    ];
-  }
-
-  return [
-    'Define scope',
-    'Create first UI version',
-    'Connect core logic',
-    'Test key flows',
-  ];
-}
-
 function normalizeParsedResponse(raw: string): MasterResponse {
   try {
     const candidate = JSON.parse(raw) as Partial<MasterResponse>;
@@ -207,7 +215,7 @@ function normalizeParsedResponse(raw: string): MasterResponse {
       message:
         typeof candidate.message === 'string' && candidate.message.trim()
           ? candidate.message
-          : 'Užklausa apdorota.',
+          : 'Užduotis apdorota.',
       action:
         candidate.action &&
         typeof candidate.action === 'object' &&
@@ -227,6 +235,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // EXECUTION MODE
     if (body.mode === 'execute-subtask') {
       const subtask = body.subtask;
 
@@ -265,16 +274,16 @@ Atsakyk JSON formatu:
       } satisfies MasterResponse);
     }
 
-    const intent = detectIntent(lastUserMessage);
+    const detectedIntent = detectIntent(lastUserMessage);
 
-    if (intent === 'NONE') {
+    if (detectedIntent === 'NONE') {
       return Response.json({
         message: 'Atpažinta informacinė arba klausimo forma. Naujas task ar agentas nebus kuriamas.',
         action: { type: 'NONE', payload: {} },
       } satisfies MasterResponse);
     }
 
-    if (intent === 'CREATE_TASK') {
+    if (detectedIntent === 'CREATE_TASK') {
       const title = normalizeTaskTitle(lastUserMessage);
       const priority = inferPriority(title);
       const subtasks = buildSubtasks(title);
@@ -286,13 +295,12 @@ Atsakyk JSON formatu:
           payload: {
             title,
             priority,
-            subtasks,
           },
         },
       } satisfies MasterResponse);
     }
 
-    if (intent === 'CREATE_AGENT') {
+    if (detectedIntent === 'CREATE_AGENT') {
       const name = normalizeAgentName(lastUserMessage);
 
       return Response.json({
@@ -307,7 +315,7 @@ Atsakyk JSON formatu:
       } satisfies MasterResponse);
     }
 
-    if (intent === 'SEND_TO_EXECUTION') {
+    if (detectedIntent === 'SEND_TO_EXECUTION') {
       return Response.json({
         message: 'Išsiunčiau į vykdymą.',
         action: {
@@ -333,6 +341,10 @@ Atsakyk JSON formatu:
           role: 'system',
           content: `
 Tu esi Master Agent OS branduolys.
+
+Tavo tikslas:
+- veikti, o ne klausti
+- atsakyti trumpai, aiškiai ir praktiškai
 
 Privalai grąžinti TIK validų JSON šiuo formatu:
 {
