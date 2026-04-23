@@ -116,15 +116,50 @@ export default function ChatPage() {
     ];
   }
 
+  function detectRecommendedAgentType(title: string): string {
+    const lower = title.toLowerCase();
+
+    if (/(ui|mobile|frontend|page|layout|navigation)/.test(lower)) return 'frontend';
+    if (/(api|backend|server|auth|database)/.test(lower)) return 'backend';
+    if (/(chatbot|assistant|prompt)/.test(lower)) return 'chatbot';
+    if (/(analysis|metrics|report)/.test(lower)) return 'analyst';
+
+    return 'general';
+  }
+
   function applyAction(action: MasterAction) {
     console.log('APPLY ACTION', action);
 
     switch (action.type) {
       case 'CREATE_TASK': {
+        // Detect recommended agent type
+        const recommendedType = detectRecommendedAgentType(action.payload.title);
+
+        // Find matching agent
+        const agent = agents.find(
+          (a) =>
+            a.role?.toLowerCase().includes(recommendedType) ||
+            a.name?.toLowerCase().includes(recommendedType)
+        );
+
+        // Create task with assignedAgentId if agent found
         createTask({
           title: action.payload.title,
           priority: action.payload.priority,
         });
+
+        // After creating task, assign agent if found
+        // We assign to the latest created task (tasks[0]) after creation
+        // But tasks state update is async, so we assign after a short delay
+        setTimeout(() => {
+          const latestTask = tasks[0];
+          if (!latestTask) return;
+
+          if (agent) {
+            // Assign agent by id
+            autoAssignTask({ taskId: latestTask.id });
+          }
+        }, 0);
 
         const subtasks = buildLocalSubtasks(action.payload.title);
 
@@ -163,6 +198,19 @@ export default function ChatPage() {
       default:
         break;
     }
+  }
+
+  function buildResponseForCreateTask(title: string): MasterResponse {
+    const message = `Task "${title}" created with medium priority.`;
+    const action: MasterAction = {
+      type: 'CREATE_TASK',
+      payload: {
+        title,
+        priority: 'medium',
+      },
+    };
+
+    return { message, action };
   }
 
   async function sendMessage() {
