@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { Agent, Subtask, Task, TaskPriority } from './master-types';
+import {
+  Agent,
+  LearningLogEntry,
+  Subtask,
+  Task,
+  TaskPriority,
+} from './master-types';
 
 type CreateTaskInput = {
   title: string;
@@ -15,9 +21,11 @@ type CreateAgentInput = {
 type MasterStore = {
   tasks: Task[];
   agents: Agent[];
+  learningLog: LearningLogEntry[];
 
   createTask: (input: CreateTaskInput) => void;
   createAgent: (input: CreateAgentInput) => void;
+  addLearningLog: (entry: Omit<LearningLogEntry, 'id' | 'timestamp'>) => void;
 
   toggleSubtask: (taskId: string, subtaskId: string) => void;
   assignTaskToAgent: (taskId: string, agentId: string) => void;
@@ -79,12 +87,12 @@ function toSubtasks(input: string[]): Subtask[] {
 export const useMasterStore = create<MasterStore>((set) => ({
   tasks: [],
   agents: [],
+  learningLog: [],
 
   createTask: ({ title, priority, subtasks }) =>
     set((state) => {
-      const finalSubtasks = subtasks && subtasks.length > 0
-        ? subtasks
-        : buildDefaultSubtasks(title);
+      const finalSubtasks =
+        subtasks && subtasks.length > 0 ? subtasks : buildDefaultSubtasks(title);
 
       const newTask: Task = {
         id: makeId('task'),
@@ -112,7 +120,18 @@ export const useMasterStore = create<MasterStore>((set) => ({
       };
     }),
 
-  toggleSubtask: ({}, {} as never),
+  addLearningLog: (entry) =>
+    set((state) => {
+      const next: LearningLogEntry = {
+        id: makeId('log'),
+        timestamp: new Date().toISOString(),
+        ...entry,
+      };
+
+      return {
+        learningLog: [next, ...state.learningLog].slice(0, 50),
+      };
+    }),
 
   assignTaskToAgent: (taskId, agentId) =>
     set((state) => ({
