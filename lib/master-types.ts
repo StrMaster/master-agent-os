@@ -1,5 +1,10 @@
 export type TaskPriority = 'low' | 'medium' | 'high';
 
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 export type MasterAction =
   | {
       type: 'CREATE_TASK';
