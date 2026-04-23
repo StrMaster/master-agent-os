@@ -26,10 +26,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <MasterStoreProvider>
-          <div className="flex min-h-screen bg-neutral-950 text-white">
+          <div className="flex min-h-screen overflow-x-hidden bg-neutral-950 text-white">
             
             {/* Sidebar */}
-            <aside className="w-64 border-r border-white/10 p-4">
+            <aside className="hidden w-64 border-r border-white/10 p-4 md:block">
               <div className="mb-6">
                 <h1 className="text-lg font-semibold">MASTER AGENT OS</h1>
               </div>
@@ -48,7 +48,7 @@ export default function RootLayout({
             </aside>
 
             {/* Content */}
-            <main className="flex-1">
+            <main className="min-w-0 flex-1 p-4 md:p-6">
               {children}
             </main>
           </div>
