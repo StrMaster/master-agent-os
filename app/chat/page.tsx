@@ -165,6 +165,19 @@ export default function ChatPage() {
     }
   }
 
+  function buildResponseForCreateTask(title: string): MasterResponse {
+    const message = `Task "${title}" created with medium priority.`;
+    const action: MasterAction = {
+      type: 'CREATE_TASK',
+      payload: {
+        title,
+        priority: 'medium',
+      },
+    };
+
+    return { message, action };
+  }
+
   async function sendMessage() {
     const content = input.trim();
     if (!content || isLoading) return;
