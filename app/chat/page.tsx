@@ -342,7 +342,7 @@ export default function ChatPage() {
 
                       {task.subtasks?.length > 0 && (
                         <div className="mt-3 space-y-2">
-                          {task.subtasks.map((subtask) => (
+                          {task.subtasks.map((subtask: { id: string; title: string; done: boolean }) => (
                             <div
                               key={subtask.id}
                               className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white/70"
