@@ -1,10 +1,7 @@
-export type GoalStatus = "draft" | "active";
-
-export type AgentStatus = "idle" | "active" | "waiting";
-
-export type TaskStatus = "backlog" | "doing" | "done" | "waiting";
-
-export type RunStatus = "draft" | "ready";
+export type GoalStatus = "draft" | "active" | "paused" | "completed" | "archived";
+export type AgentStatus = "idle" | "active" | "working" | "waiting" | "blocked" | "archived";
+export type TaskStatus = "backlog" | "doing" | "waiting" | "done" | "cancelled";
+export type RunStatus = "draft" | "ready" | "sent" | "completed" | "failed";
 
 export interface Goal {
   id: string;
@@ -20,7 +17,7 @@ export interface Goal {
 export interface Agent {
   id: string;
   name: string;
-  type: "master" | "tool" | "builder" | "analyst";
+  type: "master" | "sales" | "builder" | "analyst" | "tool" | "custom";
   role: string;
   status: AgentStatus;
   currentTask: string;
