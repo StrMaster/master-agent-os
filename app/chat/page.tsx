@@ -119,6 +119,12 @@ export default function ChatPage() {
   function applyAction(action: MasterAction) {
     console.log('APPLY ACTION', action);
 
+    // Treat missing or null action as NONE
+    if (!action || !action.type) {
+      // NONE action: do nothing
+      return;
+    }
+
     switch (action.type) {
       case 'CREATE_TASK': {
         createTask({
@@ -159,9 +165,22 @@ export default function ChatPage() {
         break;
       }
 
-      case 'NONE':
-      default:
+      case 'NONE': {
+        // Do nothing
         break;
+      }
+
+      default: {
+        // Unknown action: add assistant message with safe fallback
+        const unknownMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: 'Veiksmas neatpažintas. Nieko nekeičiu.',
+        };
+
+        setMessages((prev) => [...prev, unknownMessage]);
+        break;
+      }
     }
   }
 
