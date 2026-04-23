@@ -116,6 +116,177 @@ export default function ChatPage() {
     ];
   }
 
+  function detectAgentType(title: string): string {
+    const lower = title.toLowerCase();
+
+    const frontendKeywords = ['ui', 'mobile', 'navigation', 'page'];
+    const backendKeywords = ['api', 'server', 'auth', 'database'];
+    const chatbotKeywords = ['chat', 'prompt', 'assistant'];
+    const analystKeywords = ['analysis', 'metrics'];
+
+    if (frontendKeywords.some((kw) => lower.includes(kw))) {
+      return 'frontend';
+    }
+    if (backendKeywords.some((kw) => lower.includes(kw))) {
+      return 'backend';
+    }
+    if (chatbotKeywords.some((kw) => lower.includes(kw))) {
+      return 'chatbot';
+    }
+    if (analystKeywords.some((kw) => lower.includes(kw))) {
+      return 'analyst';
+    }
+    return 'general';
+  }
+
+  function generateSubtasks(title: string): string[] {
+    const lower = title.toLowerCase();
+
+    if (lower.includes('frontend') || lower.includes('ui') || lower.includes('page') || lower.includes('mobile') || lower.includes('navigation')) {
+      return [
+        'Design UI components',
+        'Implement responsive layout',
+        'Add navigation logic',
+        'Test user interactions',
+        'Fix UI bugs',
+      ];
+    }
+
+    if (lower.includes('backend') || lower.includes('api') || lower.includes('server') || lower.includes('auth') || lower.includes('database')) {
+      return [
+        'Design database schema',
+        'Implement API endpoints',
+        'Add authentication logic',
+        'Write unit tests',
+        'Deploy backend services',
+      ];
+    }
+
+    if (lower.includes('chat') || lower.includes('prompt') || lower.includes('assistant')) {
+      return [
+        'Define chat flow',
+        'Implement prompt handling',
+        'Integrate assistant AI',
+        'Test chat responses',
+        'Optimize conversation logic',
+      ];
+    }
+
+    if (lower.includes('analysis') || lower.includes('metrics')) {
+      return [
+        'Collect data sources',
+        'Analyze key metrics',
+        'Create reports',
+        'Present findings',
+        'Suggest improvements',
+      ];
+    }
+
+    return [
+      'Define task scope',
+      'Break down requirements',
+      'Assign resources',
+      'Implement solution',
+      'Test and review',
+    ];
+  }
+
+  function parseCreateTask(content: string): { title: string } | null {
+    const lower = content.toLowerCase();
+    const trigger = 'create task';
+    const triggerLt = 'sukurk task';
+
+    if (lower.includes(trigger)) {
+      const idx = lower.indexOf(trigger);
+      const title = content.slice(idx + trigger.length).trim();
+      if (title.length === 0) return null;
+      return { title };
+    }
+
+    if (lower.includes(triggerLt)) {
+      const idx = lower.indexOf(triggerLt);
+      const title = content.slice(idx + triggerLt.length).trim();
+      if (title.length === 0) return null;
+      return { title };
+    }
+
+    return null;
+  }
+
+  function parseCreateAgent(content: string): { name: string; role: string } | null {
+    const lower = content.toLowerCase();
+    const trigger = 'create agent';
+    const triggerLt = 'sukurk agent';
+
+    if (lower.includes(trigger)) {
+      const idx = lower.indexOf(trigger);
+      const after = content.slice(idx + trigger.length).trim();
+      if (!after) return null;
+
+      const parts = after.split(' ');
+      const name = parts[0];
+      const role = parts.length > 1 ? parts.slice(1).join(' ') : 'general';
+
+      return { name, role };
+    }
+
+    if (lower.includes(triggerLt)) {
+      const idx = lower.indexOf(triggerLt);
+      const after = content.slice(idx + triggerLt.length).trim();
+      if (!after) return null;
+
+      const parts = after.split(' ');
+      const name = parts[0];
+      const role = parts.length > 1 ? parts.slice(1).join(' ') : 'general';
+
+      return { name, role };
+    }
+
+    return null;
+  }
+
+  function isQuestion(text: string): boolean {
+    return text.trim().endsWith('?');
+  }
+
+  function buildResponseForCreateTask(title: string) {
+    const subtasks = generateSubtasks(title);
+    const agentType = detectAgentType(title);
+
+    return {
+      message: `Task "${title}" created with ${subtasks.length} subtasks.\nRecommended agent type: ${agentType}.\nNext step: assign this task to a ${agentType} agent.`,
+      action: {
+        type: 'CREATE_TASK',
+        payload: {
+          title,
+          priority: 'medium',
+        },
+      },
+      subtasks,
+      agentType,
+    };
+  }
+
+  function buildResponseForCreateAgent(name: string, role: string) {
+    return {
+      message: `Agent "${name}" created.`,
+      action: {
+        type: 'CREATE_AGENT',
+        payload: {
+          name,
+          role,
+        },
+      },
+    };
+  }
+
+  function buildInformationalResponse() {
+    return {
+      message: 'This is an informational request. No new task or agent will be created.',
+      action: null,
+    };
+  }
+
   function applyAction(action: MasterAction) {
     console.log('APPLY ACTION', action);
 
@@ -180,32 +351,56 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      const payloadMessages = [...messages, userMessage].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Master Agent logic to interpret user input and generate response
+      let response: MasterResponse | null = null;
 
-      const response = await fetch('/api/master', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: payloadMessages,
-        }),
-      });
+      // Check for create task
+      const createTaskData = parseCreateTask(content);
+      if (createTaskData) {
+        const { title } = createTaskData;
+        const { message, action } = buildResponseForCreateTask(title);
+        response = { message, action };
+      } else {
+        // Check for create agent
+        const createAgentData = parseCreateAgent(content);
+        if (createAgentData) {
+          const { name, role } = createAgentData;
+          const { message, action } = buildResponseForCreateAgent(name, role);
+          response = { message, action };
+        } else if (isQuestion(content)) {
+          response = buildInformationalResponse();
+        } else {
+          response = buildInformationalResponse();
+        }
+      }
 
-      const data = (await response.json()) as MasterResponse;
-      console.log('MASTER RESPONSE', data);
+      if (!response) {
+        response = buildInformationalResponse();
+      }
 
       const assistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: data.message,
+        content: response.message,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-      applyAction(data.action);
+
+      if (response.action) {
+        applyAction(response.action);
+
+        // If action is CREATE_TASK, also breakdown subtasks
+        if (
+          response.action.type === 'CREATE_TASK' &&
+          'title' in response.action.payload
+        ) {
+          const subtasks = generateSubtasks(response.action.payload.title);
+          breakdownTask({
+            taskTitle: response.action.payload.title,
+            subtasks,
+          });
+        }
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
