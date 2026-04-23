@@ -295,7 +295,6 @@ Atsakyk JSON formatu:
           payload: {
             title,
             priority,
-            subtasks,
           },
         },
       } satisfies MasterResponse);
