@@ -116,6 +116,87 @@ export default function ChatPage() {
     ];
   }
 
+  function normalizeInput(text: string): string {
+    return text.trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function parseCommand(text: string): MasterResponse {
+    const normalized = normalizeInput(text);
+
+    // Check for info requests
+    if (/
+ar\b|turime|kiek|yra/.test(normalized)) {
+      // Provide info about tasks and agents
+      const taskCount = tasks.length;
+      const agentCount = agents.length;
+
+      const message = `Šiuo metu turime ${taskCount} task${taskCount !== 1 ? 'ų' : ''} ir ${agentCount} agent${agentCount !== 1 ? 'ų' : ''}.`;
+
+      return {
+        message,
+        action: { type: 'NONE' },
+      };
+    }
+
+    // CREATE TASK
+    // Matches: "sukurk task: <title>", "sukurk task <title>", "create task <title>"
+    const createTaskRegex = /^(?:sukurk|create) task:? (.+)$/i;
+    const createTaskMatch = normalized.match(createTaskRegex);
+    if (createTaskMatch) {
+      const title = createTaskMatch[1].trim();
+      if (title.length === 0) {
+        return {
+          message: "Task pavadinimas negali būti tuščias.",
+          action: { type: 'NONE' },
+        };
+      }
+
+      return {
+        message: `Sukuriu taską: ${title}`,
+        action: {
+          type: 'CREATE_TASK',
+          payload: {
+            title,
+            priority: 'medium',
+          },
+        },
+      };
+    }
+
+    // CREATE AGENT
+    // Matches: "sukurk agent <role> <name>", "create agent <role> <name>"
+    const createAgentRegex = /^(?:sukurk|create) agent (\S+) (\S+)$/i;
+    const createAgentMatch = normalized.match(createAgentRegex);
+    if (createAgentMatch) {
+      const role = createAgentMatch[1].trim();
+      const name = createAgentMatch[2].trim();
+
+      if (!role || !name) {
+        return {
+          message: "Agentas turi turėti vaidmenį ir vardą.",
+          action: { type: 'NONE' },
+        };
+      }
+
+      return {
+        message: `Sukuriu agentą: ${name} su vaidmeniu ${role}`,
+        action: {
+          type: 'CREATE_AGENT',
+          payload: {
+            role,
+            name,
+          },
+        },
+      };
+    }
+
+    // Fallback
+    return {
+      message: "Nesupratau komandos. Pabandyk: 'Sukurk task: login page'",
+      action: { type: 'NONE' },
+    };
+  }
+
   function applyAction(action: MasterAction) {
     console.log('APPLY ACTION', action);
 
@@ -180,12 +261,32 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
+      // Interpret message locally first
+      const response = parseCommand(content);
+
+      const assistantMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response.message,
+      };
+
+      setMessages((prev) => [...prev, assistantMessage]);
+      applyAction(response.action);
+
+      // If action is NONE and message is fallback, do not call API
+      if (response.action.type === 'NONE' && response.message.startsWith('Nesupratau')) {
+        setIsLoading(false);
+        textareaRef.current?.focus();
+        return;
+      }
+
+      // Otherwise, send to backend for further processing
       const payloadMessages = [...messages, userMessage].map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
-      const response = await fetch('/api/master', {
+      const apiResponse = await fetch('/api/master', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,16 +296,16 @@ export default function ChatPage() {
         }),
       });
 
-      const data = (await response.json()) as MasterResponse;
+      const data = (await apiResponse.json()) as MasterResponse;
       console.log('MASTER RESPONSE', data);
 
-      const assistantMessage: ChatMessage = {
+      const apiAssistantMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: data.message,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, apiAssistantMessage]);
       applyAction(data.action);
     } catch {
       setMessages((prev) => [
