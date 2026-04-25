@@ -228,9 +228,10 @@ Output format:
   "commitMessage": "feat: ...",
   "changes": [
     {
-      "filePath": "...",
-      "content": "FULL UPDATED FILE CONTENT"
-    }
+    filePath: changedFile,
+    content: changedContent,
+    originalContent: originalChangedFileContent,
+  } as any,
   ]
 }
 
