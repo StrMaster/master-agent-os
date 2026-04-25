@@ -20,6 +20,22 @@ function isLikelyFullFile(content: string): boolean {
   return content.length > 1500 && fullFileMarkers.some((marker) => content.includes(marker));
 }
 
+function countChangedLines(before: string, after: string): number {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+
+  let changed = 0;
+  const max = Math.max(beforeLines.length, afterLines.length);
+
+  for (let i = 0; i < max; i += 1) {
+    if (beforeLines[i] !== afterLines[i]) {
+      changed += 1;
+    }
+  }
+
+  return changed;
+}
+
 function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
   if (!proposal) {
     return {
@@ -35,12 +51,22 @@ function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
   }
 
   for (const change of proposal.changes) {
-    if (isLikelyFullFile(change.content)) {
-      reasons.push(`${change.filePath} looks like a full-file rewrite.`);
-    }
+   const originalContent =
+  typeof (change as any).originalContent === 'string'
+    ? (change as any).originalContent
+    : '';
 
-    if (change.content.length > 6000) {
-      reasons.push(`${change.filePath} change is very large.`);
+const changedLineCount = originalContent
+  ? countChangedLines(originalContent, change.content)
+  : 9999;
+
+if (!originalContent && isLikelyFullFile(change.content)) {
+  reasons.push(`${change.filePath} looks like a full-file rewrite.`);
+}
+
+if (changedLineCount > 80) {
+  reasons.push(`${change.filePath} changes ${changedLineCount} lines.`);
+}
     }
 
     if (change.content.includes('import ') && change.content.length > 1500) {
