@@ -388,20 +388,24 @@ RESPONSE REQUIREMENTS:
       );
     }
 
-    if (promptForbidsImportChanges(prompt)) {
-      const originalImports = getImportBlock(originalChangedFileContent);
-      const newImports = getImportBlock(changedContent);
+    // Skip import validation for diff mode
+if (
+  promptForbidsImportChanges(prompt) &&
+  !changedContent.includes('@@') // diff marker
+) {
+  const originalImports = getImportBlock(originalChangedFileContent);
+  const newImports = getImportBlock(changedContent);
 
-      if (originalImports !== newImports) {
-        return Response.json(
-          {
-            error: 'Model changed imports even though prompt forbids import changes',
-            parsed,
-          },
-          { status: 500 }
-        );
-      }
-    }
+  if (originalImports !== newImports) {
+    return Response.json(
+      {
+        error: 'Model changed imports even though prompt forbids import changes',
+        parsed,
+      },
+      { status: 500 }
+    );
+  }
+}
 
     if (
       changedFile === 'app/execution/page.tsx' &&
