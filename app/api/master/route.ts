@@ -94,6 +94,8 @@ function parseByRules(input: string): MasterResponse | null {
 ) {
   return null; // 👈 leisk eiti į LLM fallback
 }
+return null;
+}
 
 function validateLLMResponse(value: unknown): MasterResponse | null {
   if (!value || typeof value !== 'object') return null;
