@@ -106,27 +106,38 @@ function extractJson(text: string): unknown | null {
 function validateLLMResponse(value: unknown): MasterResponse | null {
   if (!value || typeof value !== 'object') return null;
 
-  const obj = value as {
-    message?: unknown;
-    action?: {
-      type?: unknown;
-      payload?: Record<string, unknown>;
-    };
-  };
+  const data = value as any;
 
-  if (typeof obj.message !== 'string') return null;
-  if (!obj.action || typeof obj.action.type !== 'string') return null;
+  let actionType: string | null = null;
+  let payload: any = {};
+  let message: string | null = null;
 
-  const type = obj.action.type as ActionType;
+  // Format A:
+  // { message, action: { type, payload } }
+  if (data.action && typeof data.action === 'object') {
+    actionType = data.action.type;
+    payload = data.action.payload || {};
+    message = typeof data.message === 'string' ? data.message : null;
+  }
 
-  if (type === 'CREATE_TASK') {
-    const title = obj.action.payload?.title;
+  // Format B:
+  // { action: "CREATE_TASK", payload }
+  if (typeof data.action === 'string') {
+    actionType = data.action;
+    payload = data.payload || {};
+    message = typeof data.message === 'string' ? data.message : null;
+  }
+
+  if (!actionType) return null;
+
+  if (actionType === 'CREATE_TASK') {
+    const title = payload?.title;
 
     if (typeof title !== 'string' || title.trim().length < 2) {
       return none('LLM pasiūlė task, bet pavadinimas netinkamas.');
     }
 
-    const rawPriority = obj.action.payload?.priority;
+    const rawPriority = payload?.priority;
     const priority: Priority =
       rawPriority === 'low' || rawPriority === 'medium' || rawPriority === 'high'
         ? rawPriority
@@ -135,9 +146,9 @@ function validateLLMResponse(value: unknown): MasterResponse | null {
     return createTaskResponse(title, priority);
   }
 
-  if (type === 'CREATE_AGENT') {
-    const name = obj.action.payload?.name;
-    const role = obj.action.payload?.role;
+  if (actionType === 'CREATE_AGENT') {
+    const name = payload?.name;
+    const role = payload?.role;
 
     if (typeof name !== 'string' || name.trim().length < 2) {
       return none('LLM pasiūlė agentą, bet vardas netinkamas.');
@@ -146,9 +157,12 @@ function validateLLMResponse(value: unknown): MasterResponse | null {
     return createAgentResponse(typeof role === 'string' ? role : 'general', name);
   }
 
-  return none(obj.message || 'Veiksmas neatpažintas. Nieko nekeičiu.');
-}
+  if (actionType === 'NONE') {
+    return none(message || 'No action required.');
+  }
 
+  return null;
+}
 async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
   console.log('--- LLM START ---');
   console.log('INPUT:', input);
