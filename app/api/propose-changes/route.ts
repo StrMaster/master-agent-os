@@ -432,18 +432,19 @@ if (
       ensureString(parsed.commitMessage, 'feat: update file') || 'feat: update file';
 
     const response: ChangeProposal = {
-      summary: safeSummary,
-      branchName: safeBranch.startsWith('agent/')
-        ? safeBranch
-        : `agent/${safeBranch}`,
-      commitMessage: safeCommit,
-      changes: [
-        {
-          filePath: changedFile,
-          content: changedContent,
-        },
-      ],
-    };
+  summary: safeSummary,
+  branchName: safeBranch.startsWith('agent/')
+    ? safeBranch
+    : `agent/${safeBranch}`,
+  commitMessage: safeCommit,
+  changes: [
+    {
+      filePath: changedFile,
+      content: changedContent,
+      originalContent: originalChangedFileContent,
+    } as any,
+  ],
+};
 
     return Response.json(response);
   } catch (error) {
