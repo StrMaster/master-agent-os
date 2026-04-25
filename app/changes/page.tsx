@@ -80,6 +80,31 @@ function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
   };
 }
 
+function getSimpleDiff(before: string, after: string): string {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+  const maxLen = Math.max(beforeLines.length, afterLines.length);
+  const diffLines: string[] = [];
+
+  for (let i = 0; i < maxLen; i++) {
+    const beforeLine = beforeLines[i];
+    const afterLine = afterLines[i];
+
+    if (beforeLine === afterLine) {
+      diffLines.push('  ' + (beforeLine ?? ''));
+    } else {
+      if (beforeLine !== undefined) {
+        diffLines.push('- ' + beforeLine);
+      }
+      if (afterLine !== undefined) {
+        diffLines.push('+ ' + afterLine);
+      }
+    }
+  }
+
+  return diffLines.join('\n');
+}
+
 export default function ChangesPage() {
   const [prompt, setPrompt] = useState('');
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
@@ -288,25 +313,33 @@ Return code diff only.`}
               </div>
 
               <div className="space-y-4">
-                {proposal.changes.map((change) => (
-                  <div
-                    key={change.filePath}
-                    className="rounded-xl border border-white/10 bg-neutral-900 p-4"
-                  >
-                    <div className="mb-2 text-sm font-medium text-white/80">
-                      {change.filePath}
-                    </div>
+                {proposal.changes.map((change) => {
+                  const originalContent = (change as any).originalContent;
+                  const preview =
+                    typeof originalContent === 'string'
+                      ? getSimpleDiff(originalContent, change.content)
+                      : change.content;
 
-                    <div className="mb-2 text-xs text-white/40">
-                      {change.content.length} characters
-                    </div>
+                  return (
+                    <div
+                      key={change.filePath}
+                      className="rounded-xl border border-white/10 bg-neutral-900 p-4"
+                    >
+                      <div className="mb-2 text-sm font-medium text-white/80">
+                        {change.filePath}
+                      </div>
 
-                    <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
-                      {change.content.slice(0, 6000)}
-                      {change.content.length > 6000 ? '\n\n...truncated' : ''}
-                    </pre>
-                  </div>
-                ))}
+                      <div className="mb-2 text-xs text-white/40">
+                        {change.content.length} characters
+                      </div>
+
+                      <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
+                        {preview.slice(0, 6000)}
+                        {preview.length > 6000 ? '\n\n...truncated' : ''}
+                      </pre>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
