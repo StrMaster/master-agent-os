@@ -229,15 +229,15 @@ Output format:
   "changes": [
     {
       "filePath": "...",
-      "content": "UNIFIED DIFF PATCH ONLY"
+      "content": "FULL UPDATED FILE CONTENT"
     }
   ]
 }
 
 IMPORTANT IMPLEMENTATION RULES:
-- changes[0].content must be a unified diff patch only.
-- Do not return full updated file content.
-- Include only changed lines with minimal context.
+- changes[0].content must be the full updated file content.
+- Make the smallest possible code change inside the full file.
+- Preserve all unrelated code exactly.
 - Preserve all unrelated code exactly.
 - Do not rewrite or reformat unrelated sections.
 - Do not change imports unless the user explicitly asks for import changes.
@@ -281,8 +281,7 @@ RESPONSE REQUIREMENTS:
 - Return JSON only.
 - changes must contain exactly one item unless clarification is needed.
 - changes[0].filePath must be the target file if target file is provided.
-- changes[0].content must be a unified diff patch only.
-- Do not include the full file.
+- changes[0].content must be the full updated content of that one file.
 - The actual code modification must be minimal and match the user request.
 `.trim();
 
@@ -358,20 +357,7 @@ RESPONSE REQUIREMENTS:
       );
     }
 
-    if (
-  changedContent.includes("'use client'") ||
-  changedContent.includes('"use client"') ||
-  changedContent.includes('export default function') ||
-  changedContent.length > 3000
-) {
-  return Response.json(
-    {
-      error: 'Model returned content that looks like a full file, not a small diff patch',
-      parsed,
-    },
-    { status: 500 }
-  );
-}
+   
 
     if (!isAllowedFile(changedFile)) {
       return Response.json(
