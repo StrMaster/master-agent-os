@@ -151,9 +151,26 @@ export async function POST(req: Request) {
       );
     }
 
+    async function readFileFromGitHub(filePath: string) {
+  const res = await fetch(
+    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${filePath}?ref=${process.env.GITHUB_DEFAULT_BRANCH || 'main'}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+  return Buffer.from(data.content, 'base64').toString('utf8');
+}
+    
     const targetFileContent = targetFile
-      ? await readProjectFile(targetFile)
-      : null;
+  ? await readFileFromGitHub(targetFile)
+  : null;
 
     if (targetFile && !targetFileContent) {
       return Response.json(
