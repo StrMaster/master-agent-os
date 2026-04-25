@@ -64,7 +64,6 @@ function createAgentResponse(role: string, name: string): MasterResponse {
 
 function parseByRules(input: string): MasterResponse | null {
   const text = normalizeInput(input);
-  const lower = text.toLowerCase();
 
   const taskMatch = text.match(/^(sukurk|create|add)\s+task[:\s]+(.+)$/i);
   if (taskMatch) {
@@ -77,24 +76,29 @@ function parseByRules(input: string): MasterResponse | null {
 
   const agentMatch = text.match(/^(sukurk|create|add)\s+agent(?:ą)?\s+(\S+)\s+(.+)$/i);
   if (agentMatch) {
-    const role = agentMatch[2];
-    const name = agentMatch[3];
-    return createAgentResponse(role, name);
+    return createAgentResponse(agentMatch[2], agentMatch[3]);
   }
 
   if (/^(sukurk|create|add)\s+agent(?:ą)?\s*$/i.test(text)) {
     return none('Agento vardas negali būti tuščias.');
   }
 
-  if (
-  lower.endsWith('?') ||
-  lower.includes('ar') ||
-  lower.includes('kiek') ||
-  lower.includes('turime')
-) {
-  return null; // 👈 leisk eiti į LLM fallback
+  return null;
 }
-return null;
+
+function extractJson(text: string): unknown | null {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
 }
 
 function validateLLMResponse(value: unknown): MasterResponse | null {
@@ -122,7 +126,7 @@ function validateLLMResponse(value: unknown): MasterResponse | null {
 
     const rawPriority = obj.action.payload?.priority;
     const priority: Priority =
-      rawPriority === 'low' || rawPriority === 'high' || rawPriority === 'medium'
+      rawPriority === 'low' || rawPriority === 'medium' || rawPriority === 'high'
         ? rawPriority
         : 'medium';
 
@@ -156,7 +160,16 @@ async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
         {
           role: 'system',
           content:
-            'You are Master Agent. Return ONLY strict JSON. Allowed action.type values: CREATE_TASK, CREATE_AGENT, NONE. Never return unsupported actions. CREATE_TASK payload must include title and optional priority low|medium|high. CREATE_AGENT payload must include name and optional role.',
+            [
+              'You are Master Agent.',
+              'Return ONLY valid JSON. No markdown.',
+              'Allowed action.type values: CREATE_TASK, CREATE_AGENT, NONE.',
+              'CREATE_TASK payload must include title and optional priority: low, medium, high.',
+              'CREATE_AGENT payload must include name and optional role.',
+              'If user asks whether something exists, asks counts, or asks informational questions, return NONE.',
+              'If user says something like "gal padarom", "reikia", "padaryk", "sukurk kažką" and it sounds like work to do, return CREATE_TASK.',
+              'Never return unsupported actions.',
+            ].join(' '),
         },
         {
           role: 'user',
@@ -168,7 +181,9 @@ async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
     const text = response.output_text?.trim();
     if (!text) return null;
 
-    const parsed = JSON.parse(text);
+    const parsed = extractJson(text);
+    if (!parsed) return null;
+
     return validateLLMResponse(parsed);
   } catch {
     return null;
@@ -207,7 +222,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(llmResult);
     }
 
-    return null;
+    return NextResponse.json(
+      none("Nesupratau komandos. Pabandyk: 'Sukurk task: login page'")
+    );
   } catch {
     return NextResponse.json(
       none('Įvyko klaida apdorojant užklausą. Nieko nekeičiu.'),
