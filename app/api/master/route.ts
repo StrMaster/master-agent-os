@@ -87,16 +87,12 @@ function parseByRules(input: string): MasterResponse | null {
   }
 
   if (
-    lower.endsWith('?') ||
-    /\bar\b/.test(lower) ||
-    lower.includes('turime') ||
-    lower.includes('kiek') ||
-    lower.includes('yra')
-  ) {
-    return none('Atpažinta klausimo forma. Naujas task ar agentas nebus kuriamas.');
-  }
-
-  return null;
+  lower.endsWith('?') ||
+  lower.includes('ar') ||
+  lower.includes('kiek') ||
+  lower.includes('turime')
+) {
+  return null; // 👈 leisk eiti į LLM fallback
 }
 
 function validateLLMResponse(value: unknown): MasterResponse | null {
