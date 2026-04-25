@@ -9,6 +9,8 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
+console.log('API KEY EXISTS:', !!process.env.OPENAI_API_KEY);
+
 function normalizeInput(input: string): string {
   return input
     .trim()
@@ -150,11 +152,15 @@ function validateLLMResponse(value: unknown): MasterResponse | null {
   return none(obj.message || 'Veiksmas neatpažintas. Nieko nekeičiu.');
 }
 
+console.log('--- LLM START ---');
+console.log('INPUT:', input);
+
 async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
   if (!openai) return null;
 
   try {
     const response = await openai.responses.create({
+      console.log('RAW RESPONSE:', JSON.stringify(response, null, 2));
       model: process.env.OPENAI_MODEL || 'gpt-5.5',
       input: [
         {
@@ -191,14 +197,17 @@ if (!text && Array.isArray(response.output)) {
     }
   }
 }
+  console.log('TEXT:', text);
 
 if (!text) return null;
     const parsed = extractJson(text);
     if (!parsed) return null;
 
     return validateLLMResponse(parsed);
-  } catch {
-    return null;
+  } catch (e) {
+  console.error('LLM ERROR:', e);
+  return null;
+}
   }
 }
 
