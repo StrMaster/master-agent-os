@@ -20,21 +20,6 @@ function isLikelyFullFile(content: string): boolean {
   return content.length > 1500 && fullFileMarkers.some((marker) => content.includes(marker));
 }
 
-function countChangedLines(before: string, after: string): number {
-  const beforeLines = before.split('\n');
-  const afterLines = after.split('\n');
-
-  let changed = 0;
-  const max = Math.max(beforeLines.length, afterLines.length);
-
-  for (let i = 0; i < max; i += 1) {
-    if (beforeLines[i] !== afterLines[i]) {
-      changed += 1;
-    }
-  }
-
-  return changed;
-}
 
 function countChangedLines(before: string, after: string): number {
   const beforeLines = before.split('\n');
