@@ -143,39 +143,37 @@ function validateLLMResponse(value: unknown): MasterResponse | null {
       return none('LLM pasiūlė agentą, bet vardas netinkamas.');
     }
 
-    return createAgentResponse(
-      typeof role === 'string' ? role : 'general',
-      name
-    );
+    return createAgentResponse(typeof role === 'string' ? role : 'general', name);
   }
 
   return none(obj.message || 'Veiksmas neatpažintas. Nieko nekeičiu.');
 }
 
-console.log('--- LLM START ---');
-console.log('INPUT:', input);
-
 async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
-  if (!openai) return null;
+  console.log('--- LLM START ---');
+  console.log('INPUT:', input);
+
+  if (!openai) {
+    console.log('LLM SKIPPED: missing OPENAI_API_KEY');
+    return null;
+  }
 
   try {
     const response = await openai.responses.create({
-      console.log('RAW RESPONSE:', JSON.stringify(response, null, 2));
-      model: process.env.OPENAI_MODEL || 'gpt-5.5',
+      model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       input: [
         {
           role: 'system',
-          content:
-            [
-              'You are Master Agent.',
-              'Return ONLY valid JSON. No markdown.',
-              'Allowed action.type values: CREATE_TASK, CREATE_AGENT, NONE.',
-              'CREATE_TASK payload must include title and optional priority: low, medium, high.',
-              'CREATE_AGENT payload must include name and optional role.',
-              'If user asks whether something exists, asks counts, or asks informational questions, return NONE.',
-              'If user says something like "gal padarom", "reikia", "padaryk", "sukurk kažką" and it sounds like work to do, return CREATE_TASK.',
-              'Never return unsupported actions.',
-            ].join(' '),
+          content: [
+            'You are Master Agent.',
+            'Return ONLY valid JSON. No markdown.',
+            'Allowed action.type values: CREATE_TASK, CREATE_AGENT, NONE.',
+            'CREATE_TASK payload must include title and optional priority: low, medium, high.',
+            'CREATE_AGENT payload must include name and optional role.',
+            'If user asks informational questions, return NONE.',
+            'If user says something like "gal padarom", "reikia", "padaryk", "sukurk kažką" and it sounds like work to do, return CREATE_TASK.',
+            'Never return unsupported actions.',
+          ].join(' '),
         },
         {
           role: 'user',
@@ -184,30 +182,35 @@ async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
       ],
     });
 
-   let text = response.output_text?.trim();
+    console.log('RAW RESPONSE:', JSON.stringify(response, null, 2));
 
-if (!text && Array.isArray(response.output)) {
-  const first = response.output[0];
+    let text = response.output_text?.trim();
 
-  if (first && 'content' in first && Array.isArray(first.content)) {
-    const content = first.content[0];
+    if (!text && Array.isArray(response.output)) {
+      const first = response.output[0];
 
-    if (content && 'text' in content && typeof content.text === 'string') {
-      text = content.text.trim();
+      if (first && 'content' in first && Array.isArray(first.content)) {
+        const content = first.content[0];
+
+        if (content && 'text' in content && typeof content.text === 'string') {
+          text = content.text.trim();
+        }
+      }
     }
-  }
-}
-  console.log('TEXT:', text);
 
-if (!text) return null;
+    console.log('TEXT:', text);
+
+    if (!text) return null;
+
     const parsed = extractJson(text);
+    console.log('PARSED:', parsed);
+
     if (!parsed) return null;
 
     return validateLLMResponse(parsed);
-  } catch (e) {
-  console.error('LLM ERROR:', e);
-  return null;
-}
+  } catch (error) {
+    console.error('LLM ERROR:', error);
+    return null;
   }
 }
 
@@ -246,7 +249,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       none("Nesupratau komandos. Pabandyk: 'Sukurk task: login page'")
     );
-  } catch {
+  } catch (error) {
+    console.error('MASTER API ERROR:', error);
+
     return NextResponse.json(
       none('Įvyko klaida apdorojant užklausą. Nieko nekeičiu.'),
       { status: 200 }
