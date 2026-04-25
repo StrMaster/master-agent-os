@@ -179,6 +179,57 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
+        const normalized = content.toLowerCase().trim();
+
+    if (normalized.includes('kiek turime task') || normalized.includes('kiek task')) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Turime ${tasks.length} taskų.`,
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    if (normalized.includes('kiek turime agent') || normalized.includes('kiek agent')) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Turime ${agents.length} agentų.`,
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    const taskQuestionMatch = normalized.match(/^ar turime\s+(.+?)\s+task/);
+
+    if (taskQuestionMatch) {
+      const keyword = taskQuestionMatch[1].trim();
+
+      const foundTask = tasks.find((task) =>
+        task.title.toLowerCase().includes(keyword)
+      );
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: foundTask
+            ? `Taip, turime task: ${foundTask.title}.`
+            : 'Ne, tokio task neradau.',
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       const payloadMessages = [...messages, userMessage].map((m) => ({
         role: m.role,
