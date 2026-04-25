@@ -279,6 +279,7 @@ ${contextBlocks.join('\n\n')}
 
 RESPONSE REQUIREMENTS:
 - Return JSON only.
+- originalContent: originalChangedFileContent
 - changes must contain exactly one item unless clarification is needed.
 - changes[0].filePath must be the target file if target file is provided.
 - changes[0].content must be the full updated content of that one file.
