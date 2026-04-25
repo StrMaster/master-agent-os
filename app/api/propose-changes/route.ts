@@ -25,12 +25,23 @@ const openai = new OpenAI({
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 
+const ALLOWED_PREFIXES = ['app/', 'lib/', 'components/'];
+
+const KNOWN_FILES = [
+  'app/chat/page.tsx',
+  'app/changes/page.tsx',
+  'app/api/master/route.ts',
+  'app/api/propose-changes/route.ts',
+  'app/api/apply-changes/route.ts',
+  'app/execution/page.tsx',
+  'app/tasks/page.tsx',
+  'app/layout.tsx',
+  'lib/master-store.tsx',
+  'lib/master-types.ts',
+];
+
 function isAllowedFile(filePath: string) {
-  return (
-    filePath.startsWith('app/') ||
-    filePath.startsWith('lib/') ||
-    filePath.startsWith('components/')
-  );
+  return ALLOWED_PREFIXES.some((prefix) => filePath.startsWith(prefix));
 }
 
 async function readProjectFile(filePath: string) {
@@ -72,13 +83,62 @@ function extractJson(text: string) {
   return trimmed;
 }
 
+function extractTargetFileFromPrompt(prompt: string): string {
+  for (const file of KNOWN_FILES) {
+    if (prompt.includes(file)) return file;
+  }
+
+  const match = prompt.match(/\b(app|lib|components)\/[A-Za-z0-9._/-]+\.(tsx|ts|jsx|js)\b/);
+  return match?.[0] ?? '';
+}
+
+function promptForbidsImportChanges(prompt: string) {
+  const lower = prompt.toLowerCase();
+
+  return (
+    lower.includes('do not change imports') ||
+    lower.includes('do not modify imports') ||
+    lower.includes('neliesk import') ||
+    lower.includes('nekeisk import')
+  );
+}
+
+function getImportBlock(content: string) {
+  return content
+    .split('\n')
+    .filter((line) => line.trim().startsWith('import '))
+    .join('\n')
+    .trim();
+}
+
+function promptRequestsFullRewrite(prompt: string) {
+  const lower = prompt.toLowerCase();
+
+  return (
+    lower.includes('rewrite full file') ||
+    lower.includes('replace whole file') ||
+    lower.includes('pakeisk visa faila') ||
+    lower.includes('pakeisk visą failą') ||
+    lower.includes('pilnas skriptas') ||
+    lower.includes('full script')
+  );
+}
+
+function buildContextLabel(filePath: string, content: string | null) {
+  return `${filePath}
+<<FILE>>
+${content ?? 'FILE NOT AVAILABLE'}
+<<END FILE>>`;
+}
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ProposeBody;
 
     const prompt = String(body?.prompt ?? '').trim();
     const requestedTargetFile = String(body?.targetFile ?? '').trim();
-    const targetFile = requestedTargetFile || '';
+    const extractedTargetFile = extractTargetFileFromPrompt(prompt);
+    const targetFile = requestedTargetFile || extractedTargetFile;
 
     if (!prompt) {
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
@@ -102,23 +162,49 @@ export async function POST(req: Request) {
       );
     }
 
-    const masterStoreContent = await readProjectFile('lib/master-store.tsx');
-    const masterTypesContent = await readProjectFile('lib/master-types.ts');
-    const layoutContent = await readProjectFile('app/layout.tsx');
-    const changesPageContent = await readProjectFile('app/changes/page.tsx');
-    const executionPageContent = await readProjectFile('app/execution/page.tsx');
-    const tasksPageContent = await readProjectFile('app/tasks/page.tsx');
-    const chatPageContent = await readProjectFile('app/chat/page.tsx');
+    const contextFiles = new Set<string>();
+
+    if (targetFile) {
+      contextFiles.add(targetFile);
+    }
+
+    contextFiles.add('lib/master-types.ts');
+    contextFiles.add('lib/master-store.tsx');
+
+    if (prompt.includes('chat') || targetFile === 'app/chat/page.tsx') {
+      contextFiles.add('app/chat/page.tsx');
+    }
+
+    if (prompt.includes('changes') || targetFile === 'app/changes/page.tsx') {
+      contextFiles.add('app/changes/page.tsx');
+    }
+
+    if (prompt.includes('execution') || targetFile === 'app/execution/page.tsx') {
+      contextFiles.add('app/execution/page.tsx');
+    }
+
+    if (prompt.includes('task') || targetFile === 'app/tasks/page.tsx') {
+      contextFiles.add('app/tasks/page.tsx');
+    }
+
+    const contextBlocks: string[] = [];
+
+    for (const file of contextFiles) {
+      const content = await readProjectFile(file);
+      contextBlocks.push(buildContextLabel(file, content));
+    }
+
+    const fullRewriteAllowed = promptRequestsFullRewrite(prompt);
 
     const systemPrompt = `
-You are a senior software engineer.
+You are a careful code modification engine for an existing Next.js project.
 
 Return ONLY valid JSON.
 Do NOT write explanations.
 Do NOT write markdown.
 Do NOT write code fences.
 
-Format:
+Output format:
 {
   "summary": "...",
   "branchName": "agent/...",
@@ -126,101 +212,64 @@ Format:
   "changes": [
     {
       "filePath": "...",
-      "content": "FULL FILE CONTENT"
+      "content": "FULL UPDATED FILE CONTENT"
     }
   ]
 }
 
-YOUR JOB:
-- If TARGET FILE is provided, modify ONLY that file
-- If TARGET FILE is NOT provided, choose the single most relevant file
-- Preserve the existing project architecture
-- Use the existing store/types APIs exactly as provided
-- Return the FULL updated file content, not a diff
+IMPORTANT IMPLEMENTATION RULES:
+- The apply system expects FULL UPDATED FILE CONTENT in changes[0].content.
+- Even though you return the full updated file, you must make the smallest possible code change.
+- Preserve all unrelated code exactly.
+- Do not rewrite or reformat unrelated sections.
+- Do not change imports unless the user explicitly asks for import changes.
+- Do not change exports unless explicitly asked.
+- Do not rename existing variables or functions unless explicitly asked.
+- Do not move functions unless explicitly asked.
+- Do not add dependencies.
+- Do not create new files.
+- Do not rename files.
+- Do not modify more than one file.
+- Do not invent store methods or APIs.
+- Do not replace real logic with mock data.
+- Use subtasks.done, never completed.
 
-STRICT RULES:
-- DO NOT create new files
-- DO NOT rename files
-- DO NOT modify more than one file
-- DO NOT invent new APIs
-- DO NOT invent new store methods
-- DO NOT replace real logic with mock data
-- DO NOT return example/demo files
-- DO NOT use app/example/page.tsx
-- DO NOT use masterStore.getTasks
-- Use subtasks.done, never completed
+TARGETING RULES:
+- If TARGET FILE is provided, modify ONLY that file.
+- If TARGET FILE is not provided, choose exactly one best file.
+- If the user asks to change one function/block, change only that function/block.
+- If the user says "do not change imports", imports must remain byte-for-byte the same.
+- If unsure, return a safe proposal with changes: [] and explain clarification needed in summary.
 
-IMPORTANT:
-- changes must contain EXACTLY ONE item
-- changes[0].filePath must be an allowed file under app/, lib/, or components/
-- If editing app/execution/page.tsx, the result must keep using useMasterStore from '@/lib/master-store'
-- If editing UI-only files, keep business logic intact
+FULL REWRITE POLICY:
+- Full rewrites are NOT allowed unless the user explicitly asks for full rewrite / full script / replace whole file.
+- If full rewrite is not allowed, preserve existing file structure and make a minimal edit inside the requested block.
 `.trim();
 
     const userPrompt = `
 USER REQUEST:
 ${prompt}
 
-${targetFile ? `TARGET FILE: ${targetFile}` : 'TARGET FILE: auto-select the single most relevant file'}
+TARGET FILE:
+${targetFile || 'auto-select exactly one relevant file'}
 
-${targetFileContent ? `CURRENT TARGET FILE CONTENT:
-<<FILE>>
-${targetFileContent}
-<<END FILE>>` : ''}
+FULL REWRITE ALLOWED:
+${fullRewriteAllowed ? 'yes' : 'no'}
 
-RELEVANT PROJECT CONTEXT:
-lib/master-store.tsx
-<<FILE>>
-${masterStoreContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
+PROJECT CONTEXT:
+${contextBlocks.join('\n\n')}
 
-RELEVANT PROJECT CONTEXT:
-lib/master-types.ts
-<<FILE>>
-${masterTypesContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-RELEVANT PROJECT CONTEXT:
-app/layout.tsx
-<<FILE>>
-${layoutContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-RELEVANT PROJECT CONTEXT:
-app/changes/page.tsx
-<<FILE>>
-${changesPageContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-RELEVANT PROJECT CONTEXT:
-app/execution/page.tsx
-<<FILE>>
-${executionPageContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-RELEVANT PROJECT CONTEXT:
-app/tasks/page.tsx
-<<FILE>>
-${tasksPageContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-RELEVANT PROJECT CONTEXT:
-app/chat/page.tsx
-<<FILE>>
-${chatPageContent ?? 'FILE NOT AVAILABLE'}
-<<END FILE>>
-
-OUTPUT REQUIREMENTS:
-- modify only one file
-- if target file is provided, that exact file must be used
-- if target file is not provided, choose the best single file
-- use the real project store/types
-- return valid JSON only
+RESPONSE REQUIREMENTS:
+- Return JSON only.
+- changes must contain exactly one item unless clarification is needed.
+- changes[0].filePath must be the target file if target file is provided.
+- changes[0].content must be the full updated content of that one file.
+- The actual code modification must be minimal and match the user request.
 `.trim();
 
     const completion = await openai.chat.completions.create({
       model: MODEL,
-      temperature: 0.2,
+      temperature: 0,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -247,9 +296,27 @@ OUTPUT REQUIREMENTS:
     if (
       !parsed ||
       typeof parsed !== 'object' ||
-      !Array.isArray(parsed.changes) ||
-      parsed.changes.length !== 1
+      !Array.isArray(parsed.changes)
     ) {
+      return Response.json(
+        {
+          error: 'Model returned invalid proposal shape',
+          parsed,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (parsed.changes.length === 0) {
+      return Response.json({
+        summary: ensureString(parsed.summary, 'Clarification needed'),
+        branchName: 'agent/clarification-needed',
+        commitMessage: 'chore: clarification needed',
+        changes: [],
+      });
+    }
+
+    if (parsed.changes.length !== 1) {
       return Response.json(
         {
           error: 'Model must return exactly one file change',
@@ -292,9 +359,36 @@ OUTPUT REQUIREMENTS:
       );
     }
 
+    const originalChangedFileContent = await readProjectFile(changedFile);
+
+    if (!originalChangedFileContent) {
+      return Response.json(
+        {
+          error: `Could not read changed file for validation: ${changedFile}`,
+          parsed,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (promptForbidsImportChanges(prompt)) {
+      const originalImports = getImportBlock(originalChangedFileContent);
+      const newImports = getImportBlock(changedContent);
+
+      if (originalImports !== newImports) {
+        return Response.json(
+          {
+            error: 'Model changed imports even though prompt forbids import changes',
+            parsed,
+          },
+          { status: 500 }
+        );
+      }
+    }
+
     if (
       changedFile === 'app/execution/page.tsx' &&
-      !changedContent.includes("useMasterStore")
+      !changedContent.includes('useMasterStore')
     ) {
       return Response.json(
         {
