@@ -207,9 +207,9 @@ export async function POST(req: Request) {
     const contextBlocks: string[] = [];
 
     for (const file of contextFiles) {
-      const content = await readProjectFile(file);
-      contextBlocks.push(buildContextLabel(file, content));
-    }
+  const content = await readFileFromGitHub(file);
+  contextBlocks.push(buildContextLabel(file, content));
+}
 
     const fullRewriteAllowed = promptRequestsFullRewrite(prompt);
 
@@ -393,7 +393,7 @@ RESPONSE REQUIREMENTS:
       );
     }
 
-    const originalChangedFileContent = await readProjectFile(changedFile);
+    const originalChangedFileContent = await readFileFromGitHub(changedFile);
 
     if (!originalChangedFileContent) {
       return Response.json(
