@@ -26,6 +26,92 @@ function isAllowedFile(filePath: string) {
   );
 }
 
+function isUnifiedDiff(content: string) {
+  return content.includes('@@') && content.includes('\n-') && content.includes('\n+');
+}
+
+function decodeBase64Content(content: string) {
+  return Buffer.from(content.replace(/\n/g, ''), 'base64').toString('utf8');
+}
+
+function applyUnifiedDiff(original: string, diff: string) {
+  const originalLines = original.split('\n');
+  const result: string[] = [];
+  const diffLines = diff.split('\n');
+
+  let originalIndex = 0;
+  let i = 0;
+
+  while (i < diffLines.length) {
+    const line = diffLines[i];
+
+    if (!line.startsWith('@@')) {
+      i += 1;
+      continue;
+    }
+
+    const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (!match) {
+      throw new Error(`Invalid diff hunk header: ${line}`);
+    }
+
+    const oldStart = Number(match[1]) - 1;
+
+    while (originalIndex < oldStart) {
+      result.push(originalLines[originalIndex]);
+      originalIndex += 1;
+    }
+
+    i += 1;
+
+    while (i < diffLines.length && !diffLines[i].startsWith('@@')) {
+      const hunkLine = diffLines[i];
+
+      if (hunkLine.startsWith(' ')) {
+        const expected = hunkLine.slice(1);
+        const actual = originalLines[originalIndex];
+
+        if (actual !== expected) {
+          throw new Error(
+            `Diff context mismatch. Expected "${expected}", got "${actual ?? ''}"`
+          );
+        }
+
+        result.push(actual);
+        originalIndex += 1;
+      } else if (hunkLine.startsWith('-')) {
+        const expected = hunkLine.slice(1);
+        const actual = originalLines[originalIndex];
+
+        if (actual !== expected) {
+          throw new Error(
+            `Diff remove mismatch. Expected "${expected}", got "${actual ?? ''}"`
+          );
+        }
+
+        originalIndex += 1;
+      } else if (hunkLine.startsWith('+')) {
+        result.push(hunkLine.slice(1));
+      } else if (hunkLine.trim() === '') {
+        // ignore empty trailing diff line
+      } else if (hunkLine.startsWith('\\')) {
+        // "\ No newline at end of file"
+      } else {
+        throw new Error(`Unsupported diff line: ${hunkLine}`);
+      }
+
+      i += 1;
+    }
+  }
+
+  while (originalIndex < originalLines.length) {
+    result.push(originalLines[originalIndex]);
+    originalIndex += 1;
+  }
+
+  return result.join('\n');
+}
+
 async function githubRequest(path: string, init?: RequestInit) {
   assertEnv();
 
@@ -45,6 +131,24 @@ async function githubRequest(path: string, init?: RequestInit) {
   }
 
   return res.json();
+}
+
+async function createOrGetBranch(branchName: string, baseSha: string) {
+  try {
+    await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ref: `refs/heads/${branchName}`,
+        sha: baseSha,
+      }),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+
+    if (!message.includes('Reference already exists')) {
+      throw error;
+    }
+  }
 }
 
 export async function POST(req: Request) {
@@ -67,10 +171,7 @@ export async function POST(req: Request) {
         typeof change.filePath !== 'string' ||
         typeof change.content !== 'string'
       ) {
-        return Response.json(
-          { error: 'Invalid change item' },
-          { status: 400 }
-        );
+        return Response.json({ error: 'Invalid change item' }, { status: 400 });
       }
 
       if (!isAllowedFile(change.filePath)) {
@@ -86,29 +187,21 @@ export async function POST(req: Request) {
     );
 
     const baseSha = branchRef.object.sha;
-
-    await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`, {
-      method: 'POST',
-      body: JSON.stringify({
-        ref: `refs/heads/${proposal.branchName}`,
-        sha: baseSha,
-      }),
-    });
+    await createOrGetBranch(proposal.branchName, baseSha);
 
     for (const change of proposal.changes) {
-      let existingSha: string | undefined;
+      const existingFile = await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
+          change.filePath
+        )}?ref=${proposal.branchName}`
+      );
 
-      try {
-        const existingFile = await githubRequest(
-          `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
-            change.filePath
-          )}?ref=${proposal.branchName}`
-        );
+      const existingSha = existingFile.sha;
+      const originalContent = decodeBase64Content(existingFile.content);
 
-        existingSha = existingFile.sha;
-      } catch {
-        existingSha = undefined;
-      }
+      const nextContent = isUnifiedDiff(change.content)
+        ? applyUnifiedDiff(originalContent, change.content)
+        : change.content;
 
       await githubRequest(
         `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
@@ -118,7 +211,7 @@ export async function POST(req: Request) {
           method: 'PUT',
           body: JSON.stringify({
             message: proposal.commitMessage,
-            content: Buffer.from(change.content, 'utf8').toString('base64'),
+            content: Buffer.from(nextContent, 'utf8').toString('base64'),
             branch: proposal.branchName,
             sha: existingSha,
           }),
