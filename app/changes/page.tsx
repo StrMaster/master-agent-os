@@ -65,7 +65,7 @@ function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
       reasons.push(`${change.filePath} looks like a full-file rewrite.`);
     }
 
-    if (changedLineCount > 80) {
+    if (changedLineCount > 300) {
       reasons.push(`${change.filePath} changes ${changedLineCount} lines.`);
     }
 
