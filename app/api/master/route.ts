@@ -178,18 +178,21 @@ async function interpretWithLLM(input: string): Promise<MasterResponse | null> {
       ],
     });
 
-    let text = response.output_text?.trim();
+   let text = response.output_text?.trim();
 
-if (!text && response.output) {
+if (!text && Array.isArray(response.output)) {
   const first = response.output[0];
-  const content = first?.content?.[0];
-  if (content?.text) {
-    text = content.text.trim();
+
+  if (first && 'content' in first && Array.isArray(first.content)) {
+    const content = first.content[0];
+
+    if (content && 'text' in content && typeof content.text === 'string') {
+      text = content.text.trim();
+    }
   }
 }
 
 if (!text) return null;
-
     const parsed = extractJson(text);
     if (!parsed) return null;
 
