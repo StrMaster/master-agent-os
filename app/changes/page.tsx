@@ -231,7 +231,8 @@ export default function ChangesPage() {
 Change only <function/block>.
 Do not rewrite the whole file.
 Do not change imports.
-Return code diff only.`}
+Return code diff only.
+Keep changes minimal and focused.`}
             </pre>
           </div>
 
