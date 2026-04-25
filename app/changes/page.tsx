@@ -36,6 +36,22 @@ function countChangedLines(before: string, after: string): number {
   return changed;
 }
 
+function countChangedLines(before: string, after: string): number {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+
+  let changed = 0;
+  const max = Math.max(beforeLines.length, afterLines.length);
+
+  for (let i = 0; i < max; i += 1) {
+    if (beforeLines[i] !== afterLines[i]) {
+      changed += 1;
+    }
+  }
+
+  return changed;
+}
+
 function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
   if (!proposal) {
     return {
@@ -51,26 +67,25 @@ function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
   }
 
   for (const change of proposal.changes) {
-   const originalContent =
-  typeof (change as any).originalContent === 'string'
-    ? (change as any).originalContent
-    : '';
+    const originalContent =
+      typeof (change as any).originalContent === 'string'
+        ? (change as any).originalContent
+        : '';
 
-const changedLineCount = originalContent
-  ? countChangedLines(originalContent, change.content)
-  : 9999;
+    const changedLineCount = originalContent
+      ? countChangedLines(originalContent, change.content)
+      : 9999;
 
-if (!originalContent && isLikelyFullFile(change.content)) {
-  reasons.push(`${change.filePath} looks like a full-file rewrite.`);
-}
-
-if (changedLineCount > 80) {
-  reasons.push(`${change.filePath} changes ${changedLineCount} lines.`);
-}
+    if (!originalContent && isLikelyFullFile(change.content)) {
+      reasons.push(`${change.filePath} looks like a full-file rewrite.`);
     }
 
-    if (change.content.includes('import ') && change.content.length > 1500) {
-      reasons.push(`${change.filePath} may be changing imports or rewriting the file.`);
+    if (changedLineCount > 80) {
+      reasons.push(`${change.filePath} changes ${changedLineCount} lines.`);
+    }
+
+    if (!originalContent && change.content.length > 6000) {
+      reasons.push(`${change.filePath} change is very large.`);
     }
   }
 
