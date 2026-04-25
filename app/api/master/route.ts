@@ -207,9 +207,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(llmResult);
     }
 
-    return NextResponse.json(
-      none("Nesupratau komandos. Pabandyk: 'Sukurk task: login page'")
-    );
+    return null;
   } catch {
     return NextResponse.json(
       none('Įvyko klaida apdorojant užklausą. Nieko nekeičiu.'),
