@@ -351,24 +351,18 @@ Keep changes minimal and focused.`}
   {preview
     .slice(0, 6000)
     .split('\n')
-    .map((line, index) => (
-      <div
-        key={`${index}-${line}`}
-        className={
-          line.startsWith('+ ')
-            ? 'text-green-400'
-            : line.startsWith('- ')
-              ? 'text-red-400'
-              : 'text-white/60'
-        }
-      >
-        {line}
-      </div>
-    ))}
+    .map((line, i) => {
+      let color = 'text-white/60';
 
-  {preview.length > 6000 && (
-    <div className="text-white/40">...truncated</div>
-  )}
+      if (line.startsWith('+')) color = 'text-green-400';
+      else if (line.startsWith('-')) color = 'text-red-400';
+
+      return (
+        <div key={i} className={color}>
+          {line}
+        </div>
+      );
+    })}
 </pre>
                     </div>
                   );
