@@ -413,6 +413,37 @@ RESPONSE REQUIREMENTS:
       );
     }
 
+    function countChangedLines(before: string, after: string): number {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+
+  let changed = 0;
+  const max = Math.max(beforeLines.length, afterLines.length);
+
+  for (let i = 0; i < max; i += 1) {
+    if (beforeLines[i] !== afterLines[i]) {
+      changed += 1;
+    }
+  }
+
+  return changed;
+}
+
+const changedLines = countChangedLines(
+  originalChangedFileContent,
+  changedContent
+);
+
+if (changedLines > 50) {
+  return Response.json(
+    {
+      error: `Too many lines changed (${changedLines}). Expected small patch.`,
+      parsed,
+    },
+    { status: 500 }
+  );
+}
+
     // Skip import validation for diff mode
 if (
   promptForbidsImportChanges(prompt) &&
