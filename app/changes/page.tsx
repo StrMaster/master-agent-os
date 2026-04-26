@@ -275,6 +275,20 @@ Required:
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
+              onClick={() => setPrompt(`Fix this build error:
+
+<paste full Vercel build error here>
+
+Required:
+- Include exact file path
+- Include exact line number
+- Include full error message`)}
+              className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Build error prompt
+            </button>
+
+            <button
               onClick={generateProposal}
               disabled={isLoading || !prompt.trim()}
               className="rounded-xl bg-white px-4 py-2 text-black disabled:opacity-50"
