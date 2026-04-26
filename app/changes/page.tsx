@@ -259,6 +259,15 @@ Always verify diff before applying.`}
             </pre>
           </div>
 
+          <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900 p-3 text-xs text-white/60">
+            <div className="mb-2 font-medium text-white/80">Build error fix template</div>
+            <pre className="whitespace-pre-wrap">
+{`Fix this build error:
+
+<paste error here>`}
+            </pre>
+          </div>
+
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
             <button
               onClick={generateProposal}
