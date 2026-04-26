@@ -386,12 +386,16 @@ export default function ChatPage() {
                         Priority: {task.priority} · Status: {task.status}
                       </div>
 
-                      <button
-                        onClick={() => executeTask({ taskId: task.id })}
-                        className="mt-2 rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
-                      >
-                        Send to execution
-                      </button>
+                      {task.status === 'todo' ? (
+                        <button
+                          onClick={() => executeTask({ taskId: task.id })}
+                          className="mt-2 rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+                        >
+                          Send to execution
+                        </button>
+                      ) : task.status === 'in_progress' ? (
+                        <div className="mt-2 text-xs text-white/70">In progress</div>
+                      ) : null}
 
                       {assignedAgent && (
                         <div className="mt-1 text-xs text-white/50">
