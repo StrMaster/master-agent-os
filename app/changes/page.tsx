@@ -207,9 +207,8 @@ console.log(
         throw new Error(data.error || 'Failed to apply changes');
       }
 
-      setResult(`Applied to branch: ${data.branchName}`);
-      if (data.compareUrl) {
-        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.compareUrl}`);
+      if (data.pullRequestUrl) {
+        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.pullRequestUrl}`);
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
