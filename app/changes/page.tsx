@@ -86,18 +86,25 @@ function getSimpleDiff(before: string, after: string): string {
   const maxLen = Math.max(beforeLines.length, afterLines.length);
   const diffLines: string[] = [];
 
-  for (let i = 0; i < maxLen; i++) {
+  for (let i = 0; i < maxLen; i += 1) {
     const beforeLine = beforeLines[i];
     const afterLine = afterLines[i];
 
-    if (beforeLine === afterLine) {
-      diffLines.push('  ' + (beforeLine ?? ''));
-    } else {
+    if (beforeLine !== afterLine) {
+      if (i > 0) {
+        diffLines.push('  ' + (afterLines[i - 1] ?? ''));
+      }
+
       if (beforeLine !== undefined) {
         diffLines.push('- ' + beforeLine);
       }
+
       if (afterLine !== undefined) {
         diffLines.push('+ ' + afterLine);
+      }
+
+      if (i < maxLen - 1) {
+        diffLines.push('  ' + (afterLines[i + 1] ?? ''));
       }
     }
   }
@@ -340,10 +347,29 @@ Keep changes minimal and focused.`}
                         {change.content.length} characters
                       </div>
 
-                      <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
-                        {preview.slice(0, 6000)}
-                        {preview.length > 6000 ? '\n\n...truncated' : ''}
-                      </pre>
+                     <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
+  {preview
+    .slice(0, 6000)
+    .split('\n')
+    .map((line, index) => (
+      <div
+        key={`${index}-${line}`}
+        className={
+          line.startsWith('+ ')
+            ? 'text-green-400'
+            : line.startsWith('- ')
+              ? 'text-red-400'
+              : 'text-white/60'
+        }
+      >
+        {line}
+      </div>
+    ))}
+
+  {preview.length > 6000 && (
+    <div className="text-white/40">...truncated</div>
+  )}
+</pre>
                     </div>
                   );
                 })}
