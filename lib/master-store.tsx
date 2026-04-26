@@ -272,8 +272,7 @@ case 'TOGGLE_SUBTASK': {
         id: crypto.randomUUID(),
         name: action.payload.name,
         role: action.payload.role,
-        status: 'idle',
-        specialty: 'general',
+        status: 'idle'
       };
 
       return {
