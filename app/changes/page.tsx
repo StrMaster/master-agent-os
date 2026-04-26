@@ -191,7 +191,12 @@ console.log(
 
       const text = await res.text();
 
-      let data: { branchName?: string; compareUrl?: string; error?: string };
+      let data: {
+  branchName?: string;
+  compareUrl?: string;
+  pullRequestUrl?: string | null;
+  error?: string;
+};
       try {
         data = JSON.parse(text);
       } catch {
