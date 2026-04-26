@@ -285,6 +285,16 @@ FULL REWRITE POLICY:
 - If full rewrite is not allowed, preserve existing file structure and make a minimal edit inside the requested block.
 `.trim();
 
+const enforcedPrompt = `
+Modify only ONE file.
+Change only ONE small block.
+Do not rewrite the whole file.
+Do not change imports.
+Do not change JSX structure.
+
+${prompt}
+`;
+    
     const userPrompt = `
 USER REQUEST:
 ${prompt}
