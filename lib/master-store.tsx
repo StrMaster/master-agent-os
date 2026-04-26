@@ -394,6 +394,11 @@ export function MasterStoreProvider({
     type: 'EXECUTE_TASK',
     payload: input,
   }),
+      completeTask: (input) =>
+  dispatch({
+    type: 'COMPLETE_TASK',
+    payload: input,
+  }),
     }),
     [state]
   );
