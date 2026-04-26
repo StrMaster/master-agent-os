@@ -16,7 +16,7 @@ type MasterState = {
 
 type MasterContextValue = MasterState & {
   executeTask: (input: { taskId: string }) => void;
-
+  completeTask: (input: { taskId: string }) => void;
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
