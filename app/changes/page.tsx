@@ -254,7 +254,8 @@ Change only <function/block>.
 Do not rewrite the whole file.
 Do not change imports.
 Return code diff only.
-Keep changes minimal and focused.`}
+Keep changes minimal and focused.
+Always verify diff before applying.`}
             </pre>
           </div>
 
