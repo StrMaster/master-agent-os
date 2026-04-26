@@ -15,30 +15,37 @@ type MasterState = {
 };
 
 type MasterContextValue = MasterState & {
-    
+  executeTask: (input: { taskId: string }) => void;
+  completeTask: (input: { taskId: string }) => void;
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
   }) => void;
+
   createAgent: (input: {
     name: string;
     role: string;
   }) => void;
+
   sendToExecution: (input: {
     targetType: 'task' | 'agent';
   }) => void;
-    breakdownTask: (input: {
+
+  breakdownTask: (input: {
     taskTitle: string;
     subtasks: string[];
   }) => void;
+
   toggleSubtask: (input: {
-  taskId: string;
-  subtaskId: string;
-}) => void;
-autoAssignTask: (input: {
-  taskId: string;
-}) => void;
-assignTaskToAgent: (input: {
+    taskId: string;
+    subtaskId: string;
+  }) => void;
+
+  autoAssignTask: (input: {
+    taskId: string;
+  }) => void;
+
+  assignTaskToAgent: (input: {
     taskId: string;
     agentId: string;
   }) => void;
@@ -273,7 +280,7 @@ case 'TOGGLE_SUBTASK': {
         name: action.payload.name,
         role: action.payload.role,
         status: 'idle',
-        specialty: 'general',
+        specialty: 'general'
       };
 
       return {
@@ -367,6 +374,11 @@ export function MasterStoreProvider({
           type: 'SEND_TO_EXECUTION',
           payload: input,
         }),
+      executeTask: (input) =>
+  dispatch({
+    type: 'EXECUTE_TASK',
+    payload: input,
+  }),
     }),
     [state]
   );
