@@ -385,6 +385,13 @@ export default function ChatPage() {
                         Priority: {task.priority} · Status: {task.status}
                       </div>
 
+                      <button
+                        onClick={() => sendToExecution({ targetType: 'task' })}
+                        className="mt-2 rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
+                      >
+                        Send to execution
+                      </button>
+
                       {assignedAgent && (
                         <div className="mt-1 text-xs text-white/50">
                           Assigned to: {assignedAgent.name}
