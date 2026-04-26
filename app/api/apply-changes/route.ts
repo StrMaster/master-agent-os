@@ -219,11 +219,35 @@ export async function POST(req: Request) {
       );
     }
 
+    let pullRequestUrl: string | null = null;
+
+    try {
+      const prResponse = await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            title: proposal.commitMessage,
+            head: proposal.branchName,
+            base: GITHUB_DEFAULT_BRANCH,
+            body: `Automated change proposal.\n\nSummary: ${proposal.summary}`,
+          }),
+        }
+      );
+
+      if (prResponse && prResponse.html_url) {
+        pullRequestUrl = prResponse.html_url;
+      }
+    } catch {
+      pullRequestUrl = null;
+    }
+
     return Response.json({
       ok: true,
       branchName: proposal.branchName,
       repoUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${proposal.branchName}`,
       compareUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/compare/${GITHUB_DEFAULT_BRANCH}...${proposal.branchName}`,
+      pullRequestUrl,
     });
   } catch (error) {
     const message =
