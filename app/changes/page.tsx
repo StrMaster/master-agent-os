@@ -113,7 +113,13 @@ function getSimpleDiff(before: string, after: string): string {
 }
 
 export default function ChangesPage() {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const p = params.get('prompt');
+    if (p) setPrompt(decodeURIComponent(p));
+  }, []);;
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
