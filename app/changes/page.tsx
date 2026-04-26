@@ -264,7 +264,7 @@ Always verify diff before applying.`}
             <pre className="whitespace-pre-wrap">
 {`Fix this build error:
 
-<paste error here>`}
+<paste full error here including file path and line number>`}
             </pre>
           </div>
 
