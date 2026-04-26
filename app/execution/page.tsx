@@ -102,6 +102,7 @@ export default function ExecutionPage() {
         return (
           <div key={task.id} className="mb-6 border p-4 rounded">
             <h2 className="text-xl">{task.title}</h2>
+            <p className="text-sm">Status: {task.status}</p>
 
             <p className="text-sm text-gray-400">
               Assigned: {assigned?.name || 'None'}
