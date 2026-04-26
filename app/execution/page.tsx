@@ -15,6 +15,7 @@ export default function ExecutionPage() {
     sendToExecution,
     toggleSubtask,
     assignTaskToAgent,
+    completeTask,
   } = useMasterStore();
 
   const [isRunning, setIsRunning] = useState(false);
@@ -75,9 +76,16 @@ export default function ExecutionPage() {
         <h3 className="text-lg font-semibold mb-2">Activity</h3>
         {tasks.some(task => task.status === 'in_progress') ? (
           tasks.filter(task => task.status === 'in_progress').map(task => (
-            <p key={task.id} className="text-sm">
-              {task.title} is currently in progress
-            </p>
+            <div key={task.id} className="text-sm">
+  <div>{task.title} is currently in progress</div>
+
+  <button
+    onClick={() => completeTask({ taskId: task.id })}
+    className="mt-2 rounded-lg border border-white/20 px-3 py-1 text-xs"
+  >
+    Complete task
+  </button>
+</div>
           ))
         ) : (
           <p className="text-sm">No active execution.</p>
