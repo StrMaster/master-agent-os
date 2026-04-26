@@ -21,14 +21,15 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const {
-    tasks,
-    agents,
-    createTask,
-    createAgent,
-    sendToExecution,
-    breakdownTask,
-    autoAssignTask,
-  } = useMasterStore();
+  tasks,
+  agents,
+  createTask,
+  createAgent,
+  sendToExecution,
+  executeTask,
+  breakdownTask,
+  autoAssignTask,
+} = useMasterStore();
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -386,7 +387,7 @@ export default function ChatPage() {
                       </div>
 
                       <button
-                        onClick={() => sendToExecution({ targetType: 'task' })}
+                        onClick={() => executeTask({ taskId: task.id })}
                         className="mt-2 rounded-lg border border-white/10 px-3 py-1 text-xs text-white/70 hover:bg-white/10"
                       >
                         Send to execution
