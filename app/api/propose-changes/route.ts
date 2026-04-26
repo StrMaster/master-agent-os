@@ -383,9 +383,11 @@ Return JSON only.
     }
 
     const updatedContent = originalContent.replace(find, replace);
-    const changedLines = countChangedLines(originalContent, updatedContent);
 
-    if (changedLines > 50) {
+const changedLines =
+  find.split('\n').length + replace.split('\n').length;
+
+if (changedLines > 50) {
       return Response.json(
         {
           error: `Too many lines changed (${changedLines}). Expected small patch.`,
