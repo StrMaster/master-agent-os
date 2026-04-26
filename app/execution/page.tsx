@@ -71,6 +71,19 @@ export default function ExecutionPage() {
         {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
       </div>
 
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold mb-2">Activity</h3>
+        {tasks.some(task => task.status === 'in_progress') ? (
+          tasks.filter(task => task.status === 'in_progress').map(task => (
+            <p key={task.id} className="text-sm">
+              {task.title} is currently in progress
+            </p>
+          ))
+        ) : (
+          <p className="text-sm">No active execution.</p>
+        )}
+      </div>
+
       {tasks.map((task) => {
         const assigned = agents.find(
           (a) => a.id === task.assignedAgentId
