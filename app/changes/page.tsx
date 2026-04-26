@@ -264,7 +264,12 @@ Always verify diff before applying.`}
             <pre className="whitespace-pre-wrap">
 {`Fix this build error:
 
-<paste full error here including file path and line number>`}
+<paste full Vercel build error here>
+
+Required:
+- Include exact file path
+- Include exact line number
+- Include full error message`}
             </pre>
           </div>
 
