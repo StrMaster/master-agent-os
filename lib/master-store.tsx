@@ -74,6 +74,11 @@ type Action =
   }
 
   | {
+    type: 'COMPLETE_TASK';
+    payload: { taskId: string };
+  }
+
+  | {
     type: 'TOGGLE_SUBTASK';
     payload: {
       taskId: string;
