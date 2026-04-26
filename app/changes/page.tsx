@@ -202,7 +202,12 @@ console.log(
         throw new Error(data.error || 'Failed to apply changes');
       }
 
-      setResult(`Applied to branch: ${data.branchName}\n${data.compareUrl}`);
+      setResult(`Applied to branch: ${data.branchName}`);
+      if (data.compareUrl) {
+        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.compareUrl}`);
+      } else {
+        setResult(`Applied to branch: ${data.branchName}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
