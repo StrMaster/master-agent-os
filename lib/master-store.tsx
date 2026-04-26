@@ -373,6 +373,13 @@ export function MasterStoreProvider({
           type: 'CREATE_AGENT',
           payload: input,
         }),
+
+      completeTask: (input) =>
+  dispatch({
+    type: 'COMPLETE_TASK',
+    payload: input,
+  }),
+      
       sendToExecution: (input) =>
         dispatch({
           type: 'SEND_TO_EXECUTION',
