@@ -143,6 +143,12 @@ export default function ChangesPage() {
         );
       }
 
+      console.log('PROPOSAL DATA', data);
+console.log(
+  'FIRST CHANGE ORIGINAL:',
+  (data.changes?.[0] as any)?.originalContent?.slice(0, 100)
+);
+      
       setProposal(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
