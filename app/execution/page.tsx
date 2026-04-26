@@ -54,6 +54,8 @@ export default function ExecutionPage() {
     }
   }
 
+  const runningTask = tasks.find(task => task.status === 'in_progress');
+
   return (
     <div className="p-6 text-white">
       <h1 className="text-2xl mb-4">TEST</h1>
@@ -64,6 +66,10 @@ export default function ExecutionPage() {
       >
         Run First Task
       </button>
+
+      <div className="mb-4">
+        {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
+      </div>
 
       {tasks.map((task) => {
         const assigned = agents.find(
