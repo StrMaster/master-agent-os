@@ -70,6 +70,8 @@ export default function ExecutionPage() {
           (a) => a.id === task.assignedAgentId
         );
 
+        const logMessage = `${assigned?.name || 'Unknown agent'} started: ${task.title || 'Unknown task'}`;
+
         return (
           <div key={task.id} className="mb-6 border p-4 rounded">
             <h2 className="text-xl">{task.title}</h2>
