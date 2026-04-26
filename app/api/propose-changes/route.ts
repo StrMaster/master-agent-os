@@ -1,5 +1,3 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import OpenAI from 'openai';
 
 type ProposeBody = {
@@ -7,9 +5,25 @@ type ProposeBody = {
   targetFile?: string;
 };
 
+type LLMChange = {
+  filePath?: string;
+  find?: string;
+  replace?: string;
+};
+
+type LLMProposal = {
+  summary?: string;
+  branchName?: string;
+  commitMessage?: string;
+  changes?: LLMChange[];
+};
+
 type ProposedChange = {
   filePath: string;
   content: string;
+  originalContent?: string;
+  find?: string;
+  replace?: string;
 };
 
 type ChangeProposal = {
@@ -41,16 +55,18 @@ const KNOWN_FILES = [
 ];
 
 function isAllowedFile(filePath: string) {
-  return ALLOWED_PREFIXES.some((prefix) => filePath.startsWith(prefix));
+  return (
+    ALLOWED_PREFIXES.some((prefix) => filePath.startsWith(prefix)) &&
+    !filePath.includes('..') &&
+    !filePath.startsWith('.env') &&
+    !filePath.includes('node_modules') &&
+    !filePath.includes('package-lock') &&
+    !filePath.includes('vercel')
+  );
 }
 
-async function readProjectFile(filePath: string) {
-  try {
-    const fullPath = path.join(process.cwd(), filePath);
-    return await fs.readFile(fullPath, 'utf8');
-  } catch {
-    return null;
-  }
+function ensureString(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback;
 }
 
 function sanitizeBranchName(input: string) {
@@ -60,10 +76,6 @@ function sanitizeBranchName(input: string) {
     .replace(/--+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80);
-}
-
-function ensureString(value: unknown, fallback = '') {
-  return typeof value === 'string' ? value : fallback;
 }
 
 function extractJson(text: string) {
@@ -88,40 +100,75 @@ function extractTargetFileFromPrompt(prompt: string): string {
     if (prompt.includes(file)) return file;
   }
 
-  const match = prompt.match(/\b(app|lib|components)\/[A-Za-z0-9._/-]+\.(tsx|ts|jsx|js)\b/);
+  const match = prompt.match(
+    /\b(app|lib|components)\/[A-Za-z0-9._/-]+\.(tsx|ts|jsx|js)\b/
+  );
+
   return match?.[0] ?? '';
 }
 
-function promptForbidsImportChanges(prompt: string) {
-  const lower = prompt.toLowerCase();
+async function readFileFromGitHub(filePath: string) {
+  const owner = process.env.GITHUB_OWNER;
+  const repo = process.env.GITHUB_REPO;
+  const token = process.env.GITHUB_TOKEN;
+  const branch = process.env.GITHUB_DEFAULT_BRANCH || 'main';
 
-  return (
-    lower.includes('do not change imports') ||
-    lower.includes('do not modify imports') ||
-    lower.includes('neliesk import') ||
-    lower.includes('nekeisk import')
+  if (!owner || !repo || !token) {
+    throw new Error('Missing GitHub environment variables');
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=${branch}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+      },
+    }
+  );
+
+  if (!res.ok) return null;
+
+  const data = await res.json();
+
+  if (typeof data.content !== 'string') return null;
+
+  return Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString(
+    'utf8'
   );
 }
 
-function getImportBlock(content: string) {
-  return content
-    .split('\n')
-    .filter((line) => line.trim().startsWith('import '))
-    .join('\n')
-    .trim();
+function countOccurrences(source: string, find: string) {
+  if (!find) return 0;
+
+  let count = 0;
+  let index = 0;
+
+  while (true) {
+    const found = source.indexOf(find, index);
+    if (found === -1) break;
+
+    count += 1;
+    index = found + find.length;
+  }
+
+  return count;
 }
 
-function promptRequestsFullRewrite(prompt: string) {
-  const lower = prompt.toLowerCase();
+function countChangedLines(before: string, after: string) {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
 
-  return (
-    lower.includes('rewrite full file') ||
-    lower.includes('replace whole file') ||
-    lower.includes('pakeisk visa faila') ||
-    lower.includes('pakeisk visą failą') ||
-    lower.includes('pilnas skriptas') ||
-    lower.includes('full script')
-  );
+  let changed = 0;
+  const max = Math.max(beforeLines.length, afterLines.length);
+
+  for (let i = 0; i < max; i += 1) {
+    if (beforeLines[i] !== afterLines[i]) {
+      changed += 1;
+    }
+  }
+
+  return changed;
 }
 
 function buildContextLabel(filePath: string, content: string | null) {
@@ -151,75 +198,32 @@ export async function POST(req: Request) {
       );
     }
 
-    async function readFileFromGitHub(filePath: string) {
-  const res = await fetch(
-    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${filePath}?ref=${process.env.GITHUB_DEFAULT_BRANCH || 'main'}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-      },
-    }
-  );
-
-  if (!res.ok) return null;
-
-  const data = await res.json();
-  return Buffer.from(data.content, 'base64').toString('utf8');
-}
-    
-    const targetFileContent = targetFile
-  ? await readFileFromGitHub(targetFile)
-  : null;
-
-    if (targetFile && !targetFileContent) {
-      return Response.json(
-        { error: `Could not read target file: ${targetFile}` },
-        { status: 400 }
-      );
-    }
-
     const contextFiles = new Set<string>();
 
     if (targetFile) {
       contextFiles.add(targetFile);
-    }
-
-    contextFiles.add('lib/master-types.ts');
-    contextFiles.add('lib/master-store.tsx');
-
-    if (prompt.includes('chat') || targetFile === 'app/chat/page.tsx') {
-      contextFiles.add('app/chat/page.tsx');
-    }
-
-    if (prompt.includes('changes') || targetFile === 'app/changes/page.tsx') {
+    } else {
       contextFiles.add('app/changes/page.tsx');
-    }
-
-    if (prompt.includes('execution') || targetFile === 'app/execution/page.tsx') {
-      contextFiles.add('app/execution/page.tsx');
-    }
-
-    if (prompt.includes('task') || targetFile === 'app/tasks/page.tsx') {
-      contextFiles.add('app/tasks/page.tsx');
+      contextFiles.add('app/chat/page.tsx');
+      contextFiles.add('lib/master-store.tsx');
+      contextFiles.add('lib/master-types.ts');
     }
 
     const contextBlocks: string[] = [];
 
     for (const file of contextFiles) {
-  const content = await readFileFromGitHub(file);
-  contextBlocks.push(buildContextLabel(file, content));
-}
-
-    const fullRewriteAllowed = promptRequestsFullRewrite(prompt);
+      const content = await readFileFromGitHub(file);
+      contextBlocks.push(buildContextLabel(file, content));
+    }
 
     const systemPrompt = `
 You are a strict code patch generator.
 
 Return ONLY valid JSON.
-No explanations.
 No markdown.
-If the requested change is small and your output changes more than 20 lines, return changes: [] instead of code.
+No explanations.
+
+You must NOT return full file content.
 
 Output format:
 {
@@ -228,83 +232,27 @@ Output format:
   "commitMessage": "feat: ...",
   "changes": [
     {
-      "filePath": "...",
-      "content": "FULL UPDATED FILE CONTENT"
+      "filePath": "app/example/page.tsx",
+      "find": "exact existing text",
+      "replace": "new text"
     }
   ]
 }
 
-CRITICAL:
-- You must preserve the entire file exactly.
-- Only modify the smallest possible lines.
-- Do NOT reformat code.
-- Do NOT duplicate JSX.
-- Do NOT touch surrounding blocks.
-
-If the change is one line, output must differ by ~1-3 lines only.
-
-CRITICAL RULES:
-- You are NOT allowed to rewrite the full file.
-- You MUST preserve 100% of existing code except the requested change.
-- You MUST NOT touch JSX structure unless explicitly requested.
-- You MUST NOT reformat code.
-- You MUST NOT duplicate blocks.
-- You MUST NOT modify unrelated lines.
-- You MUST NOT move code.
-
-PATCH RULE:
-- Only change the minimal number of lines required.
-- If more than 20 lines change → your answer is WRONG.
-
-FAIL-SAFE:
-- If the request is unclear → return:
-{
-  "summary": "clarification needed",
-  "branchName": "agent/clarify",
-  "commitMessage": "chore: clarify",
-  "changes": []
-}
-
-IMPORTANT IMPLEMENTATION RULES:
-- changes[0].content must be the full updated file content.
-- Make the smallest possible code change inside the full file.
-- Preserve all unrelated code exactly.
-- Preserve all unrelated code exactly.
-- Do not rewrite or reformat unrelated sections.
-- Do not change imports unless the user explicitly asks for import changes.
-- Do not change exports unless explicitly asked.
-- Do not rename existing variables or functions unless explicitly asked.
-- Do not move functions unless explicitly asked.
-- Do not add dependencies.
-- Do not create new files.
-- Do not rename files.
-- Do not modify more than one file.
-- Do not invent store methods or APIs.
-- Do not replace real logic with mock data.
-- Use subtasks.done, never completed.
-
-TARGETING RULES:
-- If TARGET FILE is provided, modify ONLY that file.
-- If TARGET FILE is not provided, choose exactly one best file.
-- If the user asks to change one function/block, change only that function/block.
-- If the user says "do not change imports", imports must remain byte-for-byte the same.
-- If unsure, return a safe proposal with changes: [] and explain clarification needed in summary.
-
-FULL REWRITE POLICY:
-- Full rewrites are NOT allowed unless the user explicitly asks for full rewrite / full script / replace whole file.
-- If full rewrite is not allowed, preserve existing file structure and make a minimal edit inside the requested block.
+Rules:
+- changes must contain exactly one item.
+- Modify only ONE file.
+- Use exact find/replace only.
+- "find" must be copied exactly from the current file.
+- "find" must be small and specific.
+- "replace" must include the full replacement for that exact find block.
+- Do not rewrite the whole file.
+- Do not change imports unless explicitly requested.
+- Do not change unrelated JSX structure.
+- Do not duplicate code.
+- If unsure, return changes: [].
 `.trim();
 
-const enforcedPrompt = `
-Modify only ONE file.
-Change only ONE small block.
-Do not rewrite the whole file.
-Do not change imports.
-Do not change JSX structure.
-
-${prompt}
-`;
-    
     const userPrompt = `
 USER REQUEST:
 ${prompt}
@@ -312,19 +260,10 @@ ${prompt}
 TARGET FILE:
 ${targetFile || 'auto-select exactly one relevant file'}
 
-FULL REWRITE ALLOWED:
-${fullRewriteAllowed ? 'yes' : 'no'}
-
 PROJECT CONTEXT:
 ${contextBlocks.join('\n\n')}
 
-RESPONSE REQUIREMENTS:
-- Return JSON only.
-- originalContent: originalChangedFileContent
-- changes must contain exactly one item unless clarification is needed.
-- changes[0].filePath must be the target file if target file is provided.
-- changes[0].content must be the full updated content of that one file.
-- The actual code modification must be minimal and match the user request.
+Return JSON only.
 `.trim();
 
     const completion = await openai.chat.completions.create({
@@ -339,7 +278,7 @@ RESPONSE REQUIREMENTS:
     const raw = ensureString(completion.choices[0]?.message?.content, '');
     const jsonText = extractJson(raw);
 
-    let parsed: ChangeProposal;
+    let parsed: LLMProposal;
 
     try {
       parsed = JSON.parse(jsonText);
@@ -353,11 +292,7 @@ RESPONSE REQUIREMENTS:
       );
     }
 
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      !Array.isArray(parsed.changes)
-    ) {
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.changes)) {
       return Response.json(
         {
           error: 'Model returned invalid proposal shape',
@@ -379,32 +314,33 @@ RESPONSE REQUIREMENTS:
     if (parsed.changes.length !== 1) {
       return Response.json(
         {
-          error: 'Model must return exactly one file change',
+          error: 'Model must return exactly one change',
           parsed,
         },
         { status: 500 }
       );
     }
 
-    const changedFile = ensureString(parsed.changes[0]?.filePath).trim();
-    const changedContent = ensureString(parsed.changes[0]?.content);
+    const llmChange = parsed.changes[0];
 
-    if (!changedFile || !changedContent) {
+    const changedFile = ensureString(llmChange.filePath || targetFile).trim();
+    const find = ensureString(llmChange.find);
+    const replace = ensureString(llmChange.replace);
+
+    if (!changedFile || !find || !replace) {
       return Response.json(
         {
-          error: 'Model returned incomplete change data',
+          error: 'Model returned incomplete find/replace change',
           parsed,
         },
         { status: 500 }
       );
     }
-
-   
 
     if (!isAllowedFile(changedFile)) {
       return Response.json(
         {
-          error: `Model changed blocked file: ${changedFile}`,
+          error: `Blocked file path: ${changedFile}`,
           parsed,
         },
         { status: 500 }
@@ -421,75 +357,38 @@ RESPONSE REQUIREMENTS:
       );
     }
 
-    const originalChangedFileContent = await readFileFromGitHub(changedFile);
+    const originalContent = await readFileFromGitHub(changedFile);
 
-    if (!originalChangedFileContent) {
+    if (!originalContent) {
       return Response.json(
         {
-          error: `Could not read changed file for validation: ${changedFile}`,
+          error: `Could not read target file: ${changedFile}`,
           parsed,
         },
         { status: 500 }
       );
     }
 
-    function countChangedLines(before: string, after: string): number {
-  const beforeLines = before.split('\n');
-  const afterLines = after.split('\n');
+    const occurrences = countOccurrences(originalContent, find);
 
-  let changed = 0;
-  const max = Math.max(beforeLines.length, afterLines.length);
-
-  for (let i = 0; i < max; i += 1) {
-    if (beforeLines[i] !== afterLines[i]) {
-      changed += 1;
-    }
-  }
-
-  return changed;
-}
-
-const changedLines = countChangedLines(
-  originalChangedFileContent,
-  changedContent
-);
-
-if (changedLines > 20) {
-  return Response.json(
-    {
-      error: `Too many lines changed (${changedLines}). Expected small patch.`,
-      parsed,
-    },
-    { status: 500 }
-  );
-}
-
-    // Skip import validation for diff mode
-if (
-  promptForbidsImportChanges(prompt) &&
-  !changedContent.includes('@@') // diff marker
-) {
-  const originalImports = getImportBlock(originalChangedFileContent);
-  const newImports = getImportBlock(changedContent);
-
-  if (originalImports !== newImports) {
-    return Response.json(
-      {
-        error: 'Model changed imports even though prompt forbids import changes',
-        parsed,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-    if (
-      changedFile === 'app/execution/page.tsx' &&
-      !changedContent.includes('useMasterStore')
-    ) {
+    if (occurrences !== 1) {
       return Response.json(
         {
-          error: 'Proposal does not use useMasterStore',
+          error: `Find block must match exactly once. Found ${occurrences} matches.`,
+          parsed,
+          find,
+        },
+        { status: 500 }
+      );
+    }
+
+    const updatedContent = originalContent.replace(find, replace);
+    const changedLines = countChangedLines(originalContent, updatedContent);
+
+    if (changedLines > 50) {
+      return Response.json(
+        {
+          error: `Too many lines changed (${changedLines}). Expected small patch.`,
           parsed,
         },
         { status: 500 }
@@ -501,22 +400,25 @@ if (
       sanitizeBranchName(ensureString(parsed.branchName, 'agent/update-file')) ||
       'agent/update-file';
     const safeCommit =
-      ensureString(parsed.commitMessage, 'feat: update file') || 'feat: update file';
+      ensureString(parsed.commitMessage, 'feat: update file') ||
+      'feat: update file';
 
     const response: ChangeProposal = {
-  summary: safeSummary,
-  branchName: safeBranch.startsWith('agent/')
-    ? safeBranch
-    : `agent/${safeBranch}`,
-  commitMessage: safeCommit,
-  changes: [
-    {
-      filePath: changedFile,
-      content: changedContent,
-      originalContent: originalChangedFileContent,
-    } as any,
-  ],
-};
+      summary: safeSummary,
+      branchName: safeBranch.startsWith('agent/')
+        ? safeBranch
+        : `agent/${safeBranch}`,
+      commitMessage: safeCommit,
+      changes: [
+        {
+          filePath: changedFile,
+          content: updatedContent,
+          originalContent,
+          find,
+          replace,
+        },
+      ],
+    };
 
     return Response.json(response);
   } catch (error) {
