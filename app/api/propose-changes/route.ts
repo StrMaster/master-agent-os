@@ -219,6 +219,7 @@ You are a strict code patch generator.
 Return ONLY valid JSON.
 No explanations.
 No markdown.
+If the requested change is small and your output changes more than 20 lines, return changes: [] instead of code.
 
 Output format:
 {
@@ -232,6 +233,15 @@ Output format:
     }
   ]
 }
+
+CRITICAL:
+- You must preserve the entire file exactly.
+- Only modify the smallest possible lines.
+- Do NOT reformat code.
+- Do NOT duplicate JSX.
+- Do NOT touch surrounding blocks.
+
+If the change is one line, output must differ by ~1-3 lines only.
 
 CRITICAL RULES:
 - You are NOT allowed to rewrite the full file.
@@ -444,7 +454,7 @@ const changedLines = countChangedLines(
   changedContent
 );
 
-if (changedLines > 50) {
+if (changedLines > 20) {
   return Response.json(
     {
       error: `Too many lines changed (${changedLines}). Expected small patch.`,
