@@ -15,35 +15,37 @@ type MasterState = {
 };
 
 type MasterContextValue = MasterState & {
-    executeTask: (input: { taskId: string }) => void;
-sendToExecution: (input: {
-  targetType: 'task' | 'agent';
-}) => void;
-  
-  
+  executeTask: (input: { taskId: string }) => void;
+
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
   }) => void;
+
   createAgent: (input: {
     name: string;
     role: string;
   }) => void;
+
   sendToExecution: (input: {
     targetType: 'task' | 'agent';
   }) => void;
-    breakdownTask: (input: {
+
+  breakdownTask: (input: {
     taskTitle: string;
     subtasks: string[];
   }) => void;
+
   toggleSubtask: (input: {
-  taskId: string;
-  subtaskId: string;
-}) => void;
-autoAssignTask: (input: {
-  taskId: string;
-}) => void;
-assignTaskToAgent: (input: {
+    taskId: string;
+    subtaskId: string;
+  }) => void;
+
+  autoAssignTask: (input: {
+    taskId: string;
+  }) => void;
+
+  assignTaskToAgent: (input: {
     taskId: string;
     agentId: string;
   }) => void;
