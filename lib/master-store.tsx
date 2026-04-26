@@ -273,6 +273,7 @@ case 'TOGGLE_SUBTASK': {
         name: action.payload.name,
         role: action.payload.role,
         status: 'idle',
+        specialty: 'general',
       };
 
       return {
