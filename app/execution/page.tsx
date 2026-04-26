@@ -4,6 +4,11 @@ import { useState } from 'react';
 import { useMasterStore } from '@/lib/master-store';
 
 export default function ExecutionPage() {
+  const [logs, setLogs] = useState<string[]>([]);
+
+  function addLog(message: string) {
+    setLogs(prev => [message, ...prev]);
+  }
   const {
     tasks,
     agents,
