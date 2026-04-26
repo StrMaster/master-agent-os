@@ -385,6 +385,16 @@ export function MasterStoreProvider({
           type: 'SEND_TO_EXECUTION',
           payload: input,
         }),
+      case 'COMPLETE_TASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.id === action.payload.taskId
+        ? { ...task, status: 'done' }
+        : task
+    ),
+  };
+}
       executeTask: (input) =>
   dispatch({
     type: 'EXECUTE_TASK',
