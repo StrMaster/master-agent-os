@@ -310,12 +310,23 @@ case 'TOGGLE_SUBTASK': {
         ),
       };
     }
+      
     case 'EXECUTE_TASK': {
   return {
     ...state,
     tasks: state.tasks.map((task) =>
       task.id === action.payload.taskId
         ? { ...task, status: 'in_progress' }
+        : task
+    ),
+  };
+}
+      case 'COMPLETE_TASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.id === action.payload.taskId
+        ? { ...task, status: 'done' }
         : task
     ),
   };
@@ -373,13 +384,6 @@ export function MasterStoreProvider({
           type: 'CREATE_AGENT',
           payload: input,
         }),
-
-      completeTask: (input) =>
-  dispatch({
-    type: 'COMPLETE_TASK',
-    payload: input,
-  }),
-      
       sendToExecution: (input) =>
         dispatch({
           type: 'SEND_TO_EXECUTION',
