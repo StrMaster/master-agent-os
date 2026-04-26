@@ -214,12 +214,11 @@ export async function POST(req: Request) {
     const fullRewriteAllowed = promptRequestsFullRewrite(prompt);
 
     const systemPrompt = `
-You are a careful code modification engine for an existing Next.js project.
+You are a strict code patch generator.
 
 Return ONLY valid JSON.
-Do NOT write explanations.
-Do NOT write markdown.
-Do NOT write code fences.
+No explanations.
+No markdown.
 
 Output format:
 {
@@ -228,11 +227,32 @@ Output format:
   "commitMessage": "feat: ...",
   "changes": [
     {
-    filePath: changedFile,
-    content: changedContent,
-    originalContent: originalChangedFileContent,
-  } as any,
+      "filePath": "...",
+      "content": "FULL UPDATED FILE CONTENT"
+    }
   ]
+}
+
+CRITICAL RULES:
+- You are NOT allowed to rewrite the full file.
+- You MUST preserve 100% of existing code except the requested change.
+- You MUST NOT touch JSX structure unless explicitly requested.
+- You MUST NOT reformat code.
+- You MUST NOT duplicate blocks.
+- You MUST NOT modify unrelated lines.
+- You MUST NOT move code.
+
+PATCH RULE:
+- Only change the minimal number of lines required.
+- If more than 20 lines change → your answer is WRONG.
+
+FAIL-SAFE:
+- If the request is unclear → return:
+{
+  "summary": "clarification needed",
+  "branchName": "agent/clarify",
+  "commitMessage": "chore: clarify",
+  "changes": []
 }
 
 IMPORTANT IMPLEMENTATION RULES:
