@@ -208,7 +208,7 @@ console.log(
       }
 
       if (data.pullRequestUrl) {
-        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.pullRequestUrl}`);
+        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.pullRequestUrl}\nReview diff: ${data.pullRequestUrl}/files`);
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
