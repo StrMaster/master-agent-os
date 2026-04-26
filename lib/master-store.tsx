@@ -15,7 +15,12 @@ type MasterState = {
 };
 
 type MasterContextValue = MasterState & {
-    
+    executeTask: (input: { taskId: string }) => void;
+sendToExecution: (input: {
+  targetType: 'task' | 'agent';
+}) => void;
+  
+  
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
@@ -366,6 +371,11 @@ export function MasterStoreProvider({
           type: 'SEND_TO_EXECUTION',
           payload: input,
         }),
+      executeTask: (input) =>
+  dispatch({
+    type: 'EXECUTE_TASK',
+    payload: input,
+  }),
     }),
     [state]
   );
