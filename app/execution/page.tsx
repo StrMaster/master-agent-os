@@ -113,7 +113,16 @@ export default function ExecutionPage() {
         {tasks.some(task => task.status === 'in_progress') ? (
           tasks.filter(task => task.status === 'in_progress').map(task => (
             <div key={task.id} className="text-sm">
-  <div>{task.title} is currently in progress</div>
+  {
+  (() => {
+    const assignedAgent = agents.find(a => a.id === task.assignedAgentId);
+    return (
+      <div>
+        {assignedAgent ? `${assignedAgent.name} working on: ${task.title}` : `Unassigned working on: ${task.title}`}
+      </div>
+    );
+  })()
+}
 
   <button
     onClick={() => completeTask({ taskId: task.id })}
