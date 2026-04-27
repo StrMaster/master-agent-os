@@ -403,7 +403,14 @@ export default function ChatPage() {
                       key={task.id}
                       className="rounded-xl border border-white/10 bg-neutral-900 p-3"
                     >
-                      <div className="font-medium">{task.title}</div>
+                      <div className="font-medium flex items-center gap-2">
+                        {task.title}
+                        {task.status === 'in_progress' && (
+                          <span className="inline-block rounded-full bg-green-500 px-2 py-0.5 text-xs font-semibold text-black">
+                            Running
+                          </span>
+                        )}
+                      </div>
 
                       <div className="mt-1 text-xs text-white/60">
                         Priority: {task.priority} · Status: {task.status}
