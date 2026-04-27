@@ -259,6 +259,9 @@ Rules:
 - Before returning, verify that each find block exists in the file.
 - Before returning, verify that each find block is unique.
 - Before returning, verify that each change is minimal and focused.
+- If multiple changes are planned but some cannot be matched exactly, skip those and return only the valid ones.
+- Do not fail the entire proposal if at least one valid change can be made.
+- Prefer returning 1–2 correct changes instead of none.
 - If the task is unclear, too large, or risky, return changes: [] and explain how to split it in the summary.
 `.trim();
 
