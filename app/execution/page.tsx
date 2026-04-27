@@ -72,7 +72,7 @@ export default function ExecutionPage() {
   const runningTask = tasks.find(task => task.status === 'in_progress');
 
   return (
-    <div className="p-6 text-white bg-gray-900 rounded-lg shadow-lg">
+    <div className="p-6 text-white bg-gray-900 rounded-lg shadow-lg space-y-8">
       <h1 className="text-2xl mb-4">TEST</h1>
 
       <button
@@ -82,7 +82,7 @@ export default function ExecutionPage() {
         Run First Task
       </button>
 
-      <div className="mb-4">
+      <div className="mb-8">
         {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
         {runningTask && (
           <>
@@ -176,7 +176,7 @@ export default function ExecutionPage() {
         const logMessage = `${assigned?.name || 'Unknown agent'} started: ${task.title || 'Unknown task'}`;
 
         return (
-          <div key={task.id} className="mb-6 border border-gray-700 p-6 rounded-lg">
+          <div key={task.id} className="mb-8 border border-gray-600 p-6 rounded-lg bg-gray-800">
             <h2 className="text-xl">{task.title}</h2>
             <p className="text-sm">Status: {task.status}</p>
 
