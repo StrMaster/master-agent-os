@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+ import OpenAI from 'openai';
 
 type ProposeBody = {
   prompt?: string;
@@ -287,6 +287,9 @@ Rules:
 - Do not fail the entire proposal if at least one valid change can be made.
 - Prefer returning 1–2 correct changes instead of none.
 - If the task is unclear, too large, or risky, return changes: [] and explain how to split it in the summary.
+- Prefer modifying existing lines instead of only adding new ones.
+- Avoid duplicating UI blocks.
+- If adding new UI, ensure it integrates with existing structure.
 `.trim();
 
     const userPrompt = `
