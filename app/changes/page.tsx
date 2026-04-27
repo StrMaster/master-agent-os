@@ -112,8 +112,16 @@ function getSimpleDiff(before: string, after: string): string {
   return diffLines.join('\n');
 }
 
-export default function ChangesPage() {
+  export default function ChangesPage() {
   const [prompt, setPrompt] = useState('');
+  const [proposal, setProposal] = useState<ChangeProposal | null>(null);
+  const [hasAutoApplied, setHasAutoApplied] = useState(false);
+  const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [result, setResult] = useState<string>('');
+  const [error, setError] = useState<string>('');
+
   useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const urlPrompt = params.get('prompt');
@@ -123,14 +131,15 @@ export default function ChangesPage() {
     setShouldAutoGenerate(true);
   }
 }, []);
-  const [proposal, setProposal] = useState<ChangeProposal | null>(null);
-  const [hasAutoApplied, setHasAutoApplied] = useState(false);
-  const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
-  const [result, setResult] = useState<string>('');
-  const [error, setError] = useState<string>('');
 
+    useEffect(() => {
+  if (!shouldAutoGenerate) return;
+  if (!prompt.trim()) return;
+
+  setShouldAutoGenerate(false);
+  generateProposal();
+}, [shouldAutoGenerate, prompt]);
+    
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
 
   async function generateProposal() {
