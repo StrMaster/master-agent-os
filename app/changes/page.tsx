@@ -139,6 +139,15 @@ function getSimpleDiff(before: string, after: string): string {
   setShouldAutoGenerate(false);
   generateProposal();
 }, [shouldAutoGenerate, prompt]);
+
+useEffect(() => {
+  if (!prompt.trim()) return;
+  if (!prompt.includes('Fix this build error')) return;
+
+  if (shouldAutoGenerate) return;
+
+  setShouldAutoGenerate(true);
+}, [prompt]);
     
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
 
