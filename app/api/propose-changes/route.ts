@@ -255,6 +255,11 @@ Rules:
 - If the requested change would modify more than 50 lines, return changes: [].
 - If unsure which exact block to edit, return changes: [].
 - For UI changes, target the smallest specific JSX block.
+- The find block MUST match exactly one place in the current file.
+- Before returning, verify that each find block exists in the file.
+- Before returning, verify that each find block is unique.
+- Before returning, verify that each change is minimal and focused.
+- If the task is unclear, too large, or risky, return changes: [] and explain how to split it in the summary.
 `.trim();
 
     const userPrompt = `
