@@ -121,6 +121,7 @@ function getSimpleDiff(before: string, after: string): string {
   const [isApplying, setIsApplying] = useState(false);
   const [result, setResult] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [fixAttemptCount, setFixAttemptCount] = useState(0);
 
   useEffect(() => {
   const params = new URLSearchParams(window.location.search);
@@ -303,6 +304,7 @@ Required:
           </div>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            
             <button
               onClick={() => setPrompt(`Fix this build error:
 
@@ -318,13 +320,17 @@ Required:
             </button>
 
             <button
-              onClick={() => setPrompt(`Fix this build error:
+  onClick={() => {
+    setPrompt(`Fix this build error:
 
-<paste full Vercel build error here>`)}
-              className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Auto fix prompt
-            </button>
+<paste full Vercel build error here>`);
+
+    setFixAttemptCount((count) => count + 1);
+  }}
+  className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  Auto fix prompt
+</button>
 
             <button
               onClick={generateProposal}
@@ -348,6 +354,13 @@ Required:
               </button>
             )}
           </div>
+                    </div>
+
+          <div className="mt-2 text-xs text-white/40">
+            Fix attempts: {fixAttemptCount}/3
+          </div>
+          
+        </div>
         </div>
 
         {error && (
