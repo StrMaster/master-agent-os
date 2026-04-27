@@ -14,7 +14,7 @@ Implement this task:
 ${task.title}
 
 Subtasks:
-${task.subtasks?.map((s) => `- ${s.title}`).join('\n') || '- No subtasks'}`;
+${task.subtasks?.map((s: any) => `- ${s.title}`).join('\n') || '- No subtasks'}`;
 }
 
 export default function ExecutionPage() {
