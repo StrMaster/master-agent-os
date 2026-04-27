@@ -216,7 +216,6 @@ export async function POST(req: Request) {
       contextBlocks.push(buildContextLabel(file, content));
     }
 
-    const fileContext = originalContent?.slice(0, 3000) || '';
 
 const systemPrompt = `
 You are a strict code patch generator.
@@ -230,7 +229,7 @@ You must NOT return full file content.
 Add section:
 
 FILE CONTEXT (partial):
-${fileContext}
+${contextBlocks.join('\n\n').slice(0, 6000)}
 
 Also add instruction:
 
