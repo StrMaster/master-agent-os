@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { TaskItem } from '@/lib/master-types';
 import { useMasterStore } from '@/lib/master-store';
 
-function buildProposalPrompt(task) {
+function buildProposalPrompt(task: any) {
   return `Modify only one file.
 Keep changes minimal and focused.
 Do not rewrite entire components.
