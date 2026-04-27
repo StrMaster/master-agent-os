@@ -354,8 +354,6 @@ Required:
               </button>
             )}
           </div>
-                    </div>
-
           <div className="mt-2 text-xs text-white/40">
             Fix attempts: {fixAttemptCount}/3
           </div>
