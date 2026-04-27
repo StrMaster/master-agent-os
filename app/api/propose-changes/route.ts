@@ -225,6 +225,16 @@ No explanations.
 
 You must NOT return full file content.
 
+Add section:
+
+FILE CONTEXT (partial):
+<file content here>
+
+Also add instruction:
+
+- Use the provided file context to locate exact find blocks.
+- Prefer matching against the given context instead of guessing.
+
 Output format:
 {
   "summary": "...",
