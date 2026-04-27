@@ -391,10 +391,12 @@ Return JSON only.
 const changedLines =
   find.split('\n').length + replace.split('\n').length;
 
-if (changedLines > 50) {
+const maxChangedLines = prompt.includes('Feature mode: allowed') ? 200 : 50;
+
+if (changedLines > maxChangedLines) {
       return Response.json(
         {
-          error: `Too many lines changed (${changedLines}). Expected small patch.`,
+          error: `Too many lines changed (${changedLines}). Maximum allowed is ${maxChangedLines}.`,
           parsed,
         },
         { status: 500 }
