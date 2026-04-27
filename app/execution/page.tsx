@@ -71,15 +71,26 @@ export default function ExecutionPage() {
       <div className="mb-4">
         {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
         {runningTask && (
-          <button
-            onClick={() => {
-              const prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
-              window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
-            }}
-            className="ml-4 bg-green-500 px-3 py-1 rounded text-sm"
-          >
-            Create proposal
-          </button>
+          <>
+            <button
+              onClick={() => {
+                const prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
+                window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
+              }}
+              className="ml-4 bg-green-500 px-3 py-1 rounded text-sm"
+            >
+              Create proposal
+            </button>
+            <button
+              onClick={() => {
+                const prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
+                window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
+              }}
+              className="ml-2 bg-yellow-500 px-3 py-1 rounded text-sm"
+            >
+              Auto proposal
+            </button>
+          </>
         )}
       </div>
 
