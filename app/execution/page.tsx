@@ -18,6 +18,8 @@ ${task.subtasks?.map((s: any) => `- ${s.title}`).join('\n') || '- No subtasks'}`
 }
 
 export default function ExecutionPage() {
+  // Intentional TypeScript error for auto fix testing
+  console.log(brokenAutoFixTestVariable);
   const [logs, setLogs] = useState<string[]>([]);
 
   function addLog(message: string) {
