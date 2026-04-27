@@ -82,16 +82,18 @@ export default function ExecutionPage() {
         Run First Task
       </button>
 
-      <div className="mb-8">
-        {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
+      <div className="mb-8 border border-gray-700 rounded-lg p-4 bg-gray-800">
+        <h2 className="text-2xl font-bold mb-3 text-yellow-400">
+          {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
+        </h2>
         {runningTask && (
-          <>
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => {
                 const prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
                 window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
               }}
-              className="ml-4 bg-green-500 px-3 py-1 rounded text-sm"
+              className="bg-green-500 px-3 py-1 rounded text-sm"
             >
               Create proposal
             </button>
@@ -100,7 +102,7 @@ export default function ExecutionPage() {
                 const prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
                 window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
               }}
-              className="ml-2 bg-yellow-500 px-3 py-1 rounded text-sm"
+              className="bg-yellow-500 px-3 py-1 rounded text-sm"
             >
               Auto proposal
             </button>
@@ -110,11 +112,11 @@ export default function ExecutionPage() {
                 prompt += "\nAfter generating a safe proposal, create a PR. Do not merge automatically.";
                 window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
               }}
-              className="ml-2 bg-purple-600 px-3 py-1 rounded text-sm"
+              className="bg-purple-600 px-3 py-1 rounded text-sm"
             >
               Start auto loop
             </button>
-          </>
+          </div>
         )}
       </div>
 
