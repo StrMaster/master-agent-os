@@ -120,6 +120,7 @@ export default function ChangesPage() {
 
   if (urlPrompt) {
     setPrompt(urlPrompt);
+    setShouldAutoGenerate(true);
   }
 }, []);
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
