@@ -4,6 +4,19 @@ import { useState } from 'react';
 import { TaskItem } from '@/lib/master-types';
 import { useMasterStore } from '@/lib/master-store';
 
+function buildProposalPrompt(task) {
+  return `Modify only one file.
+Keep changes minimal and focused.
+Do not rewrite entire components.
+Return code diff only.
+
+Implement this task:
+${task.title}
+
+Subtasks:
+${task.subtasks?.map((s) => `- ${s.title}`).join('\n') || '- No subtasks'}`;
+}
+
 export default function ExecutionPage() {
   const [logs, setLogs] = useState<string[]>([]);
 
