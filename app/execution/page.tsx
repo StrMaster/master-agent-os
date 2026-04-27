@@ -176,7 +176,7 @@ export default function ExecutionPage() {
         const logMessage = `${assigned?.name || 'Unknown agent'} started: ${task.title || 'Unknown task'}`;
 
         return (
-          <div key={task.id} className="mb-6 border border-gray-700 p-6 rounded-lg">
+          <div key={task.id} className="mb-8 border border-gray-600 p-6 rounded-lg bg-gray-800">
             <h2 className="text-xl">{task.title}</h2>
             <p className="text-sm">Status: {task.status}</p>
 
