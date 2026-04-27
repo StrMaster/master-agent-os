@@ -74,6 +74,11 @@ type Action =
   }
 
   | {
+    type: 'COMPLETE_TASK';
+    payload: { taskId: string };
+  }
+
+  | {
     type: 'TOGGLE_SUBTASK';
     payload: {
       taskId: string;
@@ -280,7 +285,7 @@ case 'TOGGLE_SUBTASK': {
         name: action.payload.name,
         role: action.payload.role,
         status: 'idle',
-        specialty: 'general'
+        specialty: undefined
       };
 
       return {
@@ -306,12 +311,23 @@ case 'TOGGLE_SUBTASK': {
         ),
       };
     }
+      
     case 'EXECUTE_TASK': {
   return {
     ...state,
     tasks: state.tasks.map((task) =>
       task.id === action.payload.taskId
         ? { ...task, status: 'in_progress' }
+        : task
+    ),
+  };
+}
+      case 'COMPLETE_TASK': {
+  return {
+    ...state,
+    tasks: state.tasks.map((task) =>
+      task.id === action.payload.taskId
+        ? { ...task, status: 'done' }
         : task
     ),
   };
@@ -377,6 +393,11 @@ export function MasterStoreProvider({
       executeTask: (input) =>
   dispatch({
     type: 'EXECUTE_TASK',
+    payload: input,
+  }),
+      completeTask: (input) =>
+  dispatch({
+    type: 'COMPLETE_TASK',
     payload: input,
   }),
     }),
