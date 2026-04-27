@@ -359,8 +359,6 @@ Required:
           <div className="mt-2 text-xs text-white/40">
             Fix attempts: {fixAttemptCount}/3
           </div>
-          
-        </div>
         </div>
 
         {error && (
