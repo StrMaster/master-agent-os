@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TaskItem } from '@/lib/master-types';
 import { useMasterStore } from '@/lib/master-store';
 
 export default function ExecutionPage() {
