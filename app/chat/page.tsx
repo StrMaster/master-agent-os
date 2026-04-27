@@ -360,6 +360,12 @@ export default function ChatPage() {
         </main>
 
         <aside className="space-y-6">
+          <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Running</h2>
+            </div>
+            {/* Running section content here if any */}
+          </section>
           <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold">Tasks</h2>
