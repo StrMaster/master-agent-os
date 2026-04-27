@@ -251,6 +251,10 @@ Rules:
 - Do not change unrelated JSX structure.
 - Do not duplicate code.
 - If unsure, return changes: [].
+- Prefer the smallest possible find/replace block.
+- If the requested change would modify more than 50 lines, return changes: [].
+- If unsure which exact block to edit, return changes: [].
+- For UI changes, target the smallest specific JSX block.
 `.trim();
 
     const userPrompt = `
