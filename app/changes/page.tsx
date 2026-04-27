@@ -309,6 +309,15 @@ Required:
             </button>
 
             <button
+              onClick={() => setPrompt(`Fix this build error:
+
+<paste full Vercel build error here>`)}
+              className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Auto fix prompt
+            </button>
+
+            <button
               onClick={generateProposal}
               disabled={isLoading || !prompt.trim()}
               className="rounded-xl bg-white px-4 py-2 text-black disabled:opacity-50"
