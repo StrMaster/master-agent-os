@@ -124,6 +124,7 @@ export default function ChangesPage() {
 }, []);
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [hasAutoApplied, setHasAutoApplied] = useState(false);
+  const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
   const [result, setResult] = useState<string>('');
