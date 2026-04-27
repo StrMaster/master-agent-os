@@ -72,7 +72,7 @@ export default function ExecutionPage() {
   const runningTask = tasks.find(task => task.status === 'in_progress');
 
   return (
-    <div className="p-6 text-white bg-gray-900 rounded-lg shadow-lg">
+    <div className="p-6 text-white bg-gray-900 rounded-lg shadow-lg space-y-8">
       <h1 className="text-2xl mb-4">TEST</h1>
 
       <button
