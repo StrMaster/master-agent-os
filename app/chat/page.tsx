@@ -109,12 +109,29 @@ export default function ChatPage() {
       ];
     }
 
+    if (
+  lower.includes('improve') ||
+  lower.includes('ux') ||
+  lower.includes('ui') ||
+  lower.includes('polish') ||
+  lower.includes('spacing') ||
+  lower.includes('layout')
+) {
+  return [
+    'Improve section spacing',
+    'Add clearer section titles',
+    'Improve text readability',
+    'Add subtle visual separation',
+    'Review mobile layout',
+  ];
+}
+
     return [
-      'Define scope',
-      'Create first UI version',
-      'Connect core logic',
-      'Test key flows',
-    ];
+  'Define scope',
+  'Create first UI version',
+  'Connect core logic',
+  'Test key flows',
+];
   }
 
   function applyAction(action: MasterAction) {
