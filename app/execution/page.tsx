@@ -110,6 +110,27 @@ export default function ExecutionPage() {
 
       <div className="mb-4">
         <h3 className="text-lg font-semibold mb-2">Activity</h3>
+        <div className="mt-6">
+  <h2 className="text-lg font-semibold mb-2">Completed</h2>
+
+  {tasks.filter((task) => task.status === 'done').length === 0 ? (
+    <p className="text-sm text-white/60">No completed tasks yet.</p>
+  ) : (
+    tasks
+      .filter((task) => task.status === 'done')
+      .map((task) => {
+        const agent = agents.find(
+          (a) => a.id === task.assignedAgentId
+        );
+
+        return (
+          <p key={task.id} className="text-sm">
+            {agent ? agent.name : 'Unassigned'} finished: {task.title}
+          </p>
+        );
+      })
+  )}
+</div>
         {tasks.some(task => task.status === 'in_progress') ? (
           tasks.filter(task => task.status === 'in_progress').map(task => (
             <div key={task.id} className="text-sm">
