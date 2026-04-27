@@ -104,6 +104,16 @@ export default function ExecutionPage() {
             >
               Auto proposal
             </button>
+            <button
+              onClick={() => {
+                let prompt = `Implement this task:\n${runningTask.title}\n\nSubtasks:\n${(runningTask.subtasks || []).map(st => `- ${st.title}`).join('\n')}`;
+                prompt += "\nAfter generating a safe proposal, create a PR. Do not merge automatically.";
+                window.location.href = `/changes?prompt=${encodeURIComponent(prompt)}`;
+              }}
+              className="ml-2 bg-purple-600 px-3 py-1 rounded text-sm"
+            >
+              Start auto loop
+            </button>
           </>
         )}
       </div>
