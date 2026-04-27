@@ -218,6 +218,19 @@ export async function POST(req: Request) {
 
 
 const systemPrompt = `
+PLANNING STEP:
+First, briefly plan the changes:
+
+- List 2–5 specific UI improvements
+- Each must target a specific part of the file
+
+Then generate the patch.
+
+Rules:
+- Do not output the plan in final JSON
+- Use the plan internally to guide changes
+- Prefer multiple small improvements over one
+
 You are a strict code patch generator.
 
 Return ONLY valid JSON.
