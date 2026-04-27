@@ -317,7 +317,7 @@ export default function ChatPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-6 px-4 py-4 lg:grid-cols-[1.5fr_1fr]">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-8 px-6 py-6 lg:grid-cols-[1.5fr_1fr]">
         <main className="flex min-h-[70vh] flex-col rounded-2xl border border-white/10 bg-white/5">
           <div
             ref={listRef}
