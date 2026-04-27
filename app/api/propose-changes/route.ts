@@ -216,7 +216,9 @@ export async function POST(req: Request) {
       contextBlocks.push(buildContextLabel(file, content));
     }
 
-    const systemPrompt = `
+    const fileContext = originalContent?.slice(0, 3000) || '';
+
+const systemPrompt = `
 You are a strict code patch generator.
 
 Return ONLY valid JSON.
@@ -228,7 +230,7 @@ You must NOT return full file content.
 Add section:
 
 FILE CONTEXT (partial):
-<file content here>
+${fileContext}
 
 Also add instruction:
 
