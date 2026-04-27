@@ -82,7 +82,7 @@ export default function ExecutionPage() {
         Run First Task
       </button>
 
-      <div className="mb-4">
+      <div className="mb-8">
         {runningTask ? `Running: ${runningTask.title}` : 'Idle'}
         {runningTask && (
           <>
