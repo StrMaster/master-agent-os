@@ -204,12 +204,17 @@ export default function ChatPage() {
         createAgent({ name: 'Autopilot Agent', role: 'frontend' });
       }
       createTask({ title: taskText, priority: 'medium' });
+      // Assign the created task to the first available agent
+      if (agents.length > 0) {
+        const firstAgent = agents[0];
+        autoAssignTask({ taskId: tasks.length > 0 ? tasks[0].id : undefined });
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `Autopilot task created: ${taskText}`,
+          content: `Autopilot task created and assigned: ${taskText}`,
         },
       ]);
       setIsLoading(false);
