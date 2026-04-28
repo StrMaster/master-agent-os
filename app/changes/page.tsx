@@ -234,7 +234,7 @@ console.log(
       }
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to apply changes');
+        throw new Error(data.error || 'Failed to apply changes'); || 'Failed to apply changes');
       }
 
       if (data.pullRequestUrl) {
