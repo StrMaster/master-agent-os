@@ -112,7 +112,7 @@ function getSimpleDiff(before: string, after: string): string {
   return diffLines.join('\n');
 }
 
-  export default function ChangesPage() {
+export default function ChangesPage() {
   const [prompt, setPrompt] = useState('');
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [hasAutoApplied, setHasAutoApplied] = useState(false);
