@@ -20,7 +20,7 @@ type MasterContextValue = MasterState & {
   createTask: (input: {
     title: string;
     priority: 'low' | 'medium' | 'high';
-  }) => void;
+  }) => string;
 
   createAgent: (input: {
     name: string;
