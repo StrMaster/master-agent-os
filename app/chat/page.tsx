@@ -200,6 +200,15 @@ export default function ChatPage() {
     if (content.toLowerCase().startsWith('autopilot:')) {
       const taskText = content.slice('autopilot:'.length).trim();
       console.log('AUTOPILOT TASK:', taskText);
+      createTask({ title: taskText, priority: 'medium' });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Autopilot task created: ${taskText}`,
+        },
+      ]);
       setIsLoading(false);
       return;
     }
