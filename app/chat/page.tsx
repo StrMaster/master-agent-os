@@ -200,6 +200,9 @@ export default function ChatPage() {
     if (content.toLowerCase().startsWith('autopilot:')) {
       const taskText = content.slice('autopilot:'.length).trim();
       console.log('AUTOPILOT TASK:', taskText);
+      if (agents.length === 0) {
+        createAgent({ name: 'Autopilot Agent', role: 'frontend' });
+      }
       createTask({ title: taskText, priority: 'medium' });
       setMessages((prev) => [
         ...prev,
