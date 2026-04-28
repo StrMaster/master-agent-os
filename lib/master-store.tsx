@@ -174,7 +174,7 @@ function reducer(state: MasterState, action: Action): MasterState {
   switch (action.type) {
     case 'CREATE_TASK': {
   const newTask: TaskItem = {
-    id: crypto.randomUUID(),
+    id: action.payload.id,
     title: action.payload.title,
     priority: action.payload.priority,
     status: 'todo',
@@ -375,11 +375,19 @@ export function MasterStoreProvider({
   }),
       tasks: state.tasks,
       agents: state.agents,
-      createTask: (input) =>
-        dispatch({
-          type: 'CREATE_TASK',
-          payload: input,
-        }),
+      createTask: (input) => {
+  const id = crypto.randomUUID();
+
+  dispatch({
+    type: 'CREATE_TASK',
+    payload: {
+      id,
+      ...input,
+    },
+  });
+
+  return id;
+},
       createAgent: (input) =>
         dispatch({
           type: 'CREATE_AGENT',
