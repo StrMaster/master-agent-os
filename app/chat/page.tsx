@@ -207,6 +207,7 @@ export default function ChatPage() {
       // Find the created task by title
       const createdTask = tasks.find((t) => t.title === taskText);
       if (createdTask) {
+        autoAssignTask({ taskId: createdTask.id });
         executeTask({ taskId: createdTask.id });
       }
       setMessages((prev) => [
