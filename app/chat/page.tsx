@@ -204,8 +204,8 @@ export default function ChatPage() {
         createAgent({ name: 'Autopilot Agent', role: 'frontend' });
       }
       createTask({ title: taskText, priority: 'medium' });
-      // Find the created task by title
-      const createdTask = tasks.find((t) => t.title === taskText);
+      // Use the last task in tasks array as the created task
+      const createdTask = tasks[tasks.length - 1];
       if (createdTask) {
         autoAssignTask({ taskId: createdTask.id });
       }
