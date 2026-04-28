@@ -197,6 +197,13 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
+    if (content.toLowerCase().startsWith('autopilot:')) {
+      const taskText = content.slice('autopilot:'.length).trim();
+      console.log('AUTOPILOT TASK:', taskText);
+      setIsLoading(false);
+      return;
+    }
+
         const normalized = content.toLowerCase().trim();
 
     if (normalized.includes('kiek turime task') || normalized.includes('kiek task')) {
