@@ -204,12 +204,17 @@ export default function ChatPage() {
         createAgent({ name: 'Autopilot Agent', role: 'frontend' });
       }
       createTask({ title: taskText, priority: 'medium' });
+      // Find the created task by title
+      const createdTask = tasks.find((t) => t.title === taskText);
+      if (createdTask) {
+        executeTask({ taskId: createdTask.id });
+      }
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `Autopilot task created: ${taskText}`,
+          content: `Autopilot started execution: ${taskText}`,
         },
       ]);
       setIsLoading(false);
