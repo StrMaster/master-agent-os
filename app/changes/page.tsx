@@ -184,6 +184,11 @@ useEffect(() => {
         throw new Error(`Server returned non-JSON response:\n\n${text}`);
       }
 
+      if (data.buildError) {
+        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`;
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(
           data.error + (data.raw ? `\n\nRAW:\n${data.raw}` : '')
