@@ -145,10 +145,11 @@ export default function ChangesPage() {
     useEffect(() => {
   if (!shouldAutoGenerate) return;
   if (!prompt.trim()) return;
+  if (fixAttemptCount >= 2) return;
 
   setShouldAutoGenerate(false);
   generateProposal();
-}, [shouldAutoGenerate, prompt]);
+}, [shouldAutoGenerate, prompt, fixAttemptCount]);
 
 useEffect(() => {
   if (!prompt.trim()) return;
@@ -177,7 +178,7 @@ useEffect(() => {
 
       const text = await res.text();
 
-      let data: ChangeProposal & { error?: string; raw?: string };
+      let data: ChangeProposal & { error?: string; raw?: string; buildError?: string };
       try {
         data = JSON.parse(text);
       } catch {
@@ -185,7 +186,7 @@ useEffect(() => {
       }
 
       if (data.buildError) {
-        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`;
+        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`
         return;
       }
 
