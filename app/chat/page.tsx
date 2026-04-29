@@ -203,14 +203,14 @@ export default function ChatPage() {
       if (agents.length === 0) {
         createAgent({ name: 'Autopilot Agent', role: 'frontend' });
       }
-      createTask({ title: taskText, priority: 'medium' });
+      const taskId = createTask({ title: taskText, priority: 'medium' });
       // Use the last task in tasks array as the created task
       const createdTask = tasks[tasks.length - 1];
       if (createdTask) {
         autoAssignTask({ taskId: createdTask.id });
       }
-      if (createdTask) {
-        executeTask({ taskId: createdTask.id });
+      if (taskId) {
+        executeTask({ taskId });
       }
       setMessages((prev) => [
         ...prev,
