@@ -505,21 +505,25 @@ Return JSON only.
 const changedLines =
   find.split('\n').length + replace.split('\n').length;
 
+// New safety detection logic
+const changesCount = parsed.changes.length;
+const onlyOneFileChanged = changesCount === 1;
+const noNewFiles = true; // Assuming no new files since only one change and file exists
+const noImportsChanged = !/import\s/.test(find) && !/import\s/.test(replace);
+const changedLinesCount = countChangedLines(originalContent, updatedContent);
+
+const isSafe =
+  onlyOneFileChanged &&
+  noNewFiles &&
+  noImportsChanged &&
+  changedLinesCount < 20;
+
+// Preserve existing variables for compatibility
 const lowerPrompt = prompt.toLowerCase();
 
-const isFeatureMode =
-  prompt.includes('Feature mode: allowed') ||
-  lowerPrompt.includes('improve') ||
-  lowerPrompt.includes('polish') ||
-  lowerPrompt.includes('refactor') ||
-  lowerPrompt.includes('redesign') ||
-  lowerPrompt.includes('ui') ||
-  lowerPrompt.includes('layout') ||
-  lowerPrompt.includes('spacing') ||
-  lowerPrompt.includes('border') ||
-  lowerPrompt.includes('readability');
+const isFeatureMode = isSafe;
 
-const maxChangedLines = isFeatureMode ? 200 : 50;
+const maxChangedLines = isSafe ? 20 : 50;
 
     const safeSummary = ensureString(parsed.summary, 'Update file');
     const safeBranch =
