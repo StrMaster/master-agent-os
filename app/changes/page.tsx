@@ -248,9 +248,9 @@ console.log(
       // Mark task as done if taskId exists in URL
       const params = new URLSearchParams(window.location.search);
       const taskId = params.get('taskId');
-      if (taskId && typeof completeTask === 'function') {
-        completeTask(taskId);
-      }
+      if (taskId) {
+  completeTask({ taskId });
+}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
