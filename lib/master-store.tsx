@@ -94,13 +94,14 @@ type Action =
     };
   }
 
-  | {
-      type: 'CREATE_TASK';
-      payload: {
-        title: string;
-        priority: 'low' | 'medium' | 'high';
-      };
-    }
+  | | {
+    type: 'CREATE_TASK';
+    payload: {
+      id: string;
+      title: string;
+      priority: 'low' | 'medium' | 'high';
+    };
+  }
   | {
       type: 'CREATE_AGENT';
       payload: {
