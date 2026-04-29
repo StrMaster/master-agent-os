@@ -213,6 +213,7 @@ export default function ChatPage() {
         executeTask({ taskId });
         const proposalPrompt = `Modify only app/execution/page.tsx.\nImplement this task:\n${taskText}`;
         console.log("AUTOPILOT PROPOSAL PROMPT:", proposalPrompt);
+        window.location.href = `/changes?prompt=${encodeURIComponent(proposalPrompt)}`;
       }
       setMessages((prev) => [
         ...prev,
