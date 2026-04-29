@@ -374,7 +374,7 @@ Required:
                 </button>
                 {!safety.isSafe && (
                   <button
-                    onClick={applyProposal}
+                    onClick={() => applyProposal(true)}
                     disabled={isApplying}
                     className="mt-2 rounded-xl border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
