@@ -234,7 +234,7 @@ If you cannot find exact match:
 - Modify the closest task card/container JSX block.
 - Do not return empty changes.`;
         console.log("AUTOPILOT PROPOSAL PROMPT:", proposalPrompt);
-        window.location.href = `/changes?prompt=${encodeURIComponent(proposalPrompt)}`;
+        window.location.href = `/changes?prompt=${encodeURIComponent(proposalPrompt)}&taskId=${encodeURIComponent(taskId)}`;
       }
       setMessages((prev) => [
         ...prev,
