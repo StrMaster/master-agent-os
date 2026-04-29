@@ -211,6 +211,8 @@ export default function ChatPage() {
       }
       if (taskId) {
         executeTask({ taskId });
+        const proposalPrompt = `Implement this task:\n${taskText}`;
+        console.log("AUTOPILOT PROPOSAL PROMPT:", proposalPrompt);
       }
       setMessages((prev) => [
         ...prev,
