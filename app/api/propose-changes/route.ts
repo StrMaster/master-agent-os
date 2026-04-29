@@ -231,6 +231,23 @@ OUTPUT FORMAT (CRITICAL)
 
 Return ONLY valid JSON.
 
+Each change must be a complete find/replace patch:
+- filePath
+- find
+- replace
+
+The find field must contain the exact existing code block.
+The replace field must contain the full replacement for that exact block.
+Do not return full file content.
+Do not return partial diffs.
+Do not return markdown.
+Return exactly one change.
+
+For React handlers:
+- If a function has parameters, wrap it:
+  onClick={() => fn(arg)}
+- Never pass a parameterized function directly to onClick.
+
 {
   "summary": "short description",
   "changes": [
@@ -340,13 +357,6 @@ If unsure:
 - Avoid risky logic changes
 
 ---
-
-CRITICAL:
-
-- Always return FULL updated file content
-- Do NOT return partial diffs
-- Do NOT return find/replace blocks
-- The "content" field must contain the COMPLETE file
 
 FINAL CHECK (MANDATORY)
 
