@@ -362,7 +362,7 @@ Required:
             {proposal && (
               <>
                 <button
-                  onClick={() => applyProposal()}
+                  onClick={() => applyProposal(true)}
                   disabled={isApplying || !safety.isSafe}
                   className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
