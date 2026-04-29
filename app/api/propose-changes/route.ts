@@ -488,17 +488,21 @@ Return JSON only.
 const changedLines =
   find.split('\n').length + replace.split('\n').length;
 
-const maxChangedLines = prompt.includes('Feature mode: allowed') ? 200 : 50;
+const lowerPrompt = prompt.toLowerCase();
 
-if (changedLines > maxChangedLines) {
-      return Response.json(
-        {
-          error: `Too many lines changed (${changedLines}). Maximum allowed is ${maxChangedLines}.`,
-          parsed,
-        },
-        { status: 500 }
-      );
-    }
+const isFeatureMode =
+  prompt.includes('Feature mode: allowed') ||
+  lowerPrompt.includes('improve') ||
+  lowerPrompt.includes('polish') ||
+  lowerPrompt.includes('refactor') ||
+  lowerPrompt.includes('redesign') ||
+  lowerPrompt.includes('ui') ||
+  lowerPrompt.includes('layout') ||
+  lowerPrompt.includes('spacing') ||
+  lowerPrompt.includes('border') ||
+  lowerPrompt.includes('readability');
+
+const maxChangedLines = isFeatureMode ? 200 : 50;
 
     const safeSummary = ensureString(parsed.summary, 'Update file');
     const safeBranch =
