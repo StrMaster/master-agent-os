@@ -529,7 +529,7 @@ const maxChangedLines = isFeatureMode ? 200 : 50;
       ensureString(parsed.commitMessage, 'feat: update file') ||
       'feat: update file';
 
-    const response: ChangeProposal = {
+    const response: ChangeProposal & { buildError?: string } = {
       summary: safeSummary,
       branchName: safeBranch.startsWith('agent/')
         ? safeBranch
@@ -545,6 +545,18 @@ const maxChangedLines = isFeatureMode ? 200 : 50;
         },
       ],
     };
+
+    // Detect build error in summary or commitMessage to extract build error text
+    if (safeSummary.toLowerCase().includes('build error') || safeCommit.toLowerCase().includes('build error')) {
+      // Try to extract build error message from raw completion text
+      const buildErrorMatch = raw.match(/build error[:\s]*([\s\S]*?)(?:\n\n|$)/i);
+      if (buildErrorMatch) {
+        response.buildError = buildErrorMatch[1].trim();
+      } else {
+        // fallback: include entire raw text if no specific match
+        response.buildError = raw.trim();
+      }
+    }
 
     return Response.json(response);
   } catch (error) {
