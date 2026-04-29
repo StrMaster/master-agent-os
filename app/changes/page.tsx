@@ -1,5 +1,6 @@
 'use client';
 
+import { useMasterStore } from '@/lib/master-store';
 import { useEffect, useMemo, useState } from 'react';
 import { ChangeProposal } from '@/lib/github-types';
 
