@@ -206,12 +206,12 @@ console.log(
   applyProposal();
 }, [proposal, safety.isSafe, hasAutoApplied]);
 
-  async function applyProposal() {
+  async function applyProposal(skipSafety?: boolean) {
     if (!proposal) return;
 
     const currentSafety = getProposalSafety(proposal);
 
-    if (!currentSafety.isSafe) {
+    if (!skipSafety && !currentSafety.isSafe) {
       setError(
         `Unsafe proposal blocked:\n${currentSafety.reasons
           .map((reason) => `- ${reason}`)
