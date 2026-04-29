@@ -126,14 +126,14 @@ export default function ChangesPage() {
   const [fixAttemptCount, setFixAttemptCount] = useState(0);
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const urlPrompt = params.get('prompt');
+    const params = new URLSearchParams(window.location.search);
+    const urlPrompt = params.get('prompt');
 
-  if (urlPrompt) {
-    setPrompt(urlPrompt);
-    setShouldAutoGenerate(true);
-  }
-}, []);
+    if (urlPrompt) {
+      setPrompt(urlPrompt);
+      setShouldAutoGenerate(true);
+    }
+  }, []);
 
     useEffect(() => {
   if (!shouldAutoGenerate) return;
