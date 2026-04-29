@@ -229,8 +229,7 @@ console.log(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proposal),
-    });
-  }
+      });
       });
 
       const text = await res.text();
