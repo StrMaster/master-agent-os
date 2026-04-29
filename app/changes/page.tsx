@@ -229,7 +229,8 @@ console.log(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proposal),
-      });
+    });
+  }
       });
 
       const text = await res.text();
@@ -363,7 +364,7 @@ Required:
             {proposal && (
               <>
                 <button
-                  onClick={applyProposal}
+                  onClick={() => applyProposal()}
                   disabled={isApplying || !safety.isSafe}
                   className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
