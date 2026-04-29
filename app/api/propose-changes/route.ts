@@ -341,6 +341,13 @@ If unsure:
 
 ---
 
+CRITICAL:
+
+- Always return FULL updated file content
+- Do NOT return partial diffs
+- Do NOT return find/replace blocks
+- The "content" field must contain the COMPLETE file
+
 FINAL CHECK (MANDATORY)
 
 Before returning:
