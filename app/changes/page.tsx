@@ -242,6 +242,13 @@ console.log(
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
+
+      // Mark task as done if taskId exists in URL
+      const params = new URLSearchParams(window.location.search);
+      const taskId = params.get('taskId');
+      if (taskId && typeof completeTask === 'function') {
+        completeTask(taskId);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
