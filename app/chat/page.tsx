@@ -197,6 +197,57 @@ export default function ChatPage() {
     setInput('');
     setIsLoading(true);
 
+    if (content.toLowerCase().startsWith('autopilot:')) {
+      const taskText = content.slice('autopilot:'.length).trim();
+      console.log('AUTOPILOT TASK:', taskText);
+      if (agents.length === 0) {
+        createAgent({ name: 'Autopilot Agent', role: 'frontend' });
+      }
+      const taskId = createTask({ title: taskText, priority: 'medium' });
+      // Use the last task in tasks array as the created task
+      const createdTask = tasks[tasks.length - 1];
+      if (createdTask) {
+        autoAssignTask({ taskId: createdTask.id });
+      }
+      if (taskId) {
+        executeTask({ taskId });
+        const proposalPrompt = `Modify only app/execution/page.tsx.
+
+Implement this task:
+${taskText}
+
+STRICT RULES:
+- You must modify exactly ONE file.
+- changes array must contain exactly 1 item.
+- Only modify app/execution/page.tsx.
+- Do not create new files.
+- Do not include explanations.
+- Return valid JSON only.
+- Return code diff only.
+- Keep changes minimal and focused.
+- Match existing code exactly when applying patch.
+
+Target:
+Find the task item container div and add a visible border.
+
+If you cannot find exact match:
+- Modify the closest task card/container JSX block.
+- Do not return empty changes.`;
+        console.log("AUTOPILOT PROPOSAL PROMPT:", proposalPrompt);
+        window.location.href = `/changes?prompt=${encodeURIComponent(proposalPrompt)}&taskId=${encodeURIComponent(taskId)}`;
+      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Autopilot started execution: ${taskText}`,
+        },
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
         const normalized = content.toLowerCase().trim();
 
     if (normalized.includes('kiek turime task') || normalized.includes('kiek task')) {

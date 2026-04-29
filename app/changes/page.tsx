@@ -1,5 +1,6 @@
 'use client';
 
+import { useMasterStore } from '@/lib/master-store';
 import { useEffect, useMemo, useState } from 'react';
 import { ChangeProposal } from '@/lib/github-types';
 
@@ -112,7 +113,8 @@ function getSimpleDiff(before: string, after: string): string {
   return diffLines.join('\n');
 }
 
-  export default function ChangesPage() {
+export default function ChangesPage() {
+  const { completeTask } = useMasterStore();
   const [prompt, setPrompt] = useState('');
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [hasAutoApplied, setHasAutoApplied] = useState(false);
@@ -124,14 +126,14 @@ function getSimpleDiff(before: string, after: string): string {
   const [fixAttemptCount, setFixAttemptCount] = useState(0);
 
   useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const urlPrompt = params.get('prompt');
+    const params = new URLSearchParams(window.location.search);
+    const urlPrompt = params.get('prompt');
 
-  if (urlPrompt) {
-    setPrompt(urlPrompt);
-    setShouldAutoGenerate(true);
-  }
-}, []);
+    if (urlPrompt) {
+      setPrompt(urlPrompt);
+      setShouldAutoGenerate(true);
+    }
+  }, []);
 
     useEffect(() => {
   if (!shouldAutoGenerate) return;
@@ -143,7 +145,7 @@ function getSimpleDiff(before: string, after: string): string {
 
 useEffect(() => {
   if (!prompt.trim()) return;
-  if (!prompt.includes('Fix this build error')) return;
+  if (!prompt.startsWith('Fix this build error:')) return;
 
   if (shouldAutoGenerate) return;
 
@@ -153,6 +155,7 @@ useEffect(() => {
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
 
   async function generateProposal() {
+    setHasAutoApplied(false);
     setIsLoading(true);
     setError('');
     setResult('');
@@ -194,12 +197,21 @@ console.log(
     }
   }
 
-  async function applyProposal() {
+  useEffect(() => {
+  if (!proposal) return;
+  if (!safety.isSafe) return;
+  if (hasAutoApplied) return;
+
+  setHasAutoApplied(true);
+  applyProposal();
+}, [proposal, safety.isSafe, hasAutoApplied]);
+
+  async function applyProposal(skipSafety?: boolean) {
     if (!proposal) return;
 
     const currentSafety = getProposalSafety(proposal);
 
-    if (!currentSafety.isSafe) {
+    if (!skipSafety && !currentSafety.isSafe) {
       setError(
         `Unsafe proposal blocked:\n${currentSafety.reasons
           .map((reason) => `- ${reason}`)
@@ -242,6 +254,13 @@ console.log(
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
+
+      // Mark task as done if taskId exists in URL
+      const params = new URLSearchParams(window.location.search);
+      const taskId = params.get('taskId');
+      if (taskId) {
+  completeTask({ taskId });
+}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -341,17 +360,28 @@ Required:
             </button>
 
             {proposal && (
-              <button
-                onClick={applyProposal}
-                disabled={isApplying || !safety.isSafe}
-                className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isApplying
-                  ? 'Applying...'
-                  : safety.isSafe
-                    ? 'Apply changes'
-                    : 'Unsafe proposal'}
-              </button>
+              <>
+                <button
+                  onClick={() => applyProposal(true)}
+                  disabled={isApplying || !safety.isSafe}
+                  className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isApplying
+                    ? 'Applying...'
+                    : safety.isSafe
+                      ? 'Apply changes'
+                      : 'Unsafe proposal'}
+                </button>
+                {!safety.isSafe && (
+                  <button
+                    onClick={() => applyProposal(true)}
+                    disabled={isApplying}
+                    className="mt-2 rounded-xl border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Apply anyway
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div className="mt-2 text-xs text-white/40">
