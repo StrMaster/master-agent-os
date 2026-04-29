@@ -145,10 +145,11 @@ export default function ChangesPage() {
     useEffect(() => {
   if (!shouldAutoGenerate) return;
   if (!prompt.trim()) return;
+  if (fixAttemptCount >= 2) return;
 
   setShouldAutoGenerate(false);
   generateProposal();
-}, [shouldAutoGenerate, prompt]);
+}, [shouldAutoGenerate, prompt, fixAttemptCount]);
 
 useEffect(() => {
   if (!prompt.trim()) return;
