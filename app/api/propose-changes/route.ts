@@ -547,7 +547,7 @@ const maxChangedLines = isFeatureMode ? 200 : 50;
     };
 
     // Detect build error in summary or commitMessage to extract build error text
-    if (safeSummary.toLowerCase().includes('build error') || safeCommit.toLowerCase().includes('build error')) {
+    if (raw && raw.toLowerCase().includes('error')) {
       // Try to extract build error message from raw completion text
       const buildErrorMatch = raw.match(/build error[:\s]*([\s\S]*?)(?:\n\n|$)/i);
       if (buildErrorMatch) {
