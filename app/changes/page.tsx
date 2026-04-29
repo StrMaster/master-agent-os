@@ -341,17 +341,28 @@ Required:
             </button>
 
             {proposal && (
-              <button
-                onClick={applyProposal}
-                disabled={isApplying || !safety.isSafe}
-                className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isApplying
-                  ? 'Applying...'
-                  : safety.isSafe
-                    ? 'Apply changes'
-                    : 'Unsafe proposal'}
-              </button>
+              <>
+                <button
+                  onClick={applyProposal}
+                  disabled={isApplying || !safety.isSafe}
+                  className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isApplying
+                    ? 'Applying...'
+                    : safety.isSafe
+                      ? 'Apply changes'
+                      : 'Unsafe proposal'}
+                </button>
+                {!safety.isSafe && (
+                  <button
+                    onClick={applyProposal}
+                    disabled={isApplying}
+                    className="mt-2 rounded-xl border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Apply anyway
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div className="mt-2 text-xs text-white/40">
