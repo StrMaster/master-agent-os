@@ -342,7 +342,8 @@ Required:
   onClick={() => {
     setPrompt(`Fix this build error:
 
-<paste full Vercel build error here>`);
+<paste full Vercel build error here>
+`);
 
     setFixAttemptCount((count) => count + 1);
   }}
