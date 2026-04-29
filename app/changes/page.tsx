@@ -155,6 +155,7 @@ useEffect(() => {
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
 
   async function generateProposal() {
+    setHasAutoApplied(false);
     setIsLoading(true);
     setError('');
     setResult('');
@@ -195,6 +196,15 @@ console.log(
       setIsLoading(false);
     }
   }
+
+  useEffect(() => {
+  if (!proposal) return;
+  if (!safety.isSafe) return;
+  if (hasAutoApplied) return;
+
+  setHasAutoApplied(true);
+  applyProposal();
+}, [proposal, safety.isSafe, hasAutoApplied]);
 
   async function applyProposal() {
     if (!proposal) return;
