@@ -185,7 +185,7 @@ useEffect(() => {
       }
 
       if (data.buildError) {
-        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`;
+        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`
         return;
       }
 
