@@ -114,6 +114,7 @@ function getSimpleDiff(before: string, after: string): string {
 }
 
 export default function ChangesPage() {
+  const { completeTask } = useMasterStore();
   const [prompt, setPrompt] = useState('');
   const [proposal, setProposal] = useState<ChangeProposal | null>(null);
   const [hasAutoApplied, setHasAutoApplied] = useState(false);
