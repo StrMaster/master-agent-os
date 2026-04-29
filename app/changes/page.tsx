@@ -177,7 +177,7 @@ useEffect(() => {
 
       const text = await res.text();
 
-      let data: ChangeProposal & { error?: string; raw?: string };
+      let data: ChangeProposal & { error?: string; raw?: string; buildError?: string };
       try {
         data = JSON.parse(text);
       } catch {
