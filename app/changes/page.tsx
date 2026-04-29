@@ -128,6 +128,13 @@ export default function ChangesPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlPrompt = params.get('prompt');
+    const errorParam = params.get('error');
+
+    if (errorParam) {
+      setPrompt(`Fix this build error:\n\n${decodeURIComponent(errorParam)}`);
+      setShouldAutoGenerate(true);
+      return;
+    }
 
     if (urlPrompt) {
       setPrompt(urlPrompt);
