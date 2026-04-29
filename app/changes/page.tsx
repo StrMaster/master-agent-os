@@ -145,7 +145,7 @@ export default function ChangesPage() {
 
 useEffect(() => {
   if (!prompt.trim()) return;
-  if (!prompt.includes('Fix this build error')) return;
+  if (!prompt.startsWith('Fix this build error:')) return;
 
   if (shouldAutoGenerate) return;
 
