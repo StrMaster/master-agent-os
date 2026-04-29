@@ -94,7 +94,7 @@ type Action =
     };
   }
 
-  | | {
+  | {
     type: 'CREATE_TASK';
     payload: {
       id: string;
