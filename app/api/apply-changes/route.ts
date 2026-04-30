@@ -255,7 +255,7 @@ export async function POST(req: Request) {
   return Response.json(
     {
       error: `Failed to create pull request: ${message}`,
-      branchName: proposal.branchName,
+      branchName: 'unknown',
     },
     { status: 500 }
   );
