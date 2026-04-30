@@ -566,16 +566,30 @@ const maxChangedLines = isSafe ? 20 : 50;
   response.buildError = raw.trim();
 }
     // Auto-merge safe proposals
-if (isSafe && response.branchName) {
-  console.log('AUTO MERGE WOULD RUN', {
-    branch: response.branchName,
-  });
-}
+if (isSafe && response.pullRequestUrl) {
+  try {
+    const prNumber = response.pullRequestUrl.split('/pull/')[1];
 
-    return Response.json(response);
+    if (prNumber) {
+      await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${githubToken}`,
+            Accept: 'application/vnd.github+json',
+          },
+          body: JSON.stringify({
+            commit_title: response.commitMessage,
+            merge_method: 'squash',
+          }),
+        }
+      );
+    }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown propose-changes error';
+    console.error('Auto merge failed:', error);
+  }
+}
 
     return Response.json(
       {
