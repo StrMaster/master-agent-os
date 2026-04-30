@@ -566,38 +566,76 @@ const maxChangedLines = isSafe ? 20 : 50;
   response.buildError = raw.trim();
 }
     // Auto-merge safe proposals
-if (isSafe && response.pullRequestUrl) {
-  try {
-    const prNumber = response.pullRequestUrl.split('/pull/')[1];
+ // AUTO MERGE (safe proposals only)
 
-    if (prNumber) {
-      await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${githubToken}`,
-            Accept: 'application/vnd.github+json',
-          },
-          body: JSON.stringify({
-            commit_title: response.commitMessage,
-            merge_method: 'squash',
-          }),
-        }
-      );
+  if (isSafe && response.pullRequestUrl) {
+
+    try {
+
+      const prNumber = response.pullRequestUrl.split('/pull/')[1];
+
+      if (prNumber) {
+
+        await fetch(
+
+          `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/merge`,
+
+          {
+
+            method: 'PUT',
+
+            headers: {
+
+              Authorization: `Bearer ${githubToken}`,
+
+              Accept: 'application/vnd.github+json',
+
+            },
+
+            body: JSON.stringify({
+
+              commit_title: response.commitMessage,
+
+              merge_method: 'squash',
+
+            }),
+
+          }
+
+        );
+
+      }
+
+    } catch (error) {
+
+      console.error('Auto merge failed:', error);
+
     }
-return Response.json(response);
-  } catch (error) {
-    
-    console.error('Auto merge failed:', error);
-    return Response.json(
-      {
-        error: message,
-      },
-      { status: 500 }
-    );
+
   }
-}
-    
-  }
+
+  // ✅ SUCCESS RETURN
+
+  return Response.json(response);
+
+} catch (error) {
+
+  const message =
+
+    error instanceof Error ? error.message : 'Unknown propose-changes error';
+
+  // ❗ TIK čia yra error return
+
+  return Response.json(
+
+    {
+
+      error: message,
+
+    },
+
+    { status: 500 }
+
+  );
+
 }
