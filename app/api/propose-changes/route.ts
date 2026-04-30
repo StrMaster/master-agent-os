@@ -591,6 +591,7 @@ if (isSafe && response.pullRequestUrl) {
   }
 }
 
+return Response.json(response);
     return Response.json(
       {
         error: message,
