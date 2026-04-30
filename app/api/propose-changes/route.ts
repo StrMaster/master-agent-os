@@ -587,16 +587,17 @@ if (isSafe && response.pullRequestUrl) {
       );
     }
   } catch (error) {
-    console.error('Auto merge failed:', error);
-  }
-}
-
-return Response.json(response);
     return Response.json(
       {
         error: message,
       },
       { status: 500 }
     );
+    console.error('Auto merge failed:', error);
+  }
+}
+
+return Response.json(response);
+    
   }
 }
