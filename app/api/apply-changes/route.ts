@@ -244,7 +244,7 @@ export async function POST(req: Request) {
 
     return Response.json({
       ok: true,
-      branchName: branchName,
+      branchName: proposal.branchName,
       repoUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${proposal.branchName}`,
       compareUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/compare/${GITHUB_DEFAULT_BRANCH}...${proposal.branchName}`,
       pullRequestUrl,
