@@ -639,3 +639,4 @@ const maxChangedLines = isSafe ? 20 : 50;
   );
 
 }
+}
