@@ -227,11 +227,10 @@ export async function POST(req: Request) {
         {
           method: 'POST',
           body: JSON.stringify({
-            title: proposal.commitMessage,
-            head: proposal.branchName,
-            base: GITHUB_DEFAULT_BRANCH,
-            body: `Automated change proposal.\n\nSummary: ${proposal.summary}`,
-          }),
+  title: proposal.commitMessage,
+  head: `${GITHUB_OWNER}:${branchName}`, // 👈 LABAI SVARBU
+  base: GITHUB_DEFAULT_BRANCH,
+}),
         }
       );
 
@@ -241,6 +240,20 @@ export async function POST(req: Request) {
     } catch {
       pullRequestUrl = null;
     }
+
+    const prData = await prRes.json();
+
+if (!prRes.ok) {
+  console.error('PR ERROR:', prData);
+
+  return Response.json(
+    {
+      error: `Failed to create PR`,
+      details: prData,
+    },
+    { status: 500 }
+  );
+}
 
     return Response.json({
       ok: true,
