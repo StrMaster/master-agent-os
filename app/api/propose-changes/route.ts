@@ -561,6 +561,12 @@ const maxChangedLines = isSafe ? 20 : 50;
         response.buildError = raw.trim();
       }
     }
+    // Auto-merge safe proposals
+if (isSafe && response.branchName) {
+  console.log('AUTO MERGE WOULD RUN', {
+    branch: response.branchName,
+  });
+}
 
     return Response.json(response);
   } catch (error) {
