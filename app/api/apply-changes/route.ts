@@ -51,6 +51,7 @@ function applyUnifiedDiff(original: string, diff: string) {
     }
 
     const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+
     if (!match) {
       throw new Error(`Invalid diff hunk header: ${line}`);
     }
@@ -151,6 +152,52 @@ async function createOrGetBranch(branchName: string, baseSha: string) {
   }
 }
 
+async function createOrGetPullRequest(proposal: ChangeProposal) {
+  assertEnv();
+
+  const createRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: proposal.commitMessage,
+        head: `${GITHUB_OWNER}:${proposal.branchName}`,
+        base: GITHUB_DEFAULT_BRANCH,
+        body: `Automated change proposal.\n\nSummary: ${proposal.summary}`,
+      }),
+    }
+  );
+
+  const createData = await createRes.json();
+
+  if (createRes.ok && createData?.html_url) {
+    return createData.html_url as string;
+  }
+
+  const listRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls?head=${GITHUB_OWNER}:${proposal.branchName}&base=${GITHUB_DEFAULT_BRANCH}&state=open`,
+    {
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+      },
+    }
+  );
+
+  const listData = await listRes.json();
+
+  if (listRes.ok && Array.isArray(listData) && listData[0]?.html_url) {
+    return listData[0].html_url as string;
+  }
+
+  throw new Error(`Failed to create PR: ${JSON.stringify(createData)}`);
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -187,6 +234,7 @@ export async function POST(req: Request) {
     );
 
     const baseSha = branchRef.object.sha;
+
     await createOrGetBranch(proposal.branchName, baseSha);
 
     for (const change of proposal.changes) {
@@ -219,41 +267,7 @@ export async function POST(req: Request) {
       );
     }
 
-    let pullRequestUrl: string | null = null;
-
-    try {
-      const prResponse = await githubRequest(
-        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-  title: proposal.commitMessage,
-  head: `${GITHUB_OWNER}:${branchName}`, // 👈 LABAI SVARBU
-  base: GITHUB_DEFAULT_BRANCH,
-}),
-        }
-      );
-
-      if (prResponse && prResponse.html_url) {
-        pullRequestUrl = prResponse.html_url;
-      }
-    } catch {
-      pullRequestUrl = null;
-    }
-
-    const prData = await prRes.json();
-
-if (!prRes.ok) {
-  console.error('PR ERROR:', prData);
-
-  return Response.json(
-    {
-      error: `Failed to create PR`,
-      details: prData,
-    },
-    { status: 500 }
-  );
-}
+    const pullRequestUrl = await createOrGetPullRequest(proposal);
 
     return Response.json({
       ok: true,
@@ -263,14 +277,13 @@ if (!prRes.ok) {
       pullRequestUrl,
     });
   } catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
 
-  return Response.json(
-    {
-      error: `Failed to create pull request: ${message}`,
-      branchName: 'unknown',
-    },
-    { status: 500 }
-  );
-}
+    return Response.json(
+      {
+        error: message,
+      },
+      { status: 500 }
+    );
+  }
 }
