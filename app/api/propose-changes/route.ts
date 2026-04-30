@@ -551,16 +551,20 @@ const maxChangedLines = isSafe ? 20 : 50;
     };
 
     // Detect build error in summary or commitMessage to extract build error text
-    if (raw && raw.toLowerCase().includes('error')) {
-      // Try to extract build error message from raw completion text
-      const buildErrorMatch = raw.match(/build error[:\s]*([\s\S]*?)(?:\n\n|$)/i);
-      if (buildErrorMatch) {
-        response.buildError = buildErrorMatch[1].trim();
-      } else {
-        // fallback: include entire raw text if no specific match
-        response.buildError = raw.trim();
-      }
-    }
+    if (
+  raw &&
+  (
+    raw.includes('Failed to type check') ||
+    raw.includes('Build error occurred') ||
+    raw.includes('Turbopack build failed') ||
+    raw.includes('Command "npm run build" exited') ||
+    raw.includes('Error: Command "npm run build" exited') ||
+    raw.includes('Cannot find name') ||
+    raw.includes('Type error:')
+  )
+) {
+  response.buildError = raw.trim();
+}
     // Auto-merge safe proposals
 if (isSafe && response.branchName) {
   console.log('AUTO MERGE WOULD RUN', {
