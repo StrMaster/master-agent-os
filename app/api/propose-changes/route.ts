@@ -586,18 +586,18 @@ if (isSafe && response.pullRequestUrl) {
         }
       );
     }
+return Response.json(response);
   } catch (error) {
+    
+    console.error('Auto merge failed:', error);
     return Response.json(
       {
         error: message,
       },
       { status: 500 }
     );
-    console.error('Auto merge failed:', error);
   }
 }
-
-return Response.json(response);
     
   }
 }
