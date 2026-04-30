@@ -95,7 +95,7 @@ export default function ExecutionPage() {
               }}
               className="bg-green-500 px-3 py-1 rounded text-sm"
             >
-              Create proposal
+              Generate
             </button>
             <button
               onClick={() => {
