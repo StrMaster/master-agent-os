@@ -95,7 +95,7 @@ export default function ExecutionPage() {
               }}
               className="bg-green-500 px-3 py-1 rounded text-sm"
             >
-              Generate
+              Create proposal
             </button>
             <button
               onClick={() => {
@@ -120,7 +120,7 @@ export default function ExecutionPage() {
         )}
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 mt-2">
         <h3 className="text-lg font-semibold mb-2">Activity</h3>
         <div className="mt-6">
   <h2 className="text-lg font-semibold mb-2">Completed</h2>
