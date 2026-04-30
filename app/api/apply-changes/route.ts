@@ -250,9 +250,13 @@ export async function POST(req: Request) {
       pullRequestUrl,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Internal server error';
+  const message = error instanceof Error ? error.message : String(error);
 
-    return Response.json({ error: message }, { status: 500 });
-  }
+  return Response.json(
+    {
+      error: `Failed to create pull request: ${message}`,
+      branchName: proposal.branchName,
+    },
+    { status: 500 }
+  );
 }
