@@ -366,7 +366,7 @@ Required:
 </button>
 
             <button
-              onClick={generateProposal}
+              onClick={() => generateProposal()}
               disabled={isLoading || !prompt.trim()}
               className="rounded-xl bg-white px-4 py-2 text-black disabled:opacity-50"
             >
