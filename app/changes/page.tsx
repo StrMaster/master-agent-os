@@ -238,83 +238,42 @@ console.log(
     setResult('');
 
     try {
-      // First apply changes and get branch name
-      const applyRes = await fetch('/api/apply-changes', {
+      const res = await fetch('/api/apply-changes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proposal),
       });
 
-      const applyText = await applyRes.text();
+      const text = await res.text();
 
-      let applyData: {
-        branchName?: string;
-        compareUrl?: string;
-        error?: string;
-      };
-
+      let data: {
+  branchName?: string;
+  compareUrl?: string;
+  pullRequestUrl?: string | null;
+  error?: string;
+};
       try {
-        applyData = JSON.parse(applyText);
+        data = JSON.parse(text);
       } catch {
-        throw new Error(`Server returned non-JSON response:\n\n${applyText}`);
+        throw new Error(`Server returned non-JSON response:\n\n${text}`);
       }
 
-      if (!applyRes.ok) {
-        throw new Error(applyData.error || 'Failed to apply changes');
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to apply changes');
       }
 
-      if (!applyData.branchName) {
-        throw new Error('Branch name missing after applying changes');
-      }
-
-      // Create PR via GitHub API
-      const githubToken = process.env.NEXT_PUBLIC_GITHUB_TOKEN || '';
-      if (!githubToken) {
-        throw new Error('GitHub token not configured');
-      }
-
-      // Extract owner and repo from environment or hardcode if needed
-      const repoOwner = process.env.NEXT_PUBLIC_GITHUB_OWNER || '';
-      const repoName = process.env.NEXT_PUBLIC_GITHUB_REPO || '';
-
-      if (!repoOwner || !repoName) {
-        throw new Error('GitHub repo owner or name not configured');
-      }
-
-      const prResponse = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/pulls`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${githubToken}`,
-          Accept: 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: proposal.commitMessage,
-          head: applyData.branchName,
-          base: 'main',
-        }),
-      });
-
-      const prData = await prResponse.json();
-
-      if (!prResponse.ok) {
-        throw new Error(prData.message || 'Failed to create pull request');
-      }
-
-      const pullRequestUrl = prData.html_url || null;
-
-      if (pullRequestUrl) {
-        setResult(`Applied to branch: ${applyData.branchName}\nOpen PR: ${pullRequestUrl}\nReview diff: ${pullRequestUrl}/files`);
+      if (data.pullRequestUrl) {
+        setResult(`PR created ✅\nReview and merge manually:\n${data.pullRequestUrl}\n\nBranch: ${data.branchName}`);
       } else {
-        setResult(`Applied to branch: ${applyData.branchName}`);
+        setResult(`Applied to branch: ${data.branchName}`);
       }
 
       // Mark task as done if taskId exists in URL
       const params = new URLSearchParams(window.location.search);
       const taskId = params.get('taskId');
       if (taskId) {
-        completeTask({ taskId });
-      }
+  completeTask({ taskId });
+}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
