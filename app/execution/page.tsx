@@ -120,7 +120,7 @@ export default function ExecutionPage() {
         )}
       </div>
 
-      <div className="mb-4">
+      <div className="mb-6">
         <h3 className="text-lg font-semibold mb-2">Activity</h3>
         <div className="mt-6">
   <h2 className="text-lg font-semibold mb-2">Completed</h2>

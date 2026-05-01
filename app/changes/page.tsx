@@ -263,7 +263,7 @@ console.log(
       }
 
       if (data.pullRequestUrl) {
-        setResult(`Applied to branch: ${data.branchName}\nOpen PR: ${data.pullRequestUrl}\nReview diff: ${data.pullRequestUrl}/files`);
+        setResult(`PR created ✅\nReview and merge manually:\n${data.pullRequestUrl}\n\nBranch: ${data.branchName}`);
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
