@@ -111,19 +111,35 @@ Return JSON only.
  ]
 }
 
-Rules:
-- ONE change only
-- find must be exact from code
-- small unique blocks only
+STRICT RULES:
+- EXACTLY ONE change
+- "find" must be copied EXACTLY from file
+- DO NOT invent code
+- DO NOT approximate
+- DO NOT reformat
 `;
-
     const completion = await openai.chat.completions.create({
       model: 'gpt-4.1-mini',
       temperature: 0,
       messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: prompt },
-      ],
+  { role: 'system', content: system },
+
+  {
+    role: 'user',
+    content: `
+TASK:
+${prompt}
+
+FILE CONTENT:
+${original.slice(0, 8000)}
+
+IMPORTANT:
+- "find" MUST match EXACTLY from FILE CONTENT
+- copy exact code, do not rewrite
+- return ONLY JSON
+`
+  },
+],
     });
 
     let raw = completion.choices[0]?.message?.content || '';
