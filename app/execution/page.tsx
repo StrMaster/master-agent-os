@@ -19,7 +19,7 @@ export default function ExecutionPage() {
   return (
     <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
       <div className="mx-auto max-w-5xl space-y-6">
-        <div
+        <div>
           <h1 className="text-2xl font-semibold sm:text-3xl">Execution</h1>
           <p className="mt-2 text-sm text-white/60">
             Run assigned tasks and track progress.
