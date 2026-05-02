@@ -95,7 +95,7 @@ export default function ExecutionPage() {
 
                     <button
                       onClick={() => executeTask({ taskId: task.id })}
-                      className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+                      className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm text-white hover:bg-white/20"
                     >
                       Run task
                     </button>
