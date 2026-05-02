@@ -108,9 +108,10 @@ export default function ChangesPage() {
     const urlError = params.get('error');
 
     if (urlError) {
+      const decodedError = decodeURIComponent(urlError);
       setPrompt(`Fix this build error:
 
-${urlError}
+${decodedError}
 
 STRICT FIX MODE:
 - Fix only the exact build error.
