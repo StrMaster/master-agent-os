@@ -1,11 +1,31 @@
 import OpenAI from 'openai';
 
+export const runtime = 'nodejs';
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-function normalizeNewlines(v: string) {
-  return v.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const GITHUB_OWNER = process.env.GITHUB_OWNER;
+const GITHUB_REPO = process.env.GITHUB_REPO;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH || 'main';
+
+const KNOWN_FILES = [
+  'app/chat/page.tsx',
+  'app/changes/page.tsx',
+  'app/execution/page.tsx',
+  'app/tasks/page.tsx',
+  'app/api/apply-changes/route.ts',
+  'app/api/propose-changes/route.ts',
+  'app/api/master/route.ts',
+  'lib/master-store.tsx',
+  'lib/master-types.ts',
+];
+
+function normalizeNewlines(value: string) {
+  return value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 
 function countOccurrences(text: string, find: string) {
@@ -13,30 +33,107 @@ function countOccurrences(text: string, find: string) {
   return text.split(find).length - 1;
 }
 
-function countChangedLines(a: string, b: string) {
-  const aL = a.split('\n');
-  const bL = b.split('\n');
-  let c = 0;
-  for (let i = 0; i < Math.max(aL.length, bL.length); i++) {
-    if (aL[i] !== bL[i]) c++;
+function countChangedLines(before: string, after: string) {
+  const beforeLines = before.split('\n');
+  const afterLines = after.split('\n');
+  let changed = 0;
+
+  for (let i = 0; i < Math.max(beforeLines.length, afterLines.length); i += 1) {
+    if (beforeLines[i] !== afterLines[i]) changed += 1;
   }
-  return c;
+
+  return changed;
+}
+
+function extractJson(text: string) {
+  const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+  const first = clean.indexOf('{');
+  const last = clean.lastIndexOf('}');
+
+  if (first >= 0 && last > first) {
+    return clean.slice(first, last + 1);
+  }
+
+  return clean;
+}
+
+function extractTargetFile(prompt: string) {
+  for (const file of KNOWN_FILES) {
+    if (prompt.includes(file)) return file;
+  }
+
+  const match = prompt.match(
+    /\b(app|lib|components)\/[A-Za-z0-9._/-]+\.(tsx|ts|jsx|js)\b/
+  );
+
+  return match?.[0] || '';
+}
+
+function isAllowedFile(filePath: string) {
+  return (
+    (filePath.startsWith('app/') ||
+      filePath.startsWith('lib/') ||
+      filePath.startsWith('components/')) &&
+    !filePath.includes('..') &&
+    !filePath.includes('node_modules') &&
+    !filePath.startsWith('.env')
+  );
+}
+
+function sanitizeBranchName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9/_-]+/g, '-')
+    .replace(/--+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+async function readFileFromGitHub(filePath: string) {
+  if (!GITHUB_OWNER || !GITHUB_REPO || !GITHUB_TOKEN) {
+    throw new Error('Missing GitHub environment variables');
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_DEFAULT_BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+      },
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Could not read target file: ${filePath}\n${text}`);
+  }
+
+  const data = await res.json();
+
+  if (typeof data.content !== 'string') {
+    throw new Error(`Invalid GitHub file response for ${filePath}`);
+  }
+
+  return Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf8');
 }
 
 function replaceLineWindow(original: string, find: string, replace: string) {
-  const o = normalizeNewlines(original).split('\n');
-  const f = normalizeNewlines(find.trim()).split('\n');
-
+  const originalLines = normalizeNewlines(original).split('\n');
+  const findLines = normalizeNewlines(find.trim()).split('\n');
   const matches: number[] = [];
 
-  for (let i = 0; i <= o.length - f.length; i++) {
+  for (let i = 0; i <= originalLines.length - findLines.length; i += 1) {
     let ok = true;
-    for (let j = 0; j < f.length; j++) {
-      if (o[i + j].trim() !== f[j].trim()) {
+
+    for (let j = 0; j < findLines.length; j += 1) {
+      if (originalLines[i + j].trim() !== findLines[j].trim()) {
         ok = false;
         break;
       }
     }
+
     if (ok) matches.push(i);
   }
 
@@ -45,47 +142,66 @@ function replaceLineWindow(original: string, find: string, replace: string) {
   }
 
   const start = matches[0];
-  const end = start + f.length;
-  const r = normalizeNewlines(replace).split('\n');
-
-  const result = [
-    ...o.slice(0, start),
-    ...r,
-    ...o.slice(end),
-  ];
+  const end = start + findLines.length;
+  const replaceLines = normalizeNewlines(replace.trim()).split('\n');
 
   return {
     matches: 1,
-    content: result.join('\n'),
+    content: [
+      ...originalLines.slice(0, start),
+      ...replaceLines,
+      ...originalLines.slice(end),
+    ].join('\n'),
   };
 }
 
 function applyFindReplace(original: string, find: string, replace: string) {
-  const o = normalizeNewlines(original);
-  const f = normalizeNewlines(find);
-  const r = normalizeNewlines(replace);
+  const normalizedOriginal = normalizeNewlines(original);
+  const normalizedFind = normalizeNewlines(find);
+  const normalizedReplace = normalizeNewlines(replace);
 
-  const exact = countOccurrences(o, f);
+  const exactMatches = countOccurrences(normalizedOriginal, normalizedFind);
 
-  if (exact === 1) {
-    return { content: o.replace(f, r), strategy: 'exact' };
+  if (exactMatches === 1) {
+    return {
+      content: normalizedOriginal.replace(normalizedFind, normalizedReplace),
+      strategy: 'exact',
+    };
   }
 
-  if (exact > 1) {
-    throw new Error(`Find not unique (${exact})`);
+  if (exactMatches > 1) {
+    throw new Error(`Find not unique (${exactMatches})`);
   }
 
-  const trimmed = f.trim();
-  const trimmedCount = countOccurrences(o, trimmed);
+  const trimmedFind = normalizedFind.trim();
+  const trimmedMatches = countOccurrences(normalizedOriginal, trimmedFind);
 
-  if (trimmedCount === 1) {
-    return { content: o.replace(trimmed, r.trim()), strategy: 'trimmed' };
+  if (trimmedMatches === 1) {
+    return {
+      content: normalizedOriginal.replace(trimmedFind, normalizedReplace.trim()),
+      strategy: 'trimmed',
+    };
   }
 
-  const lw = replaceLineWindow(o, f, r);
+  if (trimmedMatches > 1) {
+    throw new Error(`Find not unique after trim (${trimmedMatches})`);
+  }
 
-  if (lw.matches === 1) {
-    return { content: lw.content, strategy: 'line-window' };
+  const lineWindow = replaceLineWindow(
+    normalizedOriginal,
+    normalizedFind,
+    normalizedReplace
+  );
+
+  if (lineWindow.matches === 1) {
+    return {
+      content: lineWindow.content,
+      strategy: 'line-window',
+    };
+  }
+
+  if (lineWindow.matches > 1) {
+    throw new Error(`Find not unique with line-window (${lineWindow.matches})`);
   }
 
   throw new Error('Find not found');
@@ -95,102 +211,142 @@ export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
 
-    if (!prompt) {
+    if (!prompt || typeof prompt !== 'string') {
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
     }
+
+    const targetFile = extractTargetFile(prompt);
+
+    if (!targetFile) {
+      return Response.json(
+        { error: 'Could not detect target file from prompt.' },
+        { status: 400 }
+      );
+    }
+
+    if (!isAllowedFile(targetFile)) {
+      return Response.json(
+        { error: `Blocked target file: ${targetFile}` },
+        { status: 400 }
+      );
+    }
+
+    const original = await readFileFromGitHub(targetFile);
 
     const system = `
 Return JSON only.
 
+Shape:
 {
- summary,
- branchName,
- commitMessage,
- changes: [
-  { filePath, find, replace }
- ]
+  "summary": "short summary",
+  "branchName": "agent/short-name",
+  "commitMessage": "type: message",
+  "changes": [
+    {
+      "filePath": "${targetFile}",
+      "find": "exact code copied from FILE CONTENT",
+      "replace": "replacement code"
+    }
+  ]
 }
 
-STRICT RULES:
-- EXACTLY ONE change
-- "find" must be copied EXACTLY from file
-- DO NOT invent code
-- DO NOT approximate
-- DO NOT reformat
-`;
+Rules:
+- Return exactly ONE change.
+- Modify only ${targetFile}.
+- "find" MUST be copied character-for-character from FILE CONTENT.
+- Do not invent code.
+- Do not reformat find.
+- Do not use markdown.
+- Do not return full file content.
+- Prefer small unique find blocks.
+`.trim();
+
+    const user = `
+TASK:
+${prompt}
+
+FILE CONTENT:
+${original.slice(0, 12000)}
+
+IMPORTANT:
+The "find" field must exist exactly in FILE CONTENT.
+Return JSON only.
+`.trim();
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
+      model: MODEL,
       temperature: 0,
       messages: [
-  { role: 'system', content: system },
-  { role: 'user', content: prompt },
-],
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
     });
 
-    let raw = completion.choices[0]?.message?.content || '';
+    const raw = completion.choices[0]?.message?.content || '';
+    const parsed = JSON.parse(extractJson(raw));
 
-// 🧼 CLEAN JSON (FIX)
-raw = raw
-  .replace(/```json/g, '')
-  .replace(/```/g, '')
-  .trim();
-
-const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
+      return Response.json(
+        { error: 'Model must return exactly one change', parsed },
+        { status: 500 }
+      );
+    }
 
     const change = parsed.changes[0];
 
-    const file = change.filePath;
+    if (
+      change.filePath !== targetFile ||
+      typeof change.find !== 'string' ||
+      typeof change.replace !== 'string'
+    ) {
+      return Response.json(
+        { error: 'Model returned invalid find/replace change', parsed },
+        { status: 500 }
+      );
+    }
 
-    const owner = process.env.GITHUB_OWNER;
-    const repo = process.env.GITHUB_REPO;
-    const token = process.env.GITHUB_TOKEN;
-    const branch = process.env.GITHUB_DEFAULT_BRANCH || 'main';
+    const result = applyFindReplace(original, change.find, change.replace);
+    const updated = result.content;
 
-    const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${file}?ref=${branch}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-    const original = Buffer.from(data.content, 'base64').toString();
-
-    let updated;
-    let strategy;
-
-    try {
-      const result = applyFindReplace(original, change.find, change.replace);
-      updated = result.content;
-      strategy = result.strategy;
-    } catch (e) {
-      return Response.json({ error: String(e) }, { status: 500 });
+    if (updated === original) {
+      return Response.json(
+        { error: 'No file changes produced', parsed },
+        { status: 500 }
+      );
     }
 
     const changedLines = countChangedLines(original, updated);
 
     const isSafe =
       changedLines < 30 &&
-      !change.find.includes('import') &&
-      !change.replace.includes('import');
+      !change.find.includes('import ') &&
+      !change.replace.includes('import ');
 
     return Response.json({
-      summary: parsed.summary,
-      branchName: parsed.branchName,
-      commitMessage: parsed.commitMessage,
+      summary: parsed.summary || 'Update file',
+      branchName:
+        sanitizeBranchName(parsed.branchName || 'agent/update-file') ||
+        'agent/update-file',
+      commitMessage: parsed.commitMessage || 'feat: update file',
       isSafe,
       changedLines,
-      matchStrategy: strategy,
+      matchStrategy: result.strategy,
       changes: [
         {
-          filePath: file,
+          filePath: targetFile,
           content: updated,
+          originalContent: original,
         },
       ],
     });
-  } catch (e) {
-    return Response.json({ error: String(e) }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return Response.json(
+      {
+        error: message,
+      },
+      { status: 500 }
+    );
   }
 }
