@@ -1,7 +1,7 @@
 'use client';
 
-import { useMasterStore } from '@/lib/master-store';
 import { useEffect, useMemo, useState } from 'react';
+import { useMasterStore } from '@/lib/master-store';
 import { ChangeProposal } from '@/lib/github-types';
 
 type ProposalSafety = {
@@ -9,36 +9,14 @@ type ProposalSafety = {
   reasons: string[];
 };
 
-function isLikelyFullFile(content: string): boolean {
-  const fullFileMarkers = [
-    "'use client'",
-    '"use client"',
-    'export default function',
-    'import ',
-    'export async function',
-  ];
+type ProposalWithSafety = ChangeProposal & {
+  isSafe?: boolean;
+  changedLines?: number;
+  matchStrategy?: string;
+  buildError?: string;
+};
 
-  return content.length > 1500 && fullFileMarkers.some((marker) => content.includes(marker));
-}
-
-
-function countChangedLines(before: string, after: string): number {
-  const beforeLines = before.split('\n');
-  const afterLines = after.split('\n');
-
-  let changed = 0;
-  const max = Math.max(beforeLines.length, afterLines.length);
-
-  for (let i = 0; i < max; i += 1) {
-    if (beforeLines[i] !== afterLines[i]) {
-      changed += 1;
-    }
-  }
-
-  return changed;
-}
-
-function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
+function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety {
   if (!proposal) {
     return {
       isSafe: false,
@@ -48,31 +26,27 @@ function getProposalSafety(proposal: ChangeProposal | null): ProposalSafety {
 
   const reasons: string[] = [];
 
-  if (proposal.changes.length > 1) {
-    reasons.push(`Proposal changes ${proposal.changes.length} files. Prefer one file only.`);
+  if (proposal.isSafe === true) {
+    return {
+      isSafe: true,
+      reasons: [],
+    };
   }
 
-  for (const change of proposal.changes) {
-    const originalContent =
-      typeof (change as any).originalContent === 'string'
-        ? (change as any).originalContent
-        : '';
+  if (proposal.changes.length !== 1) {
+    reasons.push(`Proposal changes ${proposal.changes.length} files. Prefer exactly one file.`);
+  }
 
-    const changedLineCount = originalContent
-      ? countChangedLines(originalContent, change.content)
-      : 9999;
+  if (typeof proposal.changedLines === 'number' && proposal.changedLines > 30) {
+    reasons.push(`Proposal changes ${proposal.changedLines} lines.`);
+  }
 
-    if (!originalContent && isLikelyFullFile(change.content)) {
-      reasons.push(`${change.filePath} looks like a full-file rewrite.`);
-    }
+  if (proposal.matchStrategy === 'fail') {
+    reasons.push('Find/replace matching failed.');
+  }
 
-    if (changedLineCount > 300) {
-      reasons.push(`${change.filePath} changes ${changedLineCount} lines.`);
-    }
-
-    if (!originalContent && change.content.length > 6000) {
-      reasons.push(`${change.filePath} change is very large.`);
-    }
+  if (reasons.length === 0) {
+    reasons.push('Proposal was not marked safe by backend.');
   }
 
   return {
@@ -115,8 +89,9 @@ function getSimpleDiff(before: string, after: string): string {
 
 export default function ChangesPage() {
   const { completeTask } = useMasterStore();
+
   const [prompt, setPrompt] = useState('');
-  const [proposal, setProposal] = useState<ChangeProposal | null>(null);
+  const [proposal, setProposal] = useState<ProposalWithSafety | null>(null);
   const [hasAutoApplied, setHasAutoApplied] = useState(false);
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -125,13 +100,23 @@ export default function ChangesPage() {
   const [error, setError] = useState<string>('');
   const [fixAttemptCount, setFixAttemptCount] = useState(0);
 
+  const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlPrompt = params.get('prompt');
-    const errorParam = params.get('error');
+    const urlError = params.get('error');
 
-    if (errorParam) {
-      setPrompt(`Fix this build error:\n\n${decodeURIComponent(errorParam)}`);
+    if (urlError) {
+      setPrompt(`Fix this build error:
+
+${urlError}
+
+STRICT FIX MODE:
+- Fix only the exact build error.
+- Modify only the file mentioned in the error.
+- Use the exact line number from the error.
+- Return exactly one find/replace change.`);
       setShouldAutoGenerate(true);
       return;
     }
@@ -142,32 +127,34 @@ export default function ChangesPage() {
     }
   }, []);
 
-    useEffect(() => {
-  if (!shouldAutoGenerate) return;
-  if (!prompt.trim()) return;
-  if (fixAttemptCount >= 2) return;
+  useEffect(() => {
+    if (!shouldAutoGenerate) return;
+    if (!prompt.trim()) return;
 
-  setShouldAutoGenerate(false);
-  generateProposal();
-}, [shouldAutoGenerate, prompt, fixAttemptCount]);
+    setShouldAutoGenerate(false);
+    generateProposal();
+  }, [shouldAutoGenerate, prompt]);
 
-useEffect(() => {
-  if (!prompt.trim()) return;
-  if (!prompt.startsWith('Fix this build error:')) return;
+  useEffect(() => {
+    if (!proposal) return;
+    if (hasAutoApplied) return;
+    if (!safety.isSafe) return;
 
-  if (shouldAutoGenerate) return;
-
-  setShouldAutoGenerate(true);
-}, [prompt]);
-    
-  const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
+    setHasAutoApplied(true);
+    applyProposal();
+  }, [proposal, safety.isSafe, hasAutoApplied]);
 
   async function generateProposal() {
-    setHasAutoApplied(false);
+    if (fixAttemptCount >= 3) {
+      setError('Max fix attempts reached.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     setResult('');
     setProposal(null);
+    setHasAutoApplied(false);
 
     try {
       const res = await fetch('/api/propose-changes', {
@@ -178,16 +165,12 @@ useEffect(() => {
 
       const text = await res.text();
 
-      let data: ChangeProposal & { error?: string; raw?: string; buildError?: string };
+      let data: ProposalWithSafety & { error?: string; raw?: string };
+
       try {
         data = JSON.parse(text);
       } catch {
         throw new Error(`Server returned non-JSON response:\n\n${text}`);
-      }
-
-      if (data.buildError) {
-        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`
-        return;
       }
 
       if (!res.ok) {
@@ -196,12 +179,11 @@ useEffect(() => {
         );
       }
 
-      console.log('PROPOSAL DATA', data);
-console.log(
-  'FIRST CHANGE ORIGINAL:',
-  (data.changes?.[0] as any)?.originalContent?.slice(0, 100)
-);
-      
+      if (data.buildError) {
+        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`;
+        return;
+      }
+
       setProposal(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -210,16 +192,7 @@ console.log(
     }
   }
 
-  useEffect(() => {
-  if (!proposal) return;
-  if (!safety.isSafe) return;
-  if (hasAutoApplied) return;
-
-  setHasAutoApplied(true);
-  applyProposal();
-}, [proposal, safety.isSafe, hasAutoApplied]);
-
-  async function applyProposal(skipSafety?: boolean) {
+  async function applyProposal(skipSafety = false) {
     if (!proposal) return;
 
     const currentSafety = getProposalSafety(proposal);
@@ -247,11 +220,12 @@ console.log(
       const text = await res.text();
 
       let data: {
-  branchName?: string;
-  compareUrl?: string;
-  pullRequestUrl?: string | null;
-  error?: string;
-};
+        branchName?: string;
+        compareUrl?: string;
+        pullRequestUrl?: string | null;
+        error?: string;
+      };
+
       try {
         data = JSON.parse(text);
       } catch {
@@ -262,18 +236,26 @@ console.log(
         throw new Error(data.error || 'Failed to apply changes');
       }
 
+      const params = new URLSearchParams(window.location.search);
+      const taskId = params.get('taskId');
+
+      if (taskId) {
+        completeTask({ taskId });
+      }
+
       if (data.pullRequestUrl) {
-        setResult(`PR created ✅\nReview and merge manually:\n${data.pullRequestUrl}\n\nBranch: ${data.branchName}`);
+        setResult(
+          `PR created ✅
+Branch: ${data.branchName}
+Review and merge manually:
+${data.pullRequestUrl}
+
+Review diff:
+${data.pullRequestUrl}/files`
+        );
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
-
-      // Mark task as done if taskId exists in URL
-      const params = new URLSearchParams(window.location.search);
-      const taskId = params.get('taskId');
-      if (taskId) {
-  completeTask({ taskId });
-}
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -287,7 +269,7 @@ console.log(
         <div>
           <h1 className="text-2xl font-semibold sm:text-3xl">Changes</h1>
           <p className="mt-2 text-sm text-white/60">
-            Master Agent proposes repo changes. You approve before apply.
+            Master Agent proposes repo changes. Safe proposals can auto-apply.
           </p>
         </div>
 
@@ -299,71 +281,28 @@ console.log(
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            rows={7}
+            rows={8}
             className="w-full rounded-xl border border-white/10 bg-neutral-900 p-3 text-sm text-white outline-none"
-            placeholder="Modify only app/chat/page.tsx. Change only sendMessage. Do not rewrite the whole file."
+            placeholder="Modify only app/execution/page.tsx. Add small padding to execution items."
           />
 
-          <p className="mt-2 text-xs text-white/45">
-            Tip: ask for one file, one function, one small patch.
-          </p>
-
-          <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900 p-3 text-xs text-white/60">
-            <div className="mb-2 font-medium text-white/80">Small patch template</div>
-            <pre className="whitespace-pre-wrap">
-{`Modify only <file>.
-Change only <function/block>.
-Do not rewrite the whole file.
-Do not change imports.
-Return code diff only.
-Keep changes minimal and focused.
-Always verify diff before applying.`}
-            </pre>
-          </div>
-
-          <div className="mt-4 rounded-xl border border-white/10 bg-neutral-900 p-3 text-xs text-white/60">
-            <div className="mb-2 font-medium text-white/80">Build error fix template</div>
-            <pre className="whitespace-pre-wrap">
-{`Fix this build error:
-
-<paste full Vercel build error here>
-
-Required:
-- Include exact file path
-- Include exact line number
-- Include full error message`}
-            </pre>
-          </div>
-
           <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            
             <button
-              onClick={() => setPrompt(`Fix this build error:
+              onClick={() =>
+                setPrompt(`Fix this build error:
 
 <paste full Vercel build error here>
 
-Required:
-- Include exact file path
-- Include exact line number
-- Include full error message`)}
-              className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+STRICT FIX MODE:
+- Fix only the exact build error.
+- Modify only the file mentioned in the error.
+- Use the exact line number from the error.
+- Return exactly one find/replace change.`)
+              }
+              className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10"
             >
-              Build error prompt
+              Auto fix prompt
             </button>
-
-            <button
-  onClick={() => {
-    setPrompt(`Fix this build error:
-
-<paste full Vercel build error here>
-`);
-
-    setFixAttemptCount((count) => count + 1);
-  }}
-  className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
->
-  Auto fix prompt
-</button>
 
             <button
               onClick={() => generateProposal()}
@@ -374,31 +313,31 @@ Required:
             </button>
 
             {proposal && (
-              <>
-                <button
-                  onClick={() => applyProposal(true)}
-                  disabled={isApplying || !safety.isSafe}
-                  className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isApplying
-                    ? 'Applying...'
-                    : safety.isSafe
-                      ? 'Apply changes'
-                      : 'Unsafe proposal'}
-                </button>
-                {!safety.isSafe && (
-                  <button
-                    onClick={() => applyProposal(true)}
-                    disabled={isApplying}
-                    className="mt-2 rounded-xl border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Apply anyway
-                  </button>
-                )}
-              </>
+              <button
+                onClick={() => applyProposal()}
+                disabled={isApplying || !safety.isSafe}
+                className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isApplying
+                  ? 'Applying...'
+                  : safety.isSafe
+                    ? 'Apply changes'
+                    : 'Unsafe proposal'}
+              </button>
+            )}
+
+            {proposal && !safety.isSafe && (
+              <button
+                onClick={() => applyProposal(true)}
+                disabled={isApplying}
+                className="rounded-xl border border-red-500/60 px-4 py-2 text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                Apply anyway
+              </button>
             )}
           </div>
-          <div className="mt-2 text-xs text-white/40">
+
+          <div className="mt-3 text-xs text-white/40">
             Fix attempts: {fixAttemptCount}/3
           </div>
         </div>
@@ -428,6 +367,11 @@ Required:
                 {safety.isSafe
                   ? 'Safe-looking small patch'
                   : 'Unsafe proposal: review before applying'}
+              </div>
+
+              <div className="mt-2 text-xs opacity-80">
+                Changed lines: {proposal.changedLines ?? 'unknown'} · Match:{' '}
+                {proposal.matchStrategy ?? 'unknown'}
               </div>
 
               {!safety.isSafe && (
@@ -476,23 +420,23 @@ Required:
                         {change.content.length} characters
                       </div>
 
-                     <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
-  {preview
-    .slice(0, 6000)
-    .split('\n')
-    .map((line, i) => {
-      let color = 'text-white/60';
+                      <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
+                        {preview
+                          .slice(0, 6000)
+                          .split('\n')
+                          .map((line, i) => {
+                            let color = 'text-white/60';
 
-      if (line.startsWith('+')) color = 'text-green-400';
-      else if (line.startsWith('-')) color = 'text-red-400';
+                            if (line.startsWith('+')) color = 'text-green-400';
+                            else if (line.startsWith('-')) color = 'text-red-400';
 
-      return (
-        <div key={i} className={color}>
-          {line}
-        </div>
-      );
-    })}
-</pre>
+                            return (
+                              <div key={i} className={color}>
+                                {line}
+                              </div>
+                            );
+                          })}
+                      </pre>
                     </div>
                   );
                 })}
