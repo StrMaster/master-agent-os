@@ -166,13 +166,6 @@ export async function POST(req: Request) {
 
     let pullRequestUrl: string | null = null;
 
-try {
-  // 🔧 APPLY CHANGES
-  for (const change of proposal.changes) {
-    const fileData = await githubRequest(
-      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(change.filePath)}?ref=${proposal.branchName}`
-    );
-
     await githubRequest(
       `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(change.filePath)}`,
       {
@@ -212,16 +205,5 @@ try {
     pullRequestUrl = prData.html_url;
   }
 
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-
-  // 🔥 ČIA SELF-HEAL TRIGGER
-  return Response.json(
-    {
-      error: message,
-      buildError: message,
-    },
-    { status: 500 }
-  );
 }
 }
