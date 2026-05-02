@@ -6,116 +6,9 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_OWNER = process.env.GITHUB_OWNER;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const GITHUB_DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH || 'main';
-
-function assertEnv() {
-  if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
-    throw new Error('Missing GitHub environment variables');
-  }
-}
-
-function isAllowedFile(filePath: string) {
-  return (
-    (filePath.startsWith('app/') ||
-      filePath.startsWith('lib/') ||
-      filePath.startsWith('components/')) &&
-    !filePath.includes('..') &&
-    !filePath.startsWith('.env') &&
-    !filePath.includes('node_modules') &&
-    !filePath.includes('package-lock') &&
-    !filePath.includes('vercel')
-  );
-}
-
-function isUnifiedDiff(content: string) {
-  return content.includes('@@') && content.includes('\n-') && content.includes('\n+');
-}
-
-function decodeBase64Content(content: string) {
-  return Buffer.from(content.replace(/\n/g, ''), 'base64').toString('utf8');
-}
-
-function applyUnifiedDiff(original: string, diff: string) {
-  const originalLines = original.split('\n');
-  const result: string[] = [];
-  const diffLines = diff.split('\n');
-
-  let originalIndex = 0;
-  let i = 0;
-
-  while (i < diffLines.length) {
-    const line = diffLines[i];
-
-    if (!line.startsWith('@@')) {
-      i += 1;
-      continue;
-    }
-
-    const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-
-    if (!match) {
-      throw new Error(`Invalid diff hunk header: ${line}`);
-    }
-
-    const oldStart = Number(match[1]) - 1;
-
-    while (originalIndex < oldStart) {
-      result.push(originalLines[originalIndex]);
-      originalIndex += 1;
-    }
-
-    i += 1;
-
-    while (i < diffLines.length && !diffLines[i].startsWith('@@')) {
-      const hunkLine = diffLines[i];
-
-      if (hunkLine.startsWith(' ')) {
-        const expected = hunkLine.slice(1);
-        const actual = originalLines[originalIndex];
-
-        if (actual !== expected) {
-          throw new Error(
-            `Diff context mismatch. Expected "${expected}", got "${actual ?? ''}"`
-          );
-        }
-
-        result.push(actual);
-        originalIndex += 1;
-      } else if (hunkLine.startsWith('-')) {
-        const expected = hunkLine.slice(1);
-        const actual = originalLines[originalIndex];
-
-        if (actual !== expected) {
-          throw new Error(
-            `Diff remove mismatch. Expected "${expected}", got "${actual ?? ''}"`
-          );
-        }
-
-        originalIndex += 1;
-      } else if (hunkLine.startsWith('+')) {
-        result.push(hunkLine.slice(1));
-      } else if (hunkLine.trim() === '') {
-        // ignore empty trailing diff line
-      } else if (hunkLine.startsWith('\\')) {
-        // "\ No newline at end of file"
-      } else {
-        throw new Error(`Unsupported diff line: ${hunkLine}`);
-      }
-
-      i += 1;
-    }
-  }
-
-  while (originalIndex < originalLines.length) {
-    result.push(originalLines[originalIndex]);
-    originalIndex += 1;
-  }
-
-  return result.join('\n');
-}
+const AUTO_MERGE_ENABLED = process.env.AUTO_MERGE_ENABLED === 'true';
 
 async function githubRequest(path: string, init?: RequestInit) {
-  assertEnv();
-
   const res = await fetch(`https://api.github.com${path}`, {
     ...init,
     headers: {
@@ -134,28 +27,38 @@ async function githubRequest(path: string, init?: RequestInit) {
   return res.json();
 }
 
-async function createOrGetBranch(branchName: string, baseSha: string) {
+function isAllowedFile(filePath: string) {
+  return (
+    (filePath.startsWith('app/') ||
+      filePath.startsWith('lib/') ||
+      filePath.startsWith('components/')) &&
+    !filePath.includes('..') &&
+    !filePath.startsWith('.env') &&
+    !filePath.includes('node_modules')
+  );
+}
+
+async function createBranch(branchName: string) {
+  const baseRef = await githubRequest(
+    `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${GITHUB_DEFAULT_BRANCH}`
+  );
+
   try {
     await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`, {
       method: 'POST',
       body: JSON.stringify({
         ref: `refs/heads/${branchName}`,
-        sha: baseSha,
+        sha: baseRef.object.sha,
       }),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-
-    if (!message.includes('Reference already exists')) {
-      throw error;
-    }
+    const msg = error instanceof Error ? error.message : '';
+    if (!msg.includes('Reference already exists')) throw error;
   }
 }
 
-async function createOrGetPullRequest(proposal: ChangeProposal) {
-  assertEnv();
-
-  const createRes = await fetch(
+async function createPullRequest(proposal: ChangeProposal) {
+  const prRes = await fetch(
     `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
     {
       method: 'POST',
@@ -173,10 +76,10 @@ async function createOrGetPullRequest(proposal: ChangeProposal) {
     }
   );
 
-  const createData = await createRes.json();
+  const prData = await prRes.json();
 
-  if (createRes.ok && createData?.html_url) {
-    return createData.html_url as string;
+  if (prRes.ok && prData.html_url) {
+    return prData.html_url as string;
   }
 
   const listRes = await fetch(
@@ -195,13 +98,51 @@ async function createOrGetPullRequest(proposal: ChangeProposal) {
     return listData[0].html_url as string;
   }
 
-  throw new Error(`Failed to create PR: ${JSON.stringify(createData)}`);
+  throw new Error(`Failed to create PR: ${JSON.stringify(prData)}`);
+}
+
+async function autoMergeIfAllowed(proposal: ChangeProposal, pullRequestUrl: string) {
+  if (!AUTO_MERGE_ENABLED) return;
+
+  const isSafe = (proposal as any).isSafe === true;
+  const changedLines = Number((proposal as any).changedLines ?? 9999);
+
+  if (!isSafe || changedLines > 30) return;
+
+  const match = pullRequestUrl.match(/\/pull\/(\d+)/);
+  const prNumber = match?.[1];
+
+  if (!prNumber) return;
+
+  const mergeRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${prNumber}/merge`,
+    {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        merge_method: 'squash',
+        commit_title: proposal.commitMessage,
+      }),
+    }
+  );
+
+  if (!mergeRes.ok) {
+    const text = await mergeRes.text();
+    console.error('Auto merge failed:', text);
+  }
 }
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const proposal = body as ChangeProposal;
+    if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
+      throw new Error('Missing GitHub environment variables');
+    }
+
+    const proposal = (await req.json()) as ChangeProposal;
 
     if (
       !proposal ||
@@ -213,14 +154,6 @@ export async function POST(req: Request) {
     }
 
     for (const change of proposal.changes) {
-      if (
-        !change ||
-        typeof change.filePath !== 'string' ||
-        typeof change.content !== 'string'
-      ) {
-        return Response.json({ error: 'Invalid change item' }, { status: 400 });
-      }
-
       if (!isAllowedFile(change.filePath)) {
         return Response.json(
           { error: `Blocked file path: ${change.filePath}` },
@@ -229,27 +162,14 @@ export async function POST(req: Request) {
       }
     }
 
-    const branchRef = await githubRequest(
-      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${GITHUB_DEFAULT_BRANCH}`
-    );
-
-    const baseSha = branchRef.object.sha;
-
-    await createOrGetBranch(proposal.branchName, baseSha);
+    await createBranch(proposal.branchName);
 
     for (const change of proposal.changes) {
-      const existingFile = await githubRequest(
+      const fileData = await githubRequest(
         `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
           change.filePath
         )}?ref=${proposal.branchName}`
       );
-
-      const existingSha = existingFile.sha;
-      const originalContent = decodeBase64Content(existingFile.content);
-
-      const nextContent = isUnifiedDiff(change.content)
-        ? applyUnifiedDiff(originalContent, change.content)
-        : change.content;
 
       await githubRequest(
         `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
@@ -259,15 +179,17 @@ export async function POST(req: Request) {
           method: 'PUT',
           body: JSON.stringify({
             message: proposal.commitMessage,
-            content: Buffer.from(nextContent, 'utf8').toString('base64'),
+            content: Buffer.from(change.content, 'utf8').toString('base64'),
             branch: proposal.branchName,
-            sha: existingSha,
+            sha: fileData.sha,
           }),
         }
       );
     }
 
-    const pullRequestUrl = await createOrGetPullRequest(proposal);
+    const pullRequestUrl = await createPullRequest(proposal);
+
+    await autoMergeIfAllowed(proposal, pullRequestUrl);
 
     return Response.json({
       ok: true,
