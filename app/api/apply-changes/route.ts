@@ -186,6 +186,7 @@ try {
       }
     );
   }
+}
 
   // 🔀 CREATE PR
   const prRes = await fetch(
@@ -222,6 +223,5 @@ try {
     },
     { status: 500 }
   );
-}
 }
 }
