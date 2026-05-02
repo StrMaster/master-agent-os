@@ -312,7 +312,7 @@ Return JSON only.
     });
 
     const raw = completion.choices[0]?.message?.content || '';
-    const parsed = JSON.parse(extractJson(raw));
+    const parsed = safeJsonParse(raw);
 
     if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
       return Response.json(
