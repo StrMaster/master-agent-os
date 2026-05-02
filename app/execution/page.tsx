@@ -178,7 +178,7 @@ export default function ExecutionPage() {
         const logMessage = `${assigned?.name || 'Unknown agent'} started: ${task.title || 'Unknown task'}`;
 
         return (
-          <div key={task.id} className={`mb-10 border-8 p-14 rounded-lg bg-gray-800 ${task.status === 'in_progress' ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600'} space-y-4 border border-gray-500`}>
+          <div key={task.id} className={`mb-10 border-8 p-16 rounded-lg bg-gray-800 ${task.status === 'in_progress' ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600'} space-y-4 border border-gray-500`}>
             <h2 className="text-xl">{task.title}</h2>
             <p className="text-sm">Status: {task.status}</p>
 
