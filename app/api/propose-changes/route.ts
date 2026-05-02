@@ -126,8 +126,15 @@ Rules:
       ],
     });
 
-    const raw = completion.choices[0]?.message?.content || '';
-    const parsed = JSON.parse(raw);
+    let raw = completion.choices[0]?.message?.content || '';
+
+// 🧼 CLEAN JSON (FIX)
+raw = raw
+  .replace(/```json/g, '')
+  .replace(/```/g, '')
+  .trim();
+
+const parsed = JSON.parse(raw);
 
     const change = parsed.changes[0];
 
