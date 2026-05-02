@@ -179,7 +179,6 @@ export async function POST(req: Request) {
       }
     );
   }
-}
 
   // 🔀 CREATE PR
   const prRes = await fetch(
