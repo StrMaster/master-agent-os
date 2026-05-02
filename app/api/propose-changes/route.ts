@@ -58,6 +58,28 @@ function extractJson(text: string) {
   return clean;
 }
 
+function safeJsonParse(text: string) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    // bandymas pataisyti escape
+    const cleaned = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"');
+
+    const first = cleaned.indexOf('{');
+    const last = cleaned.lastIndexOf('}');
+
+    if (first >= 0 && last > first) {
+      return JSON.parse(cleaned.slice(first, last + 1));
+    }
+
+    throw new Error('Invalid JSON from model');
+  }
+}
+
 function extractTargetFile(prompt: string) {
   for (const file of KNOWN_FILES) {
     if (prompt.includes(file)) return file;
@@ -259,6 +281,9 @@ Rules:
 - Do not use markdown.
 - Do not return full file content.
 - Prefer small unique find blocks.
+- Escape all quotes correctly in JSON
+- Do not include backticks
+- Do not include markdown
 `.trim();
 
     const user = `
@@ -270,6 +295,10 @@ ${original.slice(0, 12000)}
 
 IMPORTANT:
 The "find" field must exist exactly in FILE CONTENT.
+Return STRICT JSON.
+No markdown.
+No backticks.
+No explanations.
 Return JSON only.
 `.trim();
 
