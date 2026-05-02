@@ -123,22 +123,7 @@ STRICT RULES:
       temperature: 0,
       messages: [
   { role: 'system', content: system },
-
-  {
-    role: 'user',
-    content: `
-TASK:
-${prompt}
-
-FILE CONTENT:
-${original.slice(0, 8000)}
-
-IMPORTANT:
-- "find" MUST match EXACTLY from FILE CONTENT
-- copy exact code, do not rewrite
-- return ONLY JSON
-`
-  },
+  { role: 'user', content: prompt },
 ],
     });
 
