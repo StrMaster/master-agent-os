@@ -9,6 +9,10 @@ const GITHUB_DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH || 'main';
 const AUTO_MERGE_ENABLED = process.env.AUTO_MERGE_ENABLED === 'true';
 
 async function githubRequest(path: string, init?: RequestInit) {
+  if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
+    throw new Error('Missing GitHub environment variables');
+  }
+
   const res = await fetch(`https://api.github.com${path}`, {
     ...init,
     headers: {
@@ -34,11 +38,13 @@ function isAllowedFile(filePath: string) {
       filePath.startsWith('components/')) &&
     !filePath.includes('..') &&
     !filePath.startsWith('.env') &&
-    !filePath.includes('node_modules')
+    !filePath.includes('node_modules') &&
+    !filePath.includes('package-lock') &&
+    !filePath.includes('vercel')
   );
 }
 
-async function createBranch(branchName: string) {
+async function createOrGetBranch(branchName: string) {
   const baseRef = await githubRequest(
     `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${GITHUB_DEFAULT_BRANCH}`
   );
@@ -52,12 +58,15 @@ async function createBranch(branchName: string) {
       }),
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : '';
-    if (!msg.includes('Reference already exists')) throw error;
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (!message.includes('Reference already exists')) {
+      throw error;
+    }
   }
 }
 
-async function createPullRequest(proposal: ChangeProposal) {
+async function createOrGetPullRequest(proposal: ChangeProposal) {
   const prRes = await fetch(
     `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
     {
@@ -78,7 +87,7 @@ async function createPullRequest(proposal: ChangeProposal) {
 
   const prData = await prRes.json();
 
-  if (prRes.ok && prData.html_url) {
+  if (prRes.ok && prData?.html_url) {
     return prData.html_url as string;
   }
 
@@ -138,10 +147,6 @@ async function autoMergeIfAllowed(proposal: ChangeProposal, pullRequestUrl: stri
 
 export async function POST(req: Request) {
   try {
-    if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO) {
-      throw new Error('Missing GitHub environment variables');
-    }
-
     const proposal = (await req.json()) as ChangeProposal;
 
     if (
@@ -154,6 +159,14 @@ export async function POST(req: Request) {
     }
 
     for (const change of proposal.changes) {
+      if (
+        !change ||
+        typeof change.filePath !== 'string' ||
+        typeof change.content !== 'string'
+      ) {
+        return Response.json({ error: 'Invalid change item' }, { status: 400 });
+      }
+
       if (!isAllowedFile(change.filePath)) {
         return Response.json(
           { error: `Blocked file path: ${change.filePath}` },
@@ -162,47 +175,51 @@ export async function POST(req: Request) {
       }
     }
 
-    await createBranch(proposal.branchName);
+    await createOrGetBranch(proposal.branchName);
 
-    let pullRequestUrl: string | null = null;
+    for (const change of proposal.changes) {
+      const fileData = await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
+          change.filePath
+        )}?ref=${proposal.branchName}`
+      );
 
-    await githubRequest(
-      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(change.filePath)}`,
+      await githubRequest(
+        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
+          change.filePath
+        )}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            message: proposal.commitMessage,
+            content: Buffer.from(change.content, 'utf8').toString('base64'),
+            branch: proposal.branchName,
+            sha: fileData.sha,
+          }),
+        }
+      );
+    }
+
+    const pullRequestUrl = await createOrGetPullRequest(proposal);
+
+    await autoMergeIfAllowed(proposal, pullRequestUrl);
+
+    return Response.json({
+      ok: true,
+      branchName: proposal.branchName,
+      repoUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${proposal.branchName}`,
+      compareUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/compare/${GITHUB_DEFAULT_BRANCH}...${proposal.branchName}`,
+      pullRequestUrl,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    return Response.json(
       {
-        method: 'PUT',
-        body: JSON.stringify({
-          message: proposal.commitMessage,
-          content: Buffer.from(change.content, 'utf8').toString('base64'),
-          branch: proposal.branchName,
-          sha: fileData.sha,
-        }),
-      }
+        error: message,
+        buildError: message,
+      },
+      { status: 500 }
     );
   }
-
-  // 🔀 CREATE PR
-  const prRes = await fetch(
-    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: proposal.commitMessage,
-        head: `${GITHUB_OWNER}:${proposal.branchName}`,
-        base: GITHUB_DEFAULT_BRANCH,
-      }),
-    }
-  );
-
-  const prData = await prRes.json();
-
-  if (prRes.ok && prData.html_url) {
-    pullRequestUrl = prData.html_url;
-  }
-
-}
 }
