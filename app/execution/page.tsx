@@ -38,7 +38,7 @@ export default function ExecutionPage() {
               runningTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="rounded-xl border border-green-500/30 bg-green-500/10 p-4"
+                  className="mb-2 rounded-xl border border-green-500/30 bg-green-500/10 p-4"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
