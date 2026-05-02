@@ -164,48 +164,63 @@ export async function POST(req: Request) {
 
     await createBranch(proposal.branchName);
 
-    for (const change of proposal.changes) {
-      const fileData = await githubRequest(
-        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
-          change.filePath
-        )}?ref=${proposal.branchName}`
-      );
+    let pullRequestUrl: string | null = null;
 
-      await githubRequest(
-        `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(
-          change.filePath
-        )}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            message: proposal.commitMessage,
-            content: Buffer.from(change.content, 'utf8').toString('base64'),
-            branch: proposal.branchName,
-            sha: fileData.sha,
-          }),
-        }
-      );
-    }
+try {
+  // 🔧 APPLY CHANGES
+  for (const change of proposal.changes) {
+    const fileData = await githubRequest(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(change.filePath)}?ref=${proposal.branchName}`
+    );
 
-    const pullRequestUrl = await createPullRequest(proposal);
-
-    await autoMergeIfAllowed(proposal, pullRequestUrl);
-
-    return Response.json({
-      ok: true,
-      branchName: proposal.branchName,
-      repoUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${proposal.branchName}`,
-      compareUrl: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/compare/${GITHUB_DEFAULT_BRANCH}...${proposal.branchName}`,
-      pullRequestUrl,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-
-    return Response.json(
+    await githubRequest(
+      `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${encodeURIComponent(change.filePath)}`,
       {
-        error: message,
-      },
-      { status: 500 }
+        method: 'PUT',
+        body: JSON.stringify({
+          message: proposal.commitMessage,
+          content: Buffer.from(change.content, 'utf8').toString('base64'),
+          branch: proposal.branchName,
+          sha: fileData.sha,
+        }),
+      }
     );
   }
+
+  // 🔀 CREATE PR
+  const prRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: proposal.commitMessage,
+        head: `${GITHUB_OWNER}:${proposal.branchName}`,
+        base: GITHUB_DEFAULT_BRANCH,
+      }),
+    }
+  );
+
+  const prData = await prRes.json();
+
+  if (prRes.ok && prData.html_url) {
+    pullRequestUrl = prData.html_url;
+  }
+
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  // 🔥 ČIA SELF-HEAL TRIGGER
+  return Response.json(
+    {
+      error: message,
+      buildError: message,
+    },
+    { status: 500 }
+  );
+}
 }
