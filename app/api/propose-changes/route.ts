@@ -58,6 +58,33 @@ function extractJson(text: string) {
   return clean;
 }
 
+function validateGeneratedContent(filePath: string, content: string) {
+  const errors: string[] = [];
+
+  if (filePath.endsWith('.tsx') || filePath.endsWith('.jsx')) {
+    const openDivs = (content.match(/<div(\s|>)/g) || []).length;
+    const closeDivs = (content.match(/<\/div>/g) || []).length;
+
+    if (openDivs !== closeDivs) {
+      errors.push(`JSX div mismatch: ${openDivs} opening, ${closeDivs} closing`);
+    }
+
+    if (/<div\s*\n\s*</.test(content)) {
+      errors.push('Broken JSX: found unfinished <div before another tag');
+    }
+
+    const completedEmptyStates =
+      (content.match(/No completed tasks/g) || []).length +
+      (content.match(/No completed tasks yet/g) || []).length;
+
+    if (completedEmptyStates > 1) {
+      errors.push('Duplicate completed tasks empty-state detected');
+    }
+  }
+
+  return errors;
+}
+
 function safeJsonParse(text: string) {
   try {
     return JSON.parse(text);
@@ -347,6 +374,19 @@ Return JSON only.
         { status: 500 }
       );
     }
+
+    const validationErrors = validateGeneratedContent(targetFile, updated);
+
+if (validationErrors.length > 0) {
+  return Response.json(
+    {
+      error: `Generated patch failed validation:\n${validationErrors
+        .map((item) => `- ${item}`)
+        .join('\n')}`,
+    },
+    { status: 500 }
+  );
+}
 
     const changedLines = countChangedLines(original, updated);
 
