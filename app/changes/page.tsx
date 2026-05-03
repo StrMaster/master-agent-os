@@ -18,23 +18,17 @@ type ProposalWithSafety = ChangeProposal & {
 
 function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety {
   if (!proposal) {
-    return {
-      isSafe: false,
-      reasons: ['No proposal generated.'],
-    };
+    return { isSafe: false, reasons: ['No proposal generated.'] };
+  }
+
+  if (proposal.isSafe === true) {
+    return { isSafe: true, reasons: [] };
   }
 
   const reasons: string[] = [];
 
-  if (proposal.isSafe === true) {
-    return {
-      isSafe: true,
-      reasons: [],
-    };
-  }
-
   if (proposal.changes.length !== 1) {
-    reasons.push(`Proposal changes ${proposal.changes.length} files. Prefer exactly one file.`);
+    reasons.push(`Proposal changes ${proposal.changes.length} files.`);
   }
 
   if (typeof proposal.changedLines === 'number' && proposal.changedLines > 30) {
@@ -49,15 +43,15 @@ function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety 
     reasons.push('Proposal was not marked safe by backend.');
   }
 
-  return {
-    isSafe: reasons.length === 0,
-    reasons,
-  };
+  return { isSafe: false, reasons };
 }
 
-function getSimpleDiff(before: string, after: string): string {
-  const beforeLines = before.split('\n');
-  const afterLines = after.split('\n');
+function getSimpleDiff(before?: string, after?: string): string {
+  const safeBefore = typeof before === 'string' ? before : '';
+  const safeAfter = typeof after === 'string' ? after : '';
+
+  const beforeLines = safeBefore.split('\n');
+  const afterLines = safeAfter.split('\n');
   const maxLen = Math.max(beforeLines.length, afterLines.length);
   const diffLines: string[] = [];
 
@@ -66,21 +60,10 @@ function getSimpleDiff(before: string, after: string): string {
     const afterLine = afterLines[i];
 
     if (beforeLine !== afterLine) {
-      if (i > 0) {
-        diffLines.push('  ' + (afterLines[i - 1] ?? ''));
-      }
-
-      if (beforeLine !== undefined) {
-        diffLines.push('- ' + beforeLine);
-      }
-
-      if (afterLine !== undefined) {
-        diffLines.push('+ ' + afterLine);
-      }
-
-      if (i < maxLen - 1) {
-        diffLines.push('  ' + (afterLines[i + 1] ?? ''));
-      }
+      if (i > 0) diffLines.push('  ' + (afterLines[i - 1] ?? ''));
+      if (beforeLine !== undefined) diffLines.push('- ' + beforeLine);
+      if (afterLine !== undefined) diffLines.push('+ ' + afterLine);
+      if (i < maxLen - 1) diffLines.push('  ' + (afterLines[i + 1] ?? ''));
     }
   }
 
@@ -96,8 +79,8 @@ export default function ChangesPage() {
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
-  const [result, setResult] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [result, setResult] = useState('');
+  const [error, setError] = useState('');
   const [fixAttemptCount, setFixAttemptCount] = useState(0);
 
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
@@ -116,7 +99,9 @@ STRICT FIX MODE:
 - Fix only the exact build error.
 - Modify only the file mentioned in the error.
 - Use the exact line number from the error.
-- Return exactly one find/replace change.`);
+- Return exactly one find/replace change.
+- Do not refactor.
+- Do not rewrite the whole file.`);
       setShouldAutoGenerate(true);
       return;
     }
@@ -180,7 +165,9 @@ STRICT FIX MODE:
       }
 
       if (data.buildError) {
-        window.location.href = `/changes?error=${encodeURIComponent(data.buildError)}`;
+        window.location.href = `/changes?error=${encodeURIComponent(
+          data.buildError
+        )}`;
         return;
       }
 
@@ -244,15 +231,13 @@ STRICT FIX MODE:
       }
 
       if (data.pullRequestUrl) {
-        setResult(
-          `PR created ✅
+        setResult(`PR created ✅
 Branch: ${data.branchName}
 Review and merge manually:
 ${data.pullRequestUrl}
 
 Review diff:
-${data.pullRequestUrl}/files`
-        );
+${data.pullRequestUrl}/files`);
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
@@ -297,7 +282,9 @@ STRICT FIX MODE:
 - Fix only the exact build error.
 - Modify only the file mentioned in the error.
 - Use the exact line number from the error.
-- Return exactly one find/replace change.`)
+- Return exactly one find/replace change.
+- Do not refactor.
+- Do not rewrite the whole file.`)
               }
               className="rounded-xl border border-white/20 px-4 py-2 text-white hover:bg-white/10"
             >
@@ -405,7 +392,9 @@ STRICT FIX MODE:
                   const preview =
                     typeof originalContent === 'string'
                       ? getSimpleDiff(originalContent, change.content)
-                      : change.content;
+                      : typeof change.content === 'string'
+                        ? change.content
+                        : '';
 
                   return (
                     <div
@@ -417,11 +406,14 @@ STRICT FIX MODE:
                       </div>
 
                       <div className="mb-2 text-xs text-white/40">
-                        {change.content.length} characters
+                        {typeof change.content === 'string'
+                          ? change.content.length
+                          : 0}{' '}
+                        characters
                       </div>
 
                       <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
-                        {preview
+                        {(preview ?? '')
                           .slice(0, 6000)
                           .split('\n')
                           .map((line, i) => {
