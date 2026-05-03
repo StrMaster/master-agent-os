@@ -375,43 +375,109 @@ Return JSON only.
       );
     }
 
-    const validationErrors = validateGeneratedContent(targetFile, updated);
+    let finalUpdated = updated;
+let finalParsed = parsed;
+let finalChange = change;
+let finalResult = result;
+let validationErrors = validateGeneratedContent(targetFile, finalUpdated);
 
 if (validationErrors.length > 0) {
-  return Response.json(
-    {
-      error: `Generated patch failed validation:\n${validationErrors
-        .map((item) => `- ${item}`)
-        .join('\n')}`,
-    },
-    { status: 500 }
-  );
+  const retryPrompt = `
+The previous patch failed validation:
+
+${validationErrors.map((item) => `- ${item}`).join('\n')}
+
+Fix the patch.
+
+Rules:
+- Return JSON only.
+- Return exactly ONE change.
+- Modify only ${targetFile}.
+- Do NOT duplicate existing UI blocks.
+- If the task asks for an empty state, replace the existing empty state instead of adding another.
+- Ensure valid JSX.
+- Use find text copied exactly from FILE CONTENT.
+- Do not refactor.
+
+ORIGINAL TASK:
+${prompt}
+
+FILE CONTENT:
+${original.slice(0, 12000)}
+`.trim();
+
+  const retryCompletion = await openai.chat.completions.create({
+    model: MODEL,
+    temperature: 0,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: retryPrompt },
+    ],
+  });
+
+  const retryRaw = retryCompletion.choices[0]?.message?.content || '';
+  finalParsed = safeJsonParse(retryRaw);
+
+  if (!Array.isArray(finalParsed.changes) || finalParsed.changes.length !== 1) {
+    return Response.json(
+      { error: 'Retry model must return exactly one change', parsed: finalParsed },
+      { status: 500 }
+    );
+  }
+
+  finalChange = finalParsed.changes[0];
+
+  if (
+    finalChange.filePath !== targetFile ||
+    typeof finalChange.find !== 'string' ||
+    typeof finalChange.replace !== 'string'
+  ) {
+    return Response.json(
+      { error: 'Retry model returned invalid find/replace change', parsed: finalParsed },
+      { status: 500 }
+    );
+  }
+
+  finalResult = applyFindReplace(original, finalChange.find, finalChange.replace);
+  finalUpdated = finalResult.content;
+  validationErrors = validateGeneratedContent(targetFile, finalUpdated);
+
+  if (validationErrors.length > 0) {
+    return Response.json(
+      {
+        error: `Generated patch failed validation after retry:\n${validationErrors
+          .map((item) => `- ${item}`)
+          .join('\n')}`,
+      },
+      { status: 500 }
+    );
+  }
 }
 
-    const changedLines = countChangedLines(original, updated);
+    const changedLines = countChangedLines(original, finalUpdated);
 
-    const isSafe =
-      changedLines < 30 &&
-      !change.find.includes('import ') &&
-      !change.replace.includes('import ');
+const isSafe =
+  changedLines < 30 &&
+  !finalChange.find.includes('import ') &&
+  !finalChange.replace.includes('import ');
 
-    return Response.json({
-      summary: parsed.summary || 'Update file',
-      branchName:
-        sanitizeBranchName(parsed.branchName || 'agent/update-file') ||
-        'agent/update-file',
-      commitMessage: parsed.commitMessage || 'feat: update file',
-      isSafe,
-      changedLines,
-      matchStrategy: result.strategy,
-      changes: [
-        {
-          filePath: targetFile,
-          content: updated,
-          originalContent: original,
-        },
-      ],
-    });
+return Response.json({
+  summary: finalParsed.summary || 'Update file',
+  branchName:
+    sanitizeBranchName(finalParsed.branchName || 'agent/update-file') ||
+    'agent/update-file',
+  commitMessage: finalParsed.commitMessage || 'feat: update file',
+  isSafe,
+  changedLines,
+  matchStrategy: finalResult.strategy,
+  changes: [
+    {
+      filePath: targetFile,
+      content: finalUpdated,
+      originalContent: original,
+    },
+  ],
+});
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
