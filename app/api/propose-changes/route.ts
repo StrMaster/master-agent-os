@@ -284,6 +284,10 @@ Rules:
 - Escape all quotes correctly in JSON
 - Do not include backticks
 - Do not include markdown
+- Do not duplicate existing UI blocks
+- If replacing content, remove old version
+- Ensure valid JSX structure
+- Do not leave unclosed tags
 `.trim();
 
     const user = `
