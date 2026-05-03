@@ -18,23 +18,17 @@ type ProposalWithSafety = ChangeProposal & {
 
 function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety {
   if (!proposal) {
-    return {
-      isSafe: false,
-      reasons: ['No proposal generated.'],
-    };
+    return { isSafe: false, reasons: ['No proposal generated.'] };
+  }
+
+  if (proposal.isSafe === true) {
+    return { isSafe: true, reasons: [] };
   }
 
   const reasons: string[] = [];
 
-  if (proposal.isSafe === true) {
-    return {
-      isSafe: true,
-      reasons: [],
-    };
-  }
-
   if (proposal.changes.length !== 1) {
-    reasons.push(`Proposal changes ${proposal.changes.length} files. Prefer exactly one file.`);
+    reasons.push(`Proposal changes ${proposal.changes.length} files.`);
   }
 
   if (typeof proposal.changedLines === 'number' && proposal.changedLines > 30) {
@@ -49,10 +43,7 @@ function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety 
     reasons.push('Proposal was not marked safe by backend.');
   }
 
-  return {
-    isSafe: reasons.length === 0,
-    reasons,
-  };
+  return { isSafe: false, reasons };
 }
 
 function getSimpleDiff(before?: string, after?: string): string {
@@ -61,7 +52,6 @@ function getSimpleDiff(before?: string, after?: string): string {
 
   const beforeLines = safeBefore.split('\n');
   const afterLines = safeAfter.split('\n');
-
   const maxLen = Math.max(beforeLines.length, afterLines.length);
   const diffLines: string[] = [];
 
@@ -71,10 +61,8 @@ function getSimpleDiff(before?: string, after?: string): string {
 
     if (beforeLine !== afterLine) {
       if (i > 0) diffLines.push('  ' + (afterLines[i - 1] ?? ''));
-
       if (beforeLine !== undefined) diffLines.push('- ' + beforeLine);
       if (afterLine !== undefined) diffLines.push('+ ' + afterLine);
-
       if (i < maxLen - 1) diffLines.push('  ' + (afterLines[i + 1] ?? ''));
     }
   }
@@ -241,15 +229,13 @@ STRICT FIX MODE:
       }
 
       if (data.pullRequestUrl) {
-        setResult(
-          `PR created ✅
+        setResult(`PR created ✅
 Branch: ${data.branchName}
 Review and merge manually:
 ${data.pullRequestUrl}
 
 Review diff:
-${data.pullRequestUrl}/files`
-        );
+${data.pullRequestUrl}/files`);
       } else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
@@ -404,7 +390,9 @@ STRICT FIX MODE:
                   const preview =
                     typeof originalContent === 'string'
                       ? getSimpleDiff(originalContent, change.content)
-                      : change.content;
+                      : typeof change.content === 'string'
+                        ? change.content
+                        : '';
 
                   return (
                     <div
@@ -416,7 +404,10 @@ STRICT FIX MODE:
                       </div>
 
                       <div className="mb-2 text-xs text-white/40">
-                        {change.content.length} characters
+                        {typeof change.content === 'string'
+                          ? change.content.length
+                          : 0}{' '}
+                        characters
                       </div>
 
                       <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
