@@ -237,10 +237,20 @@ STRICT FIX MODE:
       }
 
       if (data.pullRequestUrl) {
+  let mergedStatus = '';
+  if (data.merged === true) {
+    mergedStatus = 'Merged: ✅ yes';
+  } else if (data.merged === false) {
+    if (data.mergeError) {
+      mergedStatus = `Merge error: ${data.mergeError}`;
+    } else {
+      mergedStatus = 'Merged: ❌ no (likely conflict or skipped)';
+    }
+  }
+
   setResult(`PR created ✅
 Branch: ${data.branchName}
-Merged: ${data.merged === true ? '✅ yes' : '❌ no'}
-${data.mergeError ? `Merge error: ${data.mergeError}\n` : ''}
+${mergedStatus}
 Review:
 ${data.pullRequestUrl}
 
