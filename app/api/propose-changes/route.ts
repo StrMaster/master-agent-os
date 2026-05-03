@@ -47,7 +47,6 @@ function countChangedLines(before: string, after: string) {
 
 function extractJson(text: string) {
   const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
   const first = clean.indexOf('{');
   const last = clean.lastIndexOf('}');
 
@@ -58,52 +57,17 @@ function extractJson(text: string) {
   return clean;
 }
 
-function validateGeneratedContent(filePath: string, content: string) {
-  const errors: string[] = [];
-
-  if (filePath.endsWith('.tsx') || filePath.endsWith('.jsx')) {
-    const openDivs = (content.match(/<div(\s|>)/g) || []).length;
-    const closeDivs = (content.match(/<\/div>/g) || []).length;
-
-    if (openDivs !== closeDivs) {
-      errors.push(`JSX div mismatch: ${openDivs} opening, ${closeDivs} closing`);
-    }
-
-    if (/<div\s*\n\s*</.test(content)) {
-      errors.push('Broken JSX: found unfinished <div before another tag');
-    }
-
-    const completedEmptyStates =
-      (content.match(/No completed tasks/g) || []).length +
-      (content.match(/No completed tasks yet/g) || []).length;
-
-    if (completedEmptyStates > 1) {
-      errors.push('Duplicate completed tasks empty-state detected');
-    }
-  }
-
-  return errors;
-}
-
 function safeJsonParse(text: string) {
+  const jsonText = extractJson(text);
+
   try {
-    return JSON.parse(text);
+    return JSON.parse(jsonText);
   } catch {
-    // bandymas pataisyti escape
-    const cleaned = text
-      .replace(/```json/g, '')
-      .replace(/```/g, '')
-      .replace(/\\n/g, '\n')
-      .replace(/\\"/g, '"');
+    const repaired = jsonText
+      .replace(/\\`/g, '`')
+      .replace(/[\u0000-\u001F]+/g, ' ');
 
-    const first = cleaned.indexOf('{');
-    const last = cleaned.lastIndexOf('}');
-
-    if (first >= 0 && last > first) {
-      return JSON.parse(cleaned.slice(first, last + 1));
-    }
-
-    throw new Error('Invalid JSON from model');
+    return JSON.parse(repaired);
   }
 }
 
@@ -256,6 +220,114 @@ function applyFindReplace(original: string, find: string, replace: string) {
   throw new Error('Find not found');
 }
 
+function validateGeneratedContent(filePath: string, content: string) {
+  const errors: string[] = [];
+
+  if (filePath.endsWith('.tsx') || filePath.endsWith('.jsx')) {
+    const openDivs = (content.match(/<div(\s|>)/g) || []).length;
+    const closeDivs = (content.match(/<\/div>/g) || []).length;
+
+    if (openDivs !== closeDivs) {
+      errors.push(`JSX div mismatch: ${openDivs} opening, ${closeDivs} closing`);
+    }
+
+    if (/<div\s*\n\s*</.test(content)) {
+      errors.push('Broken JSX: found unfinished <div before another tag');
+    }
+
+    const completedEmptyStateBlocks =
+      content.match(
+        /completedTasks\.length\s*===\s*0\s*\?\s*\([\s\S]*?\)\s*:\s*\(/g
+      ) || [];
+
+    if (completedEmptyStateBlocks.length > 1) {
+      errors.push('Duplicate completed tasks empty-state detected');
+    }
+
+    const suspiciousDuplicateCompletedMessages =
+      (content.match(/No completed tasks yet\./g) || []).length +
+      (content.match(/No completed tasks\./g) || []).length;
+
+    if (
+      suspiciousDuplicateCompletedMessages > 2 &&
+      content.includes('completedTasks.length === 0')
+    ) {
+      errors.push('Suspicious duplicate completed tasks messages detected');
+    }
+  }
+
+  return errors;
+}
+
+async function generatePatch(params: {
+  prompt: string;
+  targetFile: string;
+  original: string;
+  extraRules?: string;
+}) {
+  const { prompt, targetFile, original, extraRules } = params;
+
+  const system = `
+Return JSON only.
+
+Shape:
+{
+  "summary": "short summary",
+  "branchName": "agent/short-name",
+  "commitMessage": "type: message",
+  "changes": [
+    {
+      "filePath": "${targetFile}",
+      "find": "exact code copied from FILE CONTENT",
+      "replace": "replacement code"
+    }
+  ]
+}
+
+Rules:
+- Return exactly ONE change.
+- Modify only ${targetFile}.
+- "find" MUST be copied character-for-character from FILE CONTENT.
+- Do not invent code.
+- Do not reformat find.
+- Do not use markdown.
+- Do not return full file content.
+- Prefer small unique find blocks.
+- If one line is not unique, include surrounding lines.
+- Do not duplicate existing UI blocks.
+- If changing existing UI text, replace the existing text instead of adding another block.
+- Ensure valid JSX.
+${extraRules || ''}
+`.trim();
+
+  const user = `
+TASK:
+${prompt}
+
+FILE CONTENT:
+${original.slice(0, 12000)}
+
+IMPORTANT:
+The "find" field must exist exactly in FILE CONTENT.
+Return STRICT JSON only.
+No markdown.
+No backticks.
+No explanations.
+`.trim();
+
+  const completion = await openai.chat.completions.create({
+    model: MODEL,
+    temperature: 0,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content || '';
+  return safeJsonParse(raw);
+}
+
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
@@ -282,68 +354,11 @@ export async function POST(req: Request) {
 
     const original = await readFileFromGitHub(targetFile);
 
-    const system = `
-Return JSON only.
-
-Shape:
-{
-  "summary": "short summary",
-  "branchName": "agent/short-name",
-  "commitMessage": "type: message",
-  "changes": [
-    {
-      "filePath": "${targetFile}",
-      "find": "exact code copied from FILE CONTENT",
-      "replace": "replacement code"
-    }
-  ]
-}
-
-Rules:
-- Return exactly ONE change.
-- Modify only ${targetFile}.
-- "find" MUST be copied character-for-character from FILE CONTENT.
-- Do not invent code.
-- Do not reformat find.
-- Do not use markdown.
-- Do not return full file content.
-- Prefer small unique find blocks.
-- Escape all quotes correctly in JSON
-- Do not include backticks
-- Do not include markdown
-- Do not duplicate existing UI blocks
-- If replacing content, remove old version
-- Ensure valid JSX structure
-- Do not leave unclosed tags
-`.trim();
-
-    const user = `
-TASK:
-${prompt}
-
-FILE CONTENT:
-${original.slice(0, 12000)}
-
-IMPORTANT:
-The "find" field must exist exactly in FILE CONTENT.
-Return STRICT JSON.
-No markdown.
-No backticks.
-No explanations.
-Return JSON only.
-`.trim();
-
-    const completion = await openai.chat.completions.create({
-      model: MODEL,
-      temperature: 0,
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
+    let parsed = await generatePatch({
+      prompt,
+      targetFile,
+      original,
     });
-
-    const raw = completion.choices[0]?.message?.content || '';
-    const parsed = safeJsonParse(raw);
 
     if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
       return Response.json(
@@ -352,7 +367,7 @@ Return JSON only.
       );
     }
 
-    const change = parsed.changes[0];
+    let change = parsed.changes[0];
 
     if (
       change.filePath !== targetFile ||
@@ -365,125 +380,105 @@ Return JSON only.
       );
     }
 
-    const result = applyFindReplace(original, change.find, change.replace);
-    const updated = result.content;
+    let result = applyFindReplace(original, change.find, change.replace);
+    let updated = result.content;
+
+    let validationErrors = validateGeneratedContent(targetFile, updated);
+
+    if (validationErrors.length > 0) {
+      parsed = await generatePatch({
+        prompt,
+        targetFile,
+        original,
+        extraRules: `
+The previous patch failed validation:
+${validationErrors.map((item) => `- ${item}`).join('\n')}
+
+Retry rules:
+- Fix the patch.
+- Do NOT duplicate UI blocks.
+- If the task asks for text that already exists, replace the existing text or return a minimal equivalent change.
+- If adding a note, add it outside the empty-state conditional and do not create a second empty-state.
+- Use a more unique find block with surrounding context.
+`.trim(),
+      });
+
+      if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
+        return Response.json(
+          { error: 'Retry model must return exactly one change', parsed },
+          { status: 500 }
+        );
+      }
+
+      change = parsed.changes[0];
+
+      if (
+        change.filePath !== targetFile ||
+        typeof change.find !== 'string' ||
+        typeof change.replace !== 'string'
+      ) {
+        return Response.json(
+          { error: 'Retry model returned invalid find/replace change', parsed },
+          { status: 500 }
+        );
+      }
+
+      result = applyFindReplace(original, change.find, change.replace);
+      updated = result.content;
+      validationErrors = validateGeneratedContent(targetFile, updated);
+
+      if (validationErrors.length > 0) {
+        return Response.json(
+          {
+            error: `Generated patch failed validation after retry:\n${validationErrors
+              .map((item) => `- ${item}`)
+              .join('\n')}`,
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     if (updated === original) {
       return Response.json(
-        { error: 'No file changes produced', parsed },
+        {
+          error: 'No file changes needed or model produced no-op patch.',
+        },
         { status: 500 }
       );
     }
 
-    let finalUpdated = updated;
-let finalParsed = parsed;
-let finalChange = change;
-let finalResult = result;
-let validationErrors = validateGeneratedContent(targetFile, finalUpdated);
+    const changedLines = countChangedLines(original, updated);
 
-if (validationErrors.length > 0) {
-  const retryPrompt = `
-The previous patch failed validation:
+    const isSafe =
+      changedLines < 30 &&
+      !change.find.includes('import ') &&
+      !change.replace.includes('import ');
 
-${validationErrors.map((item) => `- ${item}`).join('\n')}
-
-Fix the patch.
-
-Rules:
-- Return JSON only.
-- Return exactly ONE change.
-- Modify only ${targetFile}.
-- Do NOT duplicate existing UI blocks.
-- If the task asks for an empty state, replace the existing empty state instead of adding another.
-- Ensure valid JSX.
-- Use find text copied exactly from FILE CONTENT.
-- Do not refactor.
-
-ORIGINAL TASK:
-${prompt}
-
-FILE CONTENT:
-${original.slice(0, 12000)}
-`.trim();
-
-  const retryCompletion = await openai.chat.completions.create({
-    model: MODEL,
-    temperature: 0,
-    messages: [
-      { role: 'system', content: system },
-      { role: 'user', content: retryPrompt },
-    ],
-  });
-
-  const retryRaw = retryCompletion.choices[0]?.message?.content || '';
-  finalParsed = safeJsonParse(retryRaw);
-
-  if (!Array.isArray(finalParsed.changes) || finalParsed.changes.length !== 1) {
-    return Response.json(
-      { error: 'Retry model must return exactly one change', parsed: finalParsed },
-      { status: 500 }
-    );
-  }
-
-  finalChange = finalParsed.changes[0];
-
-  if (
-    finalChange.filePath !== targetFile ||
-    typeof finalChange.find !== 'string' ||
-    typeof finalChange.replace !== 'string'
-  ) {
-    return Response.json(
-      { error: 'Retry model returned invalid find/replace change', parsed: finalParsed },
-      { status: 500 }
-    );
-  }
-
-  finalResult = applyFindReplace(original, finalChange.find, finalChange.replace);
-  finalUpdated = finalResult.content;
-  validationErrors = validateGeneratedContent(targetFile, finalUpdated);
-
-  if (validationErrors.length > 0) {
-    return Response.json(
-      {
-        error: `Generated patch failed validation after retry:\n${validationErrors
-          .map((item) => `- ${item}`)
-          .join('\n')}`,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-    const changedLines = countChangedLines(original, finalUpdated);
-
-const isSafe =
-  changedLines < 30 &&
-  !finalChange.find.includes('import ') &&
-  !finalChange.replace.includes('import ');
-
-return Response.json({
-  summary: finalParsed.summary || 'Update file',
-  branchName:
-    sanitizeBranchName(finalParsed.branchName || 'agent/update-file') ||
-    'agent/update-file',
-  commitMessage: finalParsed.commitMessage || 'feat: update file',
-  isSafe,
-  changedLines,
-  matchStrategy: finalResult.strategy,
-  changes: [
-    {
-      filePath: targetFile,
-      content: finalUpdated,
-      originalContent: original,
-    },
-  ],
-});
+    return Response.json({
+      summary: parsed.summary || 'Update file',
+      branchName:
+        sanitizeBranchName(parsed.branchName || 'agent/update-file') ||
+        'agent/update-file',
+      commitMessage: parsed.commitMessage || 'feat: update file',
+      isSafe,
+      changedLines,
+      matchStrategy: result.strategy,
+      changes: [
+        {
+          filePath: targetFile,
+          content: updated,
+          originalContent: original,
+        },
+      ],
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
 
     return Response.json(
       {
         error: message,
+        buildError: message,
       },
       { status: 500 }
     );
