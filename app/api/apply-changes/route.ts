@@ -1,20 +1,23 @@
 export const runtime = 'nodejs';
 
-const TOKEN = process.env.GITHUB_TOKEN!;
-const OWNER = process.env.GITHUB_OWNER!;
-const REPO = process.env.GITHUB_REPO!;
+const GITHUB_OWNER = process.env.GITHUB_OWNER!;
+const GITHUB_REPO = process.env.GITHUB_REPO!;
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
+const DEFAULT_BRANCH = process.env.GITHUB_DEFAULT_BRANCH || 'main';
 
-async function gh(path: string, init?: RequestInit) {
-  const res = await fetch(`https://api.github.com${path}`, {
-    ...init,
+async function githubFetch(url: string, options: RequestInit = {}) {
+  const res = await fetch(url, {
+    ...options,
     headers: {
-      Authorization: `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      ...(options.headers || {}),
     },
   });
 
   if (!res.ok) {
-    throw new Error(await res.text());
+    const text = await res.text();
+    throw new Error(`GitHub API error: ${res.status}\n${text}`);
   }
 
   return res.json();
@@ -22,49 +25,93 @@ async function gh(path: string, init?: RequestInit) {
 
 export async function POST(req: Request) {
   try {
-    const { changes } = await req.json();
+    const body = await req.json();
 
-    const branch = `agent-${Date.now()}`;
+    const { branchName, commitMessage, changes } = body;
 
-    const base = await gh(`/repos/${OWNER}/${REPO}/git/ref/heads/main`);
-
-    await gh(`/repos/${OWNER}/${REPO}/git/refs`, {
-      method: 'POST',
-      body: JSON.stringify({
-        ref: `refs/heads/${branch}`,
-        sha: base.object.sha,
-      }),
-    });
-
-    for (const c of changes) {
-      const file = await gh(
-        `/repos/${OWNER}/${REPO}/contents/${c.filePath}?ref=${branch}`
+    if (!branchName || !changes?.length) {
+      return Response.json(
+        { error: 'Invalid proposal payload' },
+        { status: 400 }
       );
-
-      await gh(`/repos/${OWNER}/${REPO}/contents/${c.filePath}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          message: 'AI update',
-          content: Buffer.from(c.content).toString('base64'),
-          sha: file.sha,
-          branch,
-        }),
-      });
     }
 
-    const pr = await gh(`/repos/${OWNER}/${REPO}/pulls`, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: 'AI change',
-        head: branch,
-        base: 'main',
-      }),
+    // 1. Get base branch SHA
+    const baseRef = await githubFetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${DEFAULT_BRANCH}`
+    );
+
+    const baseSha = baseRef.object.sha;
+
+    // 2. Create new branch
+    const newBranch = branchName;
+
+    await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+        },
+        body: JSON.stringify({
+          ref: `refs/heads/${newBranch}`,
+          sha: baseSha,
+        }),
+      }
+    ).catch(() => {
+      // branch might already exist — ignore
     });
 
-    return Response.json({ pr: pr.html_url });
-  } catch (e: any) {
+    // 3. Apply file changes
+    for (const change of changes) {
+      const { filePath, content } = change;
+
+      // get current file SHA
+      const fileData = await githubFetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${DEFAULT_BRANCH}`
+      );
+
+      const fileSha = fileData.sha;
+
+      await githubFetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            message: commitMessage || 'update file',
+            content: Buffer.from(content).toString('base64'),
+            sha: fileSha,
+            branch: newBranch,
+          }),
+        }
+      );
+    }
+
+    // 4. Create PR
+    const pr = await githubFetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          title: commitMessage || 'Update file',
+          head: newBranch,
+          base: DEFAULT_BRANCH,
+        }),
+      }
+    );
+
+    return Response.json({
+      ok: true,
+      branchName: newBranch,
+      pullRequestUrl: pr.html_url,
+      compareUrl: pr.html_url,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
     return Response.json(
-      { error: e.message, buildError: e.message },
+      { error: message },
       { status: 500 }
     );
   }
