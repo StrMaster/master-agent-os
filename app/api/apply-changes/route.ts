@@ -124,20 +124,32 @@ export async function POST(req: Request) {
 
     if (isSafe === true && typeof changedLines === 'number' && changedLines < 30) {
       try {
-        const mergeRes = await fetch(
-          `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${pr.number}/merge`,
-          {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${GITHUB_TOKEN}`,
-              Accept: 'application/vnd.github+json',
-            },
-            body: JSON.stringify({
-              merge_method: 'squash'
-            }),
-          }
-        );
+        // 1. refetch PR
+const prFresh = await fetch(
+  `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${pr.number}`,
+  {
+    headers: {
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+    },
+  }
+).then(r => r.json());
 
+// 2. merge su SHA (labai svarbu)
+const mergeRes = await fetch(
+  `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${pr.number}/merge`,
+  {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+    },
+    body: JSON.stringify({
+      merge_method: 'squash',
+      sha: prFresh.head.sha, // 👈 CRITICAL FIX
+    }),
+  }
+);
         if (mergeRes.ok) {
           merged = true;
         } else {
