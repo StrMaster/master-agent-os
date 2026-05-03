@@ -425,7 +425,7 @@ STRICT FIX MODE:
                       </div>
 
                       <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs">
-                        {preview
+                        {(preview ?? '')
                           .slice(0, 6000)
                           .split('\n')
                           .map((line, i) => {
