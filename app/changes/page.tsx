@@ -205,7 +205,7 @@ STRICT FIX MODE:
   changes: proposal.changes,
   isSafe: proposal.isSafe,
   changedLines: proposal.changedLines
-});
+}),
 
       const text = await res.text();
 
