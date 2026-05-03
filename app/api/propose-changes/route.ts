@@ -438,12 +438,15 @@ export async function POST(req: Request) {
       isSafe,
       changedLines,
       matchStrategy: 'multiple',
-      changes: parsed.changes,
-        {
-          content: updated,
-          originalContent: original,
-        },
-      ],
+      changes: parsed.changes?.length
+  ? parsed.changes
+  : [
+      {
+        filePath: targetFile,
+        content: updated,
+        originalContent: original,
+      },
+    ],
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
