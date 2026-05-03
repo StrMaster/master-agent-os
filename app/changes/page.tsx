@@ -201,8 +201,11 @@ STRICT FIX MODE:
       const res = await fetch('/api/apply-changes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(proposal),
-      });
+        body: JSON.stringify({
+  changes: proposal.changes,
+  isSafe: proposal.isSafe,
+  changedLines: proposal.changedLines
+});
 
       const text = await res.text();
 
