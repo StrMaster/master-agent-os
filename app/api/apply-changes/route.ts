@@ -90,18 +90,42 @@ export async function POST(req: Request) {
 
       const latestFileSha = latestFileData.sha;
 
-      await githubFetch(
-        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            message: commitMessage || 'update file',
-            content: Buffer.from(content).toString('base64'),
-            sha: latestFileSha,
-            branch: newBranch,
-          }),
+      try {
+        await githubFetch(
+          `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              message: commitMessage || 'update file',
+              content: Buffer.from(content).toString('base64'),
+              sha: latestFileSha,
+              branch: newBranch,
+            }),
+          }
+        );
+      } catch (e) {
+        if (e instanceof Error && e.message.startsWith('GitHub API error: 409')) {
+          // refetch latest SHA and retry once
+          const latestFileDataRetry = await githubFetch(
+            `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${newBranch}`
+          );
+          const latestFileShaRetry = latestFileDataRetry.sha;
+          await githubFetch(
+            `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
+            {
+              method: 'PUT',
+              body: JSON.stringify({
+                message: commitMessage || 'update file',
+                content: Buffer.from(content).toString('base64'),
+                sha: latestFileShaRetry,
+                branch: newBranch,
+              }),
+            }
+          );
+        } else {
+          throw e;
         }
-      );
+      }
     }
 
     // 4. Create PR
