@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const baseSha = baseRef.object.sha;
 
     // 2. Create new branch
-    let newBranch = branchName;
+    let newBranch = `${branchName}-${Date.now()}`;
     try {
       await fetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
