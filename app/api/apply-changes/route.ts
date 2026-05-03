@@ -151,11 +151,17 @@ const mergeRes = await fetch(
   }
 );
         if (mergeRes.ok) {
-          merged = true;
-        } else {
-          const errorText = await mergeRes.text();
-          mergeError = `Merge failed: ${mergeRes.status} ${errorText}`;
-        }
+  merged = true;
+} else {
+  const errorText = await mergeRes.text();
+
+  if (errorText.includes("merge conflict")) {
+    // 🔥 tiesiog ignoruojam, paliekam manual review
+    merged = false;
+  } else {
+    mergeError = `Merge failed: ${errorText}`;
+  }
+}
       } catch (e) {
         mergeError = e instanceof Error ? e.message : String(e);
       }
