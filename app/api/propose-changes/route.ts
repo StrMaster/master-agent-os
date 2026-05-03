@@ -440,7 +440,6 @@ export async function POST(req: Request) {
       matchStrategy: 'multiple',
       changes: parsed.changes,
         {
-          filePath: targetFile,
           content: updated,
           originalContent: original,
         },
