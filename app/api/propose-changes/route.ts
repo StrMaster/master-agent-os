@@ -439,7 +439,11 @@ export async function POST(req: Request) {
       isSafe,
       changedLines,
       matchStrategy: 'multiple',
-      changes: parsed.changes,
+      changes: parsed.changes.map((change: { filePath: string; find: string; replace: string }) => ({
+  filePath: change.filePath,
+  content: applyFindReplace(original, change.find, change.replace).content,
+  originalContent: original,
+})),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
