@@ -207,11 +207,13 @@ STRICT FIX MODE:
       const text = await res.text();
 
       let data: {
-        branchName?: string;
-        compareUrl?: string;
-        pullRequestUrl?: string | null;
-        error?: string;
-      };
+  branchName?: string;
+  compareUrl?: string;
+  pullRequestUrl?: string | null;
+  merged?: boolean;
+  mergeError?: string | null;
+  error?: string;
+};
 
       try {
         data = JSON.parse(text);
