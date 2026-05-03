@@ -44,32 +44,48 @@ export async function POST(req: Request) {
     const baseSha = baseRef.object.sha;
 
     // 2. Create new branch
-    const newBranch = branchName;
-
-    await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-        },
-        body: JSON.stringify({
-          ref: `refs/heads/${newBranch}`,
-          sha: baseSha,
-        }),
-      }
-    ).catch(() => {
-      // branch might already exist — ignore
-    });
+    let newBranch = branchName;
+    try {
+      await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+          },
+          body: JSON.stringify({
+            ref: `refs/heads/${newBranch}`,
+            sha: baseSha,
+          }),
+        }
+      );
+    } catch {
+      // branch might already exist — append timestamp to make unique
+      newBranch = `${branchName}-${Date.now()}`;
+      await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+          },
+          body: JSON.stringify({
+            ref: `refs/heads/${newBranch}`,
+            sha: baseSha,
+          }),
+        }
+      );
+    }
 
     // 3. Apply file changes
     for (const change of changes) {
       const { filePath, content } = change;
 
-      // get current file SHA
+      // get current file SHA from the new branch
       const fileData = await githubFetch(
-        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${DEFAULT_BRANCH}`
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${newBranch}`
       );
 
       const fileSha = fileData.sha;
