@@ -112,7 +112,7 @@ export default function ExecutionPage() {
           <div className="mt-4 space-y-3">
             {completedTasks.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No completed tasks final test.
+                No completed tasks conflict-safe test.
               </div>
             ) : (
               completedTasks.map((task) => (
