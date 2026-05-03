@@ -332,17 +332,24 @@ STRICT FIX MODE:
             </button>
 
             {proposal && (
-              <button
-                onClick={() => applyProposal()}
-                disabled={isApplying || !safety.isSafe}
-                className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isApplying
-                  ? 'Applying...'
-                  : safety.isSafe
-                    ? 'Apply changes'
-                    : 'Unsafe proposal'}
-              </button>
+              <>
+                <button
+                  onClick={() => applyProposal()}
+                  disabled={
+                    isApplying || !safety.isSafe || (proposal.isSafe === false || (proposal.changedLines ?? 0) > 30)
+                  }
+                  className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isApplying
+                    ? 'Applying...'
+                    : safety.isSafe
+                      ? 'Apply changes'
+                      : 'Unsafe proposal'}
+                </button>
+                {(proposal.isSafe === false || (proposal.changedLines ?? 0) > 30) && (
+                  <div className="mt-1 text-xs text-yellow-400">Blocked by Quality Gate</div>
+                )}
+              </>
             )}
 
             {proposal && !safety.isSafe && (
