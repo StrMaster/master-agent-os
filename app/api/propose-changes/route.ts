@@ -379,19 +379,9 @@ Return JSON only.
 let finalParsed = parsed;
 let finalChange = change;
 let finalResult = result;
-
 let validationErrors = validateGeneratedContent(targetFile, finalUpdated);
 
-const MAX_RETRIES = 3;
-
-for (let attempt = 0; attempt < MAX_RETRIES && validationErrors.length > 0; attempt++) {
-  const strictness =
-    attempt === 0
-      ? 'Do not duplicate. Replace existing blocks if needed.'
-      : attempt === 1
-      ? 'You MUST NOT add new blocks. Only modify existing code.'
-      : 'Return the smallest possible fix. Do NOT introduce any new elements.';
-
+if (validationErrors.length > 0) {
   const retryPrompt = `
 The previous patch failed validation:
 
@@ -404,12 +394,10 @@ Rules:
 - Return exactly ONE change.
 - Modify only ${targetFile}.
 - Do NOT duplicate existing UI blocks.
+- If the task asks for an empty state, replace the existing empty state instead of adding another.
 - Ensure valid JSX.
-- Use exact find text from FILE CONTENT.
+- Use find text copied exactly from FILE CONTENT.
 - Do not refactor.
-
-STRICTNESS:
-${strictness}
 
 ORIGINAL TASK:
 ${prompt}
@@ -428,17 +416,13 @@ ${original.slice(0, 12000)}
   });
 
   const retryRaw = retryCompletion.choices[0]?.message?.content || '';
-
-  try {
-    finalParsed = safeJsonParse(retryRaw);
-  } catch {
-    validationErrors = ['Invalid JSON from retry'];
-    continue;
-  }
+  finalParsed = safeJsonParse(retryRaw);
 
   if (!Array.isArray(finalParsed.changes) || finalParsed.changes.length !== 1) {
-    validationErrors = ['Retry must return exactly one change'];
-    continue;
+    return Response.json(
+      { error: 'Retry model must return exactly one change', parsed: finalParsed },
+      { status: 500 }
+    );
   }
 
   finalChange = finalParsed.changes[0];
@@ -448,26 +432,26 @@ ${original.slice(0, 12000)}
     typeof finalChange.find !== 'string' ||
     typeof finalChange.replace !== 'string'
   ) {
-    validationErrors = ['Invalid find/replace from retry'];
-    continue;
+    return Response.json(
+      { error: 'Retry model returned invalid find/replace change', parsed: finalParsed },
+      { status: 500 }
+    );
   }
 
   finalResult = applyFindReplace(original, finalChange.find, finalChange.replace);
   finalUpdated = finalResult.content;
-
   validationErrors = validateGeneratedContent(targetFile, finalUpdated);
-}
 
-if (validationErrors.length > 0) {
-  return Response.json(
-    {
-      error: `Generated patch failed after ${MAX_RETRIES} attempts:\n${validationErrors
-        .map((item) => `- ${item}`)
-        .join('\n')}`,
-    },
-    { status: 500 }
-  );
-}
+  if (validationErrors.length > 0) {
+    return Response.json(
+      {
+        error: `Generated patch failed validation after retry:\n${validationErrors
+          .map((item) => `- ${item}`)
+          .join('\n')}`,
+      },
+      { status: 500 }
+    );
+  }
 }
 
     const changedLines = countChangedLines(original, finalUpdated);
