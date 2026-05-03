@@ -114,7 +114,6 @@ export default function ExecutionPage() {
               <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
                 No completed tasks yet.
               </div>
-  
             ) : (
               completedTasks.map((task) => (
                 <div
