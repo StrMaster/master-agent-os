@@ -55,9 +55,13 @@ function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety 
   };
 }
 
-function getSimpleDiff(before: string, after: string): string {
-  const beforeLines = before.split('\n');
-  const afterLines = after.split('\n');
+function getSimpleDiff(before?: string, after?: string): string {
+  const safeBefore = typeof before === 'string' ? before : '';
+  const safeAfter = typeof after === 'string' ? after : '';
+
+  const beforeLines = safeBefore.split('\n');
+  const afterLines = safeAfter.split('\n');
+
   const maxLen = Math.max(beforeLines.length, afterLines.length);
   const diffLines: string[] = [];
 
@@ -66,21 +70,12 @@ function getSimpleDiff(before: string, after: string): string {
     const afterLine = afterLines[i];
 
     if (beforeLine !== afterLine) {
-      if (i > 0) {
-        diffLines.push('  ' + (afterLines[i - 1] ?? ''));
-      }
+      if (i > 0) diffLines.push('  ' + (afterLines[i - 1] ?? ''));
 
-      if (beforeLine !== undefined) {
-        diffLines.push('- ' + beforeLine);
-      }
+      if (beforeLine !== undefined) diffLines.push('- ' + beforeLine);
+      if (afterLine !== undefined) diffLines.push('+ ' + afterLine);
 
-      if (afterLine !== undefined) {
-        diffLines.push('+ ' + afterLine);
-      }
-
-      if (i < maxLen - 1) {
-        diffLines.push('  ' + (afterLines[i + 1] ?? ''));
-      }
+      if (i < maxLen - 1) diffLines.push('  ' + (afterLines[i + 1] ?? ''));
     }
   }
 
