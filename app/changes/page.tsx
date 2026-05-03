@@ -79,9 +79,14 @@ export default function ChangesPage() {
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
-  const [result, setResult] = useState('');
-  const [error, setError] = useState('');
-  const [fixAttemptCount, setFixAttemptCount] = useState(0);
+const [result, setResult] = useState('');
+const [error, setError] = useState('');
+const [fixAttemptCount, setFixAttemptCount] = useState(0);
+const [history, setHistory] = useState<Array<{
+  branchName?: string;
+  pullRequestUrl?: string | null;
+  merged?: boolean;
+}>>([]);
 
   const safety = useMemo(() => getProposalSafety(proposal), [proposal]);
 
