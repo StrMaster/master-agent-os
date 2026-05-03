@@ -359,6 +359,8 @@ STRICT FIX MODE:
           </div>
         )}
 
+        <HistorySection />
+
         {proposal && (
           <div className="space-y-4">
             <div
