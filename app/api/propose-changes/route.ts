@@ -426,7 +426,8 @@ export async function POST(req: Request) {
     const isSafe =
       changedLines < 30 &&
       !parsed.changes.some(
-        (change) => change.find.includes('import ') || change.replace.includes('import ')
+        (change: { find: string; replace: string }) =>
+  change.find.includes('import ') || change.replace.includes('import ')
       );
 
     return Response.json({
