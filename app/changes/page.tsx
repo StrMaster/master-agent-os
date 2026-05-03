@@ -202,9 +202,9 @@ STRICT FIX MODE:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-  changes: proposal.changes,
+  ...proposal,
   isSafe: proposal.isSafe,
-  changedLines: proposal.changedLines
+  changedLines: proposal.changedLines,
 }),
 });
 
