@@ -231,14 +231,16 @@ STRICT FIX MODE:
       }
 
       if (data.pullRequestUrl) {
-        setResult(`PR created ✅
+  setResult(`PR created ✅
 Branch: ${data.branchName}
-Review and merge manually:
+Merged: ${data.merged === true ? '✅ yes' : '❌ no'}
+${data.mergeError ? `Merge error: ${data.mergeError}\n` : ''}
+Review:
 ${data.pullRequestUrl}
 
 Review diff:
 ${data.pullRequestUrl}/files`);
-      } else {
+} else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
     } catch (err) {
