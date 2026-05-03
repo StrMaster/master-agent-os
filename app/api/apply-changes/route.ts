@@ -105,24 +105,44 @@ export async function POST(req: Request) {
     }
 
     // 4. Create PR
-    const pr = await githubFetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          title: commitMessage || 'Update file',
-          head: newBranch,
-          base: DEFAULT_BRANCH,
-        }),
-      }
-    );
+    let pr;
+
+try {
+  pr = await githubFetch(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        title: commitMessage || 'Update file',
+        head: newBranch,
+        base: DEFAULT_BRANCH,
+      }),
+    }
+  );
+} catch (e) {
+  const message = e instanceof Error ? e.message : String(e);
+
+  if (message.includes('pull request already exists')) {
+    pr = {
+      html_url: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/pulls`,
+      number: null,
+    };
+  } else {
+    throw e;
+  }
+}
 
     let merged = false;
     let mergeError = null;
 
     const { isSafe, changedLines } = body;
 
-    if (isSafe === true && typeof changedLines === 'number' && changedLines < 30) {
+    if (
+  pr.number &&
+  isSafe === true &&
+  typeof changedLines === 'number' &&
+  changedLines < 30
+) {
       try {
         // 1. refetch PR
 const prFresh = await fetch(
@@ -151,11 +171,17 @@ const mergeRes = await fetch(
   }
 );
         if (mergeRes.ok) {
-          merged = true;
-        } else {
-          const errorText = await mergeRes.text();
-          mergeError = `Merge failed: ${mergeRes.status} ${errorText}`;
-        }
+  merged = true;
+} else {
+  const errorText = await mergeRes.text();
+
+  if (errorText.includes("merge conflict")) {
+    // 🔥 tiesiog ignoruojam, paliekam manual review
+    merged = false;
+  } else {
+    mergeError = `Merge failed: ${errorText}`;
+  }
+}
       } catch (e) {
         mergeError = e instanceof Error ? e.message : String(e);
       }
