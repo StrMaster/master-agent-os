@@ -44,32 +44,48 @@ export async function POST(req: Request) {
     const baseSha = baseRef.object.sha;
 
     // 2. Create new branch
-    const newBranch = branchName;
-
-    await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-        },
-        body: JSON.stringify({
-          ref: `refs/heads/${newBranch}`,
-          sha: baseSha,
-        }),
-      }
-    ).catch(() => {
-      // branch might already exist — ignore
-    });
+    let newBranch = branchName;
+    try {
+      await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+          },
+          body: JSON.stringify({
+            ref: `refs/heads/${newBranch}`,
+            sha: baseSha,
+          }),
+        }
+      );
+    } catch {
+      // branch might already exist — append timestamp to make unique
+      newBranch = `${branchName}-${Date.now()}`;
+      await fetch(
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+          },
+          body: JSON.stringify({
+            ref: `refs/heads/${newBranch}`,
+            sha: baseSha,
+          }),
+        }
+      );
+    }
 
     // 3. Apply file changes
     for (const change of changes) {
       const { filePath, content } = change;
 
-      // get current file SHA
+      // get current file SHA from the new branch
       const fileData = await githubFetch(
-        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${DEFAULT_BRANCH}`
+        `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${newBranch}`
       );
 
       const fileSha = fileData.sha;
@@ -101,11 +117,45 @@ export async function POST(req: Request) {
       }
     );
 
+    let merged = false;
+    let mergeError = null;
+
+    const { isSafe, changedLines } = body;
+
+    if (isSafe === true && typeof changedLines === 'number' && changedLines < 30) {
+      try {
+        const mergeRes = await fetch(
+          `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${pr.number}/merge`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${GITHUB_TOKEN}`,
+              Accept: 'application/vnd.github+json',
+            },
+            body: JSON.stringify({
+              merge_method: 'squash'
+            }),
+          }
+        );
+
+        if (mergeRes.ok) {
+          merged = true;
+        } else {
+          const errorText = await mergeRes.text();
+          mergeError = `Merge failed: ${mergeRes.status} ${errorText}`;
+        }
+      } catch (e) {
+        mergeError = e instanceof Error ? e.message : String(e);
+      }
+    }
+
     return Response.json({
       ok: true,
       branchName: newBranch,
       pullRequestUrl: pr.html_url,
       compareUrl: pr.html_url,
+      merged,
+      mergeError,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

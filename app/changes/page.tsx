@@ -201,17 +201,23 @@ STRICT FIX MODE:
       const res = await fetch('/api/apply-changes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(proposal),
-      });
+        body: JSON.stringify({
+  ...proposal,
+  isSafe: proposal.isSafe,
+  changedLines: proposal.changedLines,
+}),
+});
 
       const text = await res.text();
 
       let data: {
-        branchName?: string;
-        compareUrl?: string;
-        pullRequestUrl?: string | null;
-        error?: string;
-      };
+  branchName?: string;
+  compareUrl?: string;
+  pullRequestUrl?: string | null;
+  merged?: boolean;
+  mergeError?: string | null;
+  error?: string;
+};
 
       try {
         data = JSON.parse(text);
@@ -231,14 +237,16 @@ STRICT FIX MODE:
       }
 
       if (data.pullRequestUrl) {
-        setResult(`PR created ✅
+  setResult(`PR created ✅
 Branch: ${data.branchName}
-Review and merge manually:
+Merged: ${data.merged === true ? '✅ yes' : '❌ no'}
+${data.mergeError ? `Merge error: ${data.mergeError}\n` : ''}
+Review:
 ${data.pullRequestUrl}
 
 Review diff:
 ${data.pullRequestUrl}/files`);
-      } else {
+} else {
         setResult(`Applied to branch: ${data.branchName}`);
       }
     } catch (err) {
