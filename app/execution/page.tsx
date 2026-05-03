@@ -132,6 +132,9 @@ export default function ExecutionPage() {
               ))
             )}
           </div>
+          <p className="text-sm text-white/60 mt-2">
+            Tasks will appear here once completed.
+          </p>
         </section>
       </div>
     </div>
