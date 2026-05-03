@@ -101,11 +101,45 @@ export async function POST(req: Request) {
       }
     );
 
+    let merged = false;
+    let mergeError = null;
+
+    const { isSafe, changedLines } = body;
+
+    if (isSafe === true && typeof changedLines === 'number' && changedLines < 30) {
+      try {
+        const mergeRes = await fetch(
+          `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/pulls/${pr.number}/merge`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${GITHUB_TOKEN}`,
+              Accept: 'application/vnd.github+json',
+            },
+            body: JSON.stringify({
+              merge_method: 'squash'
+            }),
+          }
+        );
+
+        if (mergeRes.ok) {
+          merged = true;
+        } else {
+          const errorText = await mergeRes.text();
+          mergeError = `Merge failed: ${mergeRes.status} ${errorText}`;
+        }
+      } catch (e) {
+        mergeError = e instanceof Error ? e.message : String(e);
+      }
+    }
+
     return Response.json({
       ok: true,
       branchName: newBranch,
       pullRequestUrl: pr.html_url,
       compareUrl: pr.html_url,
+      merged,
+      mergeError,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
