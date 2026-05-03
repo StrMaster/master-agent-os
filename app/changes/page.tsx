@@ -253,7 +253,16 @@ STRICT FIX MODE:
     }
   }
 
-  setResult(`PR created ✅
+  setHistory(prev => [
+  {
+    branchName: data.branchName,
+    pullRequestUrl: data.pullRequestUrl,
+    merged: data.merged,
+  },
+  ...prev,
+].slice(0, 5));
+
+setResult(`PR created ✅
 Branch: ${data.branchName}
 ${mergedStatus}
 Review:
