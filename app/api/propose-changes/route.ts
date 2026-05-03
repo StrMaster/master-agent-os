@@ -352,109 +352,93 @@ export async function POST(req: Request) {
       original,
     });
 
-    if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
+    if (!Array.isArray(parsed.changes) || parsed.changes.length === 0) {
       return Response.json(
-        { error: 'Model must return exactly one change', parsed },
+        { error: 'Model must return at least one change', parsed },
         { status: 500 }
       );
     }
 
-    let change = parsed.changes[0];
-
-    if (
-      change.filePath !== targetFile ||
-      typeof change.find !== 'string' ||
-      typeof change.replace !== 'string'
-    ) {
-      return Response.json(
-        { error: 'Model returned invalid find/replace change', parsed },
-        { status: 500 }
-      );
-    }
-
-    let result = applyFindReplace(original, change.find, change.replace);
-    let updated = result.content;
-
-    let validationErrors = validateGeneratedContent(targetFile, updated);
-
-    if (validationErrors.length > 0) {
-      parsed = await generatePatch({
-        prompt,
-        targetFile,
-        original,
-        extraRules: `
-The previous patch failed validation:
-${validationErrors.map((item) => `- ${item}`).join('\n')}
-
-Retry rules:
-- Fix the patch.
-- Do NOT duplicate UI blocks.
-- If the task asks for text that already exists, replace the existing text.
-- If adding a note, add it outside the empty-state conditional and do not create a second empty-state.
-- Use a more unique find block with surrounding context.
-`.trim(),
-      });
-
-      if (!Array.isArray(parsed.changes) || parsed.changes.length !== 1) {
-        return Response.json(
-          { error: 'Retry model must return exactly one change', parsed },
-          { status: 500 }
-        );
-      }
-
-      change = parsed.changes[0];
-
+    for (const change of parsed.changes) {
       if (
-        change.filePath !== targetFile ||
+        typeof change.filePath !== 'string' ||
         typeof change.find !== 'string' ||
         typeof change.replace !== 'string'
       ) {
         return Response.json(
-          { error: 'Retry model returned invalid find/replace change', parsed },
+          { error: 'Model returned invalid find/replace change', parsed },
           { status: 500 }
         );
       }
 
-      result = applyFindReplace(original, change.find, change.replace);
-      updated = result.content;
-      validationErrors = validateGeneratedContent(targetFile, updated);
+      if (!isAllowedFile(change.filePath)) {
+        return Response.json(
+          { error: `Blocked target file: ${change.filePath}`, parsed },
+          { status: 400 }
+        );
+      }
+    }
+
+    let updatedFiles: Record<string, string> = {};
+
+    for (const change of parsed.changes) {
+      const originalContent =
+        change.filePath === targetFile
+          ? original
+          : await readFileFromGitHub(change.filePath);
+
+      const result = applyFindReplace(originalContent, change.find, change.replace);
+
+      const validationErrors = validateGeneratedContent(change.filePath, result.content);
 
       if (validationErrors.length > 0) {
         return Response.json(
           {
-            error: `Generated patch failed validation after retry:\n${validationErrors
+            error: `Generated patch failed validation for file ${change.filePath}:\n${validationErrors
               .map((item) => `- ${item}`)
               .join('\n')}`,
           },
           { status: 500 }
         );
       }
+
+      if (result.content === originalContent) {
+        return Response.json(
+          {
+            error: `No file changes needed or model produced no-op patch for file ${change.filePath}.`,
+          },
+          { status: 500 }
+        );
+      }
+
+      updatedFiles[change.filePath] = result.content;
     }
 
-    if (updated === original) {
-      return Response.json(
-        { error: 'No file changes needed or model produced no-op patch.' },
-        { status: 500 }
-      );
-    }
-
-    const changedLines = countChangedLines(original, updated);
+    const changedLines = Object.entries(updatedFiles).reduce(
+      (acc, [filePath, content]) => {
+        const originalContent =
+          filePath === targetFile ? original : '';
+        return acc + countChangedLines(originalContent, content);
+      },
+      0
+    );
 
     const isSafe =
       changedLines < 30 &&
-      !change.find.includes('import ') &&
-      !change.replace.includes('import ');
+      !parsed.changes.some(
+        (change) => change.find.includes('import ') || change.replace.includes('import ')
+      );
 
     return Response.json({
-      summary: parsed.summary || 'Update file',
+      summary: parsed.summary || 'Update files',
       branchName:
-        sanitizeBranchName(parsed.branchName || 'agent/update-file') ||
-        'agent/update-file',
-      commitMessage: parsed.commitMessage || 'feat: update file',
+        sanitizeBranchName(parsed.branchName || 'agent/update-files') ||
+        'agent/update-files',
+      commitMessage: parsed.commitMessage || 'feat: update files',
       isSafe,
       changedLines,
-      matchStrategy: result.strategy,
-      changes: [
+      matchStrategy: 'multiple',
+      changes: parsed.changes,
         {
           filePath: targetFile,
           content: updated,
