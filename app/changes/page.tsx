@@ -368,6 +368,35 @@ STRICT FIX MODE:
         )}
 
         {result && (
+
+)}
+
+{history.length > 0 && (
+  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="text-sm text-white/50">Recent changes</div>
+
+    <div className="mt-3 space-y-2 text-sm">
+      {history.map((item, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <div>
+            {item.merged ? '✅ merged' : '❌ not merged'} · {item.branchName}
+          </div>
+          {item.pullRequestUrl && (
+            <a
+              href={item.pullRequestUrl}
+              target="_blank"
+              className="text-blue-400 underline"
+            >
+              View PR
+            </a>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
+{result && (
           <div className="whitespace-pre-wrap rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-300">
             {result}
           </div>
