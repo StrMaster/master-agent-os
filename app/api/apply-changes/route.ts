@@ -83,12 +83,12 @@ export async function POST(req: Request) {
     for (const change of changes) {
       const { filePath, content } = change;
 
-      // get current file SHA from the new branch
-      const fileData = await githubFetch(
+      // fetch latest file SHA from the new branch before update
+      const latestFileData = await githubFetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}?ref=${newBranch}`
       );
 
-      const fileSha = fileData.sha;
+      const latestFileSha = latestFileData.sha;
 
       await githubFetch(
         `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${filePath}`,
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             message: commitMessage || 'update file',
             content: Buffer.from(content).toString('base64'),
-            sha: fileSha,
+            sha: latestFileSha,
             branch: newBranch,
           }),
         }
