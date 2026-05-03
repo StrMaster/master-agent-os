@@ -292,7 +292,10 @@ Rules:
 - Do not reformat find.
 - Do not use markdown.
 - Do not return full file content.
-- Prefer small unique find blocks.
+- Prefer multi-line find blocks (3-6 lines).
+- The "find" must be UNIQUE in FILE CONTENT.
+- If a short find appears multiple times, expand it with surrounding lines until it is unique.
+- Always include enough surrounding context to make the find unique.
 - If one line is not unique, include surrounding lines.
 - Do not duplicate existing UI blocks.
 - If changing existing UI text, replace the existing text instead of adding another block.
