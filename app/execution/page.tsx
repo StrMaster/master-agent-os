@@ -22,7 +22,7 @@ export default function ExecutionPage() {
         <div>
           <h1 className="text-2xl font-semibold sm:text-3xl">Execution</h1>
           <p className="mt-2 text-sm text-white/60">
-            Run assigned tasks and track progress.
+            Manage and monitor task execution.
           </p>
         </div>
 
