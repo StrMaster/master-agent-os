@@ -184,7 +184,7 @@ STRICT FIX MODE:
     }
   }
 
-  async function applyProposal(skipSafety = false) {
+  async function applyProposal(skipSafety = false, retryAttempt = 0) {
     if (!proposal) return;
 
     const currentSafety = getProposalSafety(proposal);
@@ -274,6 +274,14 @@ ${data.pullRequestUrl}/files`);
         setResult(`Applied to branch: ${data.branchName}`);
       }
     } catch (err) {
+      if (retryAttempt < 1) {
+  setTimeout(() => {
+    applyProposal(skipSafety, retryAttempt + 1);
+  }, 1000);
+
+  setError('Apply failed. Retrying once...');
+  return;
+}
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsApplying(false);
