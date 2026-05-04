@@ -35,7 +35,7 @@ export default function TasksPage() {
                   <div className="mt-2 text-sm text-white/60">
                     Priority: {task.priority} · Status: {task.status}
                   </div>
-
+                  
                   {totalCount > 0 && (
                     <div className="mt-3">
                       <div className="h-2 w-full rounded bg-white/10">
@@ -69,6 +69,7 @@ export default function TasksPage() {
                         >
                           {subtask.done ? '✓' : '•'} {subtask.title}
                         </button>
+                        </div>
                       ))}
                     </div>
                   )}
