@@ -203,15 +203,15 @@ STRICT FIX MODE:
     setResult('');
 
     try {
-      const res = await fetch('/api/apply-changes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-  ...proposal,
-  isSafe: proposal.isSafe,
-  changedLines: proposal.changedLines,
-}),
-});
+  const res = await fetch('/api/apply-changes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...proposal,
+      isSafe: proposal.isSafe,
+      changedLines: proposal.changedLines,
+    }),
+  });
 
       const text = await res.text();
 
@@ -274,18 +274,22 @@ ${data.pullRequestUrl}/files`);
         setResult(`Applied to branch: ${data.branchName}`);
       }
     } catch (err) {
-      if (retryAttempt < 1) {
-  setTimeout(() => {
-    applyProposal(skipSafety, retryAttempt + 1);
-  }, 1000);
+  const message = err instanceof Error ? err.message : 'Unknown error';
 
-  setError('Apply failed. Retrying once...');
-  return;
+  if (retryAttempt < 3) {
+    setError(`Apply failed. Retrying ${retryAttempt + 1}/3...\n\n${message}`);
+
+    setTimeout(() => {
+      applyProposal(skipSafety, retryAttempt + 1);
+    }, 1000);
+
+    return;
+  }
+
+  setError(message);
+} finally {
+  setIsApplying(false);
 }
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsApplying(false);
-    }
   }
 
   return (
