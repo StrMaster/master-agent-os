@@ -1,82 +1,171 @@
 'use client';
 
+import Link from 'next/link';
 import { useMasterStore } from '@/lib/master-store';
 
 export default function TasksPage() {
-  const { tasks, toggleSubtask } = useMasterStore();
+  const { tasks, agents, createTask, assignTask, executeTask, completeTask } =
+    useMasterStore();
+
+  function getAgentName(agentId?: string) {
+    if (!agentId) return 'Unassigned';
+
+    const agent = agents.find((item) => item.id === agentId);
+    return agent?.name ?? 'Unknown agent';
+  }
+
+  function getChangesPrompt(task: { title: string; description?: string }) {
+    return `Task: ${task.title}
+
+${task.description || ''}
+
+Rules:
+- One file only
+- Small safe change
+- Do not refactor
+- Keep change under 30 lines`;
+  }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-6 text-white">
-      <div className="mx-auto max-w-5xl">
-        <h1 className="mb-2 text-3xl font-semibold">Tasks</h1>
-        <p className="mb-6 text-white/60">
-          Bendras Master Agent task sąrašas.
-        </p>
+    <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold sm:text-3xl">Tasks</h1>
+          <p className="mt-2 text-sm text-white/60">
+            Master Agent task queue. Send tasks into the Changes autopilot flow.
+          </p>
+        </div>
 
-        <div className="space-y-4">
-          {tasks.length === 0 ? (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white/60">
-              Kol kas taskų nėra.
-            </div>
-          ) : (
-            tasks.map((task) => {
-              const completedCount = task.subtasks?.filter((s) => s.done).length ?? 0;
-              const totalCount = task.subtasks?.length ?? 0;
-              const progress =
-                totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="text-sm text-white/50">Phase 3</div>
+          <div className="mt-1 text-lg font-medium">
+            Master Agent Task Runner
+          </div>
+          <p className="mt-2 text-sm text-white/60">
+            Tasks can now be routed into Changes for proposal, quality review,
+            apply, PR creation, and auto-merge.
+          </p>
+        </div>
 
-              return (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              onClick={() =>
+                createTask({
+                  title: 'Improve execution empty states',
+                  description:
+                    'Polish empty state copy in app/execution/page.tsx.',
+                })
+              }
+              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
+            >
+              Add sample UI task
+            </button>
+
+            <button
+              onClick={() =>
+                createTask({
+                  title: 'Improve task card spacing',
+                  description:
+                    'Make task cards easier to scan in app/tasks/page.tsx.',
+                })
+              }
+              className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+            >
+              Add sample task card task
+            </button>
+          </div>
+        </div>
+
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <h2 className="text-lg font-semibold">Task Queue</h2>
+
+          <div className="mt-4 space-y-3">
+            {tasks.length === 0 ? (
+              <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
+                No tasks yet.
+              </div>
+            ) : (
+              tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                  className="rounded-xl border border-white/10 bg-neutral-900 p-4"
                 >
-                  <div className="text-lg font-medium">{task.title}</div>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <div className="font-medium text-white/90">
+                        {task.title}
+                      </div>
 
-                  <div className="mt-2 text-sm text-white/60">
-                    Priority: {task.priority} · Status: {task.status}
-                  </div>
-                  
-                  {totalCount > 0 && (
-                    <div className="mt-3">
-                      <div className="h-2 w-full rounded bg-white/10">
-                        <div
-                          className="h-2 rounded bg-blue-500 transition-all"
-                          style={{ width: `${progress}%` }}
-                        />
+                      {task.description && (
+                        <p className="text-sm text-white/60">
+                          {task.description}
+                        </p>
+                      )}
+
+                      <div className="text-xs text-white/40">
+                        Status: {task.status}
                       </div>
-                      <div className="mt-1 text-xs text-white/50">
-                        {progress}% complete
+
+                      <div className="text-xs text-white/40">
+                        Assigned to: {getAgentName(task.assignedAgentId)}
                       </div>
+
+                      <Link
+                        href={`/changes?prompt=${encodeURIComponent(
+                          getChangesPrompt(task)
+                        )}`}
+                        className="inline-block text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
+                      >
+                        Send to Changes
+                      </Link>
                     </div>
-                  )}
 
-                  {task.subtasks?.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {task.subtasks.map((subtask) => (
-                        <button
-                          key={subtask.id}
-                          onClick={() =>
-                            toggleSubtask({
+                    <div className="flex flex-col gap-2 sm:min-w-40">
+                      {agents.length > 0 && (
+                        <select
+                          value={task.assignedAgentId || ''}
+                          onChange={(event) =>
+                            assignTask({
                               taskId: task.id,
-                              subtaskId: subtask.id,
+                              agentId: event.target.value || undefined,
                             })
                           }
-                          className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
-                            subtask.done
-                              ? 'border-green-500/40 bg-green-500/10 text-green-400'
-                              : 'border-white/10 text-white/70 hover:bg-white/5'
-                          }`}
+                          className="rounded-xl border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white"
                         >
-                          {subtask.done ? '✓' : '•'} {subtask.title}
+                          <option value="">Unassigned</option>
+                          {agents.map((agent) => (
+                            <option key={agent.id} value={agent.id}>
+                              {agent.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                      {task.status === 'todo' && (
+                        <button
+                          onClick={() => executeTask({ taskId: task.id })}
+                          className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
+                        >
+                          Start
                         </button>
-                      ))}
+                      )}
+
+                      {task.status === 'in_progress' && (
+                        <button
+                          onClick={() => completeTask({ taskId: task.id })}
+                          className="rounded-xl bg-green-400 px-4 py-2 text-sm font-medium text-black hover:bg-green-300"
+                        >
+                          Mark done
+                        </button>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              ))
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
