@@ -430,6 +430,10 @@ export async function POST(req: Request) {
   change.find.includes('import ') || change.replace.includes('import ')
       );
 
+    const qualityReview = isSafe && changedLines <= 30
+      ? { status: 'PASS', reason: 'Change is safe and within line limit' }
+      : { status: 'FAIL', reason: isSafe ? 'Changed lines exceed 30' : 'Change is not safe' };
+
     return Response.json({
       summary: parsed.summary || 'Update files',
       branchName:
@@ -438,6 +442,7 @@ export async function POST(req: Request) {
       commitMessage: parsed.commitMessage || 'feat: update files',
       isSafe,
       changedLines,
+      qualityReview,
       matchStrategy: 'multiple',
       changes: parsed.changes.map((change: { filePath: string; find: string; replace: string }) => ({
   filePath: change.filePath,
