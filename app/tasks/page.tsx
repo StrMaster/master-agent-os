@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { useMasterStore } from '@/lib/master-store';
 
@@ -17,6 +18,19 @@ export default function TasksPage() {
   function getChangesPrompt(task: { title: string }) {
   return `File: app/execution/page.tsx
 
+  useEffect(() => {
+  const interval = setInterval(() => {
+    const nextTask = tasks.find((t) => t.status === 'todo');
+
+    if (nextTask) {
+      window.location.href = `/changes?prompt=${encodeURIComponent(
+        getChangesPrompt(nextTask)
+      )}`;
+    }
+  }, 15000);
+
+  return () => clearInterval(interval);
+}, [tasks]);
 Find:
 "No completed tasks"
 
