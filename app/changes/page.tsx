@@ -415,10 +415,10 @@ STRICT FIX MODE:
           <div className="space-y-4">
             <div
               className={`rounded-2xl border p-4 ${
-                safety.isSafe
-                  ? 'border-green-500/30 bg-green-500/10 text-green-200'
-                  : 'border-yellow-500/30 bg-yellow-500
-            '}>
+  safety.isSafe
+    ? 'border-green-500/30 bg-green-500/10 text-green-200'
+    : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-200'
+}`}>
               <div className={proposal.qualityReview?.status === 'PASS' ? 'text-green-400 font-semibold' : proposal.qualityReview?.status === 'FAIL' ? 'text-red-500 font-semibold' : ''}>
                 Quality: {proposal.qualityReview?.status ?? 'N/A'}
               </div>
