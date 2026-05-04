@@ -18,6 +18,13 @@ export default function TasksPage() {
   function getChangesPrompt(task: { title: string }) {
   return `File: app/execution/page.tsx
 
+Rules:
+- EXACT match
+- One change only
+- Do not refactor
+- Keep change under 10 lines`;
+}
+
   useEffect(() => {
   const interval = setInterval(() => {
     const nextTask = tasks.find((t) => t.status === 'todo');
@@ -36,13 +43,6 @@ Find:
 
 Replace:
 "No completed tasks (${task.title})"
-
-Rules:
-- EXACT match
-- One change only
-- Do not refactor
-- Keep change under 10 lines`;
-}
 
   return (
     <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
