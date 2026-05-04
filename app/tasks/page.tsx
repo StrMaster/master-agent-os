@@ -52,10 +52,9 @@ Rules:
             <button
               onClick={() =>
                 createTask({
-                  title: 'Improve execution empty states',
-                  description:
-                    'Polish empty state copy in app/execution/page.tsx.',
-                })
+  title: 'Improve execution empty states',
+  priority: 'medium',
+})
               }
               className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
             >
@@ -65,10 +64,9 @@ Rules:
             <button
               onClick={() =>
                 createTask({
-                  title: 'Improve task card spacing',
-                  description:
-                    'Make task cards easier to scan in app/tasks/page.tsx.',
-                })
+  title: 'Improve task card spacing',
+  priority: 'medium',
+})
               }
               className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
             >
