@@ -333,33 +333,37 @@ STRICT FIX MODE:
 
             {proposal && (
               <>
+                <div
+                  className={`rounded-2xl border p-4 mb-2 ${proposal.qualityReview?.pass ? 'border-green-500/30 bg-green-500/10 text-green-200' : 'border-red-500/30 bg-red-500/10 text-red-200'}`}
+                >
+                  <div className="font-semibold">
+                    Quality: {proposal.qualityReview?.pass ? 'PASS' : 'FAIL'}
+                  </div>
+                  {proposal.qualityReview?.reason && (
+                    <div className="mt-1 text-sm">
+                      {proposal.qualityReview.reason}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   onClick={() => applyProposal()}
-                  disabled={
-                    isApplying || !safety.isSafe || (proposal.isSafe === false || (proposal.changedLines ?? 0) > 30)
-                  }
+                  disabled={isApplying || !safety.isSafe || (proposal.isSafe === false || (proposal.changedLines ?? 0) > 30)}
                   className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isApplying
-                    ? 'Applying...'
-                    : safety.isSafe
-                      ? 'Apply changes'
-                      : 'Unsafe proposal'}
+                  {isApplying ? 'Applying...' : safety.isSafe ? 'Apply changes' : 'Unsafe proposal'}
                 </button>
-                {(proposal.isSafe === false || (proposal.changedLines ?? 0) > 30) && (
-                  <div className="mt-1 text-xs text-yellow-400">Blocked by Quality Gate</div>
+
+                {!safety.isSafe && (
+                  <button
+                    onClick={() => applyProposal(true)}
+                    disabled={isApplying}
+                    className="rounded-xl border border-white/50 px-4 py-2 text-white hover:bg-white/10 disabled:opacity-50"
+                  >
+                    Apply anyway
+                  </button>
                 )}
               </>
-            )}
-
-            {proposal && !safety.isSafe && (
-              <button
-                onClick={() => applyProposal(true)}
-                disabled={isApplying}
-                className="rounded-xl border border-red-500/60 px-4 py-2 text-red-200 hover:bg-red-500/10 disabled:opacity-50"
-              >
-                Apply anyway
-              </button>
             )}
           </div>
 
