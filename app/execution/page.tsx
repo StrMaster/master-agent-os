@@ -112,7 +112,7 @@ export default function ExecutionPage() {
           <div className="mt-4 space-y-3">
             {completedTasks.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                Test self-healing
+                No completed tasks (Change completed empty state text)
               </div>
             ) : (
               completedTasks.map((task) => (
