@@ -322,7 +322,7 @@ No explanations.
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json();
+    const { prompt, isSystemOperation } = await req.json();
 
     if (!prompt || typeof prompt !== 'string') {
       return Response.json({ error: 'Missing prompt' }, { status: 400 });
