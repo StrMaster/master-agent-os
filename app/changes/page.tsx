@@ -31,7 +31,7 @@ function getProposalSafety(proposal: ProposalWithSafety | null): ProposalSafety 
     reasons.push(`Proposal changes ${proposal.changes.length} files.`);
   }
 
-  if (typeof proposal.changedLines === 'number' && proposal.changedLines > 30) {
+  if (typeof proposal.changedLines === 'number' && proposal.changedLines > 100) {
     reasons.push(`Proposal changes ${proposal.changedLines} lines.`);
   }
 
@@ -381,7 +381,7 @@ STRICT FIX MODE:
                 <button
                   onClick={() => applyProposal()}
                   disabled={
-                    isApplying || !safety.isSafe || (proposal.isSafe === false || (proposal.changedLines ?? 0) > 30)
+                    isApplying || !safety.isSafe || (proposal.isSafe === false || (proposal.changedLines ?? 0) > 100)
                   }
                   className="rounded-xl border border-white/20 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -391,7 +391,7 @@ STRICT FIX MODE:
                       ? 'Apply changes'
                       : 'Unsafe proposal'}
                 </button>
-                {(proposal.isSafe === false || (proposal.changedLines ?? 0) > 30) && (
+                {(proposal.isSafe === false || (proposal.changedLines ?? 0) > 100) && (
                   <div className="mt-1 text-xs text-yellow-400">Blocked by Quality Gate</div>
                 )}
               </>
