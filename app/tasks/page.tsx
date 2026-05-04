@@ -17,7 +17,7 @@ export default function TasksPage() {
   function getChangesPrompt(task: { title: string; description?: string }) {
     return `Task: ${task.title}
 
-${task.description || ''}
+${task.title || ''}
 
 Rules:
 - One file only
@@ -95,9 +95,9 @@ Rules:
                         {task.title}
                       </div>
 
-                      {task.description && (
+                      {task.title && (
                         <p className="text-sm text-white/60">
-                          {task.description}
+                          {task.title}
                         </p>
                       )}
 
