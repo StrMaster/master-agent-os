@@ -82,6 +82,7 @@ export default function ChangesPage() {
 const [result, setResult] = useState('');
 const [error, setError] = useState('');
 const [fixAttemptCount, setFixAttemptCount] = useState(0);
+const [fixAttempt, setFixAttempt] = useState(0);
 const [history, setHistory] = useState<Array<{
   branchName?: string;
   pullRequestUrl?: string | null;
@@ -276,6 +277,7 @@ ${data.pullRequestUrl}/files`);
     } catch (err) {
   const message = err instanceof Error ? err.message : 'Unknown error';
 
+  // 🔁 retry x3
   if (retryAttempt < 3) {
     setError(`Apply failed. Retrying ${retryAttempt + 1}/3...\n\n${message}`);
 
@@ -284,6 +286,37 @@ ${data.pullRequestUrl}/files`);
     }, 1000);
 
     return;
+  }
+
+  // 🤖 AI self-healing (tik 1 kartas)
+  if (fixAttempt < 1 && message.includes('Find not found')) {
+    setFixAttempt(1);
+    setError('Attempting AI self-healing...');
+
+    try {
+      const fixRes = await fetch('/api/propose-changes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: proposal?.summary || 'Fix previous change',
+          isSystemOperation: true,
+        }),
+      });
+
+      const fixedProposal = await fixRes.json();
+
+      if (fixedProposal?.changes) {
+        setProposal(fixedProposal);
+
+        setTimeout(() => {
+          applyProposal(true, 0); // skip safety on system retry
+        }, 1000);
+
+        return;
+      }
+    } catch (e) {
+      console.error('Self-healing failed', e);
+    }
   }
 
   setError(message);
