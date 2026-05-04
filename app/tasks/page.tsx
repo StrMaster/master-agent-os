@@ -107,6 +107,12 @@ Replace:
 </button>
 
             <button
+              onClick={() =>
+                createTask({
+                  title: 'Improve task card readability',
+                  priority: 'medium',
+                })
+              }
               className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
             >
               Generate planner task
