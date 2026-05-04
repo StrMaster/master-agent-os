@@ -417,7 +417,16 @@ STRICT FIX MODE:
               className={`rounded-2xl border p-4 ${
                 safety.isSafe
                   ? 'border-green-500/30 bg-green-500/10 text-green-200'
-                  : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-200'
+                  : 'border-yellow-500/30 bg-yellow-500
+            '}>
+              <div className={proposal.qualityReview?.status === 'PASS' ? 'text-green-400 font-semibold' : proposal.qualityReview?.status === 'FAIL' ? 'text-red-500 font-semibold' : ''}>
+                Quality: {proposal.qualityReview?.status ?? 'N/A'}
+              </div>
+              {proposal.qualityReview?.reason && (
+                <div className="mt-1 text-sm text-white/60">
+                  {proposal.qualityReview.reason}
+                </div>
+              )}/10 text-yellow-200'
               }`}
             >
               <div className="font-medium">
