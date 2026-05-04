@@ -42,7 +42,7 @@ export default function TasksPage() {
                         <div
                           className="h-2 rounded bg-blue-500 transition-all"
                           style={{ width: `${progress}%` }}
-                        /div>
+                        />
                       </div>
                       <div className="mt-1 text-xs text-white/50">
                         {progress}% complete
