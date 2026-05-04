@@ -66,7 +66,7 @@ export default function TasksPage() {
                               ? 'border-green-500/40 bg-green-500/10 text-green-400'
                               : 'border-white/10 text-white/70 hover:bg-white/5'
                           }`}
-                        >
+                        </div>
                           {subtask.done ? '✓' : '•'} {subtask.title}
                         </button>
                       ))}
