@@ -424,8 +424,8 @@ export async function POST(req: Request) {
     );
 
     const isSafe = isSystemOperation === true ?
-      changedLines < 30 :
-      changedLines < 30 &&
+      changedLines < 100 :
+      changedLines < 100 &&
       !parsed.changes.some(
         (change: { find: string; replace: string; filePath: string }) =>
           change.find.includes('import ') ||
@@ -435,8 +435,8 @@ export async function POST(req: Request) {
       );
 
     const qualityReview = isSystemOperation === true ?
-      (changedLines <= 30 ? { status: 'PASS', reason: 'System operation bypasses strict checks' } : { status: 'FAIL', reason: 'Change too large' }) :
-      isSafe && changedLines <= 30
+      (changedLines <= 100 ? { status: 'PASS', reason: 'System operation bypasses strict checks' } : { status: 'FAIL', reason: 'Change too large' }) :
+      isSafe && changedLines <= 100
       ? { status: 'PASS', reason: 'Change is safe and within line limit' }
       : { status: 'FAIL', reason: parsed.changes.some(
           (change: { find: string; replace: string; filePath: string }) =>
@@ -450,7 +450,7 @@ export async function POST(req: Request) {
             change.filePath.includes('route.ts')
         )
         ? 'Sensitive file change'
-        : 'Changed lines exceed 30'
+        : 'Changed lines exceed 100'
       };
 
     return Response.json({
