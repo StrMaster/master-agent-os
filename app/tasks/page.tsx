@@ -14,17 +14,21 @@ export default function TasksPage() {
     return agent?.name ?? 'Unknown agent';
   }
 
-  function getChangesPrompt(task: { title: string; description?: string }) {
-    return `Task: ${task.title}
+  function getChangesPrompt(task: { title: string }) {
+  return `File: app/execution/page.tsx
 
-${task.title || ''}
+Find:
+"No completed tasks"
+
+Replace:
+"No completed tasks (${task.title})"
 
 Rules:
-- One file only
-- Small safe change
+- EXACT match
+- One change only
 - Do not refactor
-- Keep change under 30 lines`;
-  }
+- Keep change under 10 lines`;
+}
 
   return (
     <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
