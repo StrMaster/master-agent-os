@@ -426,13 +426,29 @@ export async function POST(req: Request) {
     const isSafe =
       changedLines < 30 &&
       !parsed.changes.some(
-        (change: { find: string; replace: string }) =>
-  change.find.includes('import ') || change.replace.includes('import ')
+        (change: { find: string; replace: string; filePath: string }) =>
+          change.find.includes('import ') ||
+          change.replace.includes('import ') ||
+          change.filePath.includes('api/') ||
+          change.filePath.includes('route.ts')
       );
 
     const qualityReview = isSafe && changedLines <= 30
       ? { status: 'PASS', reason: 'Change is safe and within line limit' }
-      : { status: 'FAIL', reason: isSafe ? 'Changed lines exceed 30' : 'Change is not safe' };
+      : { status: 'FAIL', reason: parsed.changes.some(
+          (change: { find: string; replace: string; filePath: string }) =>
+            change.find.includes('import ') ||
+            change.replace.includes('import ')
+        )
+        ? 'Import change detected'
+        : parsed.changes.some(
+          (change: { filePath: string }) =>
+            change.filePath.includes('api/') ||
+            change.filePath.includes('route.ts')
+        )
+        ? 'Sensitive file change'
+        : 'Changed lines exceed 30'
+      };
 
     return Response.json({
       summary: parsed.summary || 'Update files',
