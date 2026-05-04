@@ -69,7 +69,6 @@ export default function TasksPage() {
                         >
                           {subtask.done ? '✓' : '•'} {subtask.title}
                         </button>
-                        </div>
                       ))}
                     </div>
                   )}
