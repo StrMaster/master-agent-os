@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useMasterStore } from '@/lib/master-store';
 
 export default function TasksPage() {
-  const { tasks, agents, createTask, assignTask, executeTask, completeTask } =
-    useMasterStore();
+  const { tasks, agents, createTask, executeTask, completeTask } =
+  useMasterStore();
 
   function getAgentName(agentId?: string) {
     if (!agentId) return 'Unassigned';
@@ -122,25 +122,6 @@ Rules:
                     </div>
 
                     <div className="flex flex-col gap-2 sm:min-w-40">
-                      {agents.length > 0 && (
-                        <select
-                          value={task.assignedAgentId || ''}
-                          onChange={(event) =>
-                            assignTask({
-                              taskId: task.id,
-                              agentId: event.target.value || undefined,
-                            })
-                          }
-                          className="rounded-xl border border-white/10 bg-neutral-950 px-3 py-2 text-sm text-white"
-                        >
-                          <option value="">Unassigned</option>
-                          {agents.map((agent) => (
-                            <option key={agent.id} value={agent.id}>
-                              {agent.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
 
                       {task.status === 'todo' && (
                         <button
