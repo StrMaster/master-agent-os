@@ -49,7 +49,7 @@ export default function ExecutionPage() {
                         Assigned to: {getAgentName(task.assignedAgentId)}
                       </div>
                       <div className="mt-1 text-xs text-green-100/70">
-                        Status: in_progress
+                        Status: {task.status}
                       </div>
                     </div>
 
