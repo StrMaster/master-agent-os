@@ -347,7 +347,14 @@ STRICT FIX MODE:
                       : 'Unsafe proposal'}
                 </button>
                 {(proposal.isSafe === false || (proposal.changedLines ?? 0) > 30) && (
-                  <div className="mt-1 text-xs text-yellow-400">Blocked by Quality Gate</div>
+                  <div className="mt-1 text-xs text-yellow-400">
+                    Blocked by Quality Gate
+                    {proposal.qualityReview?.reason && (
+                      <div className="mt-0.5 text-xs text-yellow-300">
+                        Reason: {proposal.qualityReview.reason}
+                      </div>
+                    )}
+                  </div>
                 )}
               </>
             )}
