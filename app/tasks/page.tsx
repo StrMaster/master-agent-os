@@ -68,15 +68,20 @@ Replace:
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
-              onClick={() =>
-                createTask({
-  title: 'Improve execution empty states',
-  priority: 'medium',
-})
-              }
+              onClick={() => {
+                const tasks = [
+                  'Improve button accessibility',
+                  'Refine color contrast',
+                  'Optimize layout spacing',
+                  'Simplify navigation flow',
+                  'Enhance task card readability'
+                ];
+                const title = tasks[Math.floor(Math.random() * tasks.length)];
+                createTask({ title, priority: 'medium' });
+              }}
               className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
             >
-              Add sample UI task
+              Generate planner task
             </button>
 
             <button
