@@ -1,184 +1,317 @@
-"use client";
+import { NextResponse } from "next/server";
 
-import { useState } from "react";
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
 
-export default function RunAgentButton() {
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+type AgentTask = {
+  id: string;
+  title: string;
+  targetFile?: string;
+  status: "todo" | "running" | "done" | "failed";
+  priority?: "low" | "medium" | "high";
+  createdAt?: string;
+  updatedAt?: string;
+  error?: string;
+  result?: {
+    branchName?: string;
+    pullRequestUrl?: string;
+    merged?: boolean;
+  };
+};
 
-  async function runAgent() {
-    setLoading(true);
-    setResult(null);
+type GitHubFile = {
+  sha: string;
+  content: string;
+};
 
-    const res = await fetch("/api/agent-runner", {
-      method: "POST",
-    });
+async function readTasksFile(): Promise<{ tasks: AgentTask[]; sha: string }> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) throw new Error("Missing GITHUB_TOKEN");
 
-    const data = await res.json();
-    setResult(data);
-    setLoading(false);
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to read tasks.json: ${res.status}`);
   }
 
-  return (
-    <div style={{ marginTop: 24 }}>
-      <button
-        onClick={runAgent}
-        disabled={loading}
-        style={{
-          padding: "12px 18px",
-          borderRadius: 12,
-          border: "1px solid #333",
-          background: loading ? "#333" : "#111",
-          color: "white",
-          cursor: loading ? "not-allowed" : "pointer",
-          fontWeight: 700,
-        }}
-      >
-        {loading ? "Agent running..." : "Run Agent"}
-      </button>
+  const file = (await res.json()) as GitHubFile;
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
 
-      {loading && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 16,
-            borderRadius: 14,
-            border: "1px solid #333",
-            background: "#151515",
-            color: "#aaa",
-          }}
-        >
-          Generating proposal → checking safety → applying changes...
-        </div>
-      )}
+  return {
+    tasks: JSON.parse(content),
+    sha: file.sha,
+  };
+}
 
-      {result && (
-        <div style={{ marginTop: 20, display: "grid", gap: 16 }}>
-          <div
-            style={{
-              padding: 18,
-              borderRadius: 16,
-              border: result.ok ? "1px solid #0f6" : "1px solid #f55",
-              background: result.ok ? "#06210f" : "#260b0b",
-              color: result.ok ? "#8dffb0" : "#ff9a9a",
-              lineHeight: 1.6,
-            }}
-          >
-            <strong>
-              {result.ok ? "Agent run completed ✅" : "Agent run failed ❌"}
-            </strong>
+async function writeTasksFile(
+  tasks: AgentTask[],
+  sha: string,
+  message: string
+) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) throw new Error("Missing GITHUB_TOKEN");
 
-            <div>Mode: {result.mode ?? "unknown"}</div>
-
-            {result.taskId && <div>Task: {result.taskId}</div>}
-
-            {result.reason && <div>Reason: {result.reason}</div>}
-          </div>
-
-          {result.proposal && (
-            <div
-              style={{
-                padding: 18,
-                borderRadius: 16,
-                border: "1px solid #0a6",
-                background: "#06210f",
-                color: "#b6ffd0",
-                lineHeight: 1.6,
-              }}
-            >
-              <strong>Safe-looking small patch</strong>
-
-              <div>Summary: {result.proposal.summary}</div>
-              <div>Branch: {result.proposal.branchName}</div>
-              <div>Changed lines: {result.proposal.changedLines}</div>
-              <div>Safe: {String(result.proposal.isSafe)}</div>
-            </div>
-          )}
-
-          {result.applyResult && (
-            <div
-              style={{
-                padding: 18,
-                borderRadius: 16,
-                border: result.applyResult.ok ? "1px solid #0f6" : "1px solid #f55",
-                background: result.applyResult.ok ? "#06210f" : "#260b0b",
-                color: result.applyResult.ok ? "#8dffb0" : "#ff9a9a",
-                lineHeight: 1.6,
-                wordBreak: "break-word",
-              }}
-            >
-              <strong>PR created {result.applyResult.ok ? "✅" : "❌"}</strong>
-
-              <div>Branch: {result.applyResult.branchName}</div>
-              <div>Merged: {result.applyResult.merged ? "✅ yes" : "❌ no"}</div>
-
-              {result.applyResult.mergeError && (
-                <div>Merge error: {result.applyResult.mergeError}</div>
-              )}
-
-              {result.applyResult.pullRequestUrl && (
-                <div>
-                  Review:{" "}
-                  <a
-                    href={result.applyResult.pullRequestUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {result.applyResult.pullRequestUrl}
-                  </a>
-                </div>
-              )}
-
-              {result.applyResult.pullRequestUrl && (
-                <div>
-                  Review diff:{" "}
-                  <a
-                    href={`${result.applyResult.pullRequestUrl}/files`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {result.applyResult.pullRequestUrl}/files
-                  </a>
-{result.proposal?.changes?.[0] && (
-  <div
-    style={{
-      padding: 18,
-      borderRadius: 16,
-      border: "1px solid #333",
-      background: "#111",
-      color: "#ddd",
-      lineHeight: 1.4,
-      fontFamily: "monospace",
-      whiteSpace: "pre-wrap",
-    }}
-  >
-    <strong>Diff preview</strong>
-
-    <div style={{ marginTop: 10, color: "#999" }}>
-      File: {result.proposal.changes[0].filePath}
-    </div>
-
-    <div style={{ marginTop: 10 }}>
-      <div style={{ color: "#f88" }}>--- before</div>
-      <div>
-        {result.proposal.changes[0].originalContent?.slice(0, 800)}
-      </div>
-
-      <div style={{ marginTop: 12, color: "#8f8" }}>+++ after</div>
-      <div>
-        {result.proposal.changes[0].content?.slice(0, 800)}
-      </div>
-    </div>
-  </div>
-)}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+  const content = Buffer.from(JSON.stringify(tasks, null, 2) + "\n").toString(
+    "base64"
   );
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        content,
+        sha,
+        branch: BRANCH,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to write tasks.json: ${res.status} ${text}`);
+  }
+}
+
+function buildPrompt(task: AgentTask) {
+  return `
+Make a small safe change in ${task.targetFile}.
+
+Task:
+${task.title}
+
+Constraints:
+- Modify only ${task.targetFile}
+- Change exactly one file
+- No imports
+- No refactoring
+- No dependency changes
+- No config changes
+- Keep the change under 30 changed lines
+- Prefer copy, labels, or small UI improvements only
+`;
+}
+
+export async function GET() {
+  try {
+    const { tasks } = await readTasksFile();
+
+    return NextResponse.json({
+      ok: true,
+      mode: "status",
+      runningTask: tasks.find((task) => task.status === "running") ?? null,
+      nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
+      totalTasks: tasks.length,
+      todoCount: tasks.filter((task) => task.status === "todo").length,
+      runningCount: tasks.filter((task) => task.status === "running").length,
+      doneCount: tasks.filter((task) => task.status === "done").length,
+      failedCount: tasks.filter((task) => task.status === "failed").length,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST() {
+  try {
+    let { tasks, sha } = await readTasksFile();
+
+    let taskIndex = tasks.findIndex((task) => task.status === "running");
+
+    if (taskIndex === -1) {
+      taskIndex = tasks.findIndex((task) => task.status === "todo");
+
+      if (taskIndex === -1) {
+        return NextResponse.json({
+          ok: true,
+          mode: "idle",
+          message: "No running or todo tasks found",
+        });
+      }
+
+      tasks = [...tasks];
+      tasks[taskIndex] = {
+        ...tasks[taskIndex],
+        status: "running",
+        updatedAt: new Date().toISOString(),
+      };
+
+      await writeTasksFile(tasks, sha, "Mark agent task as running");
+
+      const fresh = await readTasksFile();
+      tasks = fresh.tasks;
+      sha = fresh.sha;
+    }
+
+    const task = tasks[taskIndex];
+
+    if (!task.targetFile) {
+      tasks = [...tasks];
+      tasks[taskIndex] = {
+        ...task,
+        status: "failed",
+        error: "Task is missing targetFile",
+        updatedAt: new Date().toISOString(),
+      };
+
+      await writeTasksFile(tasks, sha, "Mark agent task as failed");
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        error: "Task is missing targetFile",
+        task,
+      });
+    }
+
+    const prompt = buildPrompt(task);
+
+    const proposeRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      }
+    );
+
+    const proposal = await proposeRes.json();
+
+    if (!proposeRes.ok || !proposal.isSafe || proposal.changedLines >= 30) {
+      const fresh = await readTasksFile();
+
+      const updatedTasks = [...fresh.tasks];
+      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+      if (freshTaskIndex !== -1) {
+        updatedTasks[freshTaskIndex] = {
+          ...updatedTasks[freshTaskIndex],
+          status: "failed",
+          error: "Proposal failed safety check",
+          updatedAt: new Date().toISOString(),
+        };
+
+        await writeTasksFile(
+          updatedTasks,
+          fresh.sha,
+          "Mark agent task as failed"
+        );
+      }
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        reason: "Proposal failed safety check",
+        proposal,
+      });
+    }
+
+    const applyRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(proposal),
+      }
+    );
+
+    const applyResult = await applyRes.json();
+
+    if (!applyRes.ok || !applyResult.ok) {
+      const fresh = await readTasksFile();
+
+      const updatedTasks = [...fresh.tasks];
+      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+      if (freshTaskIndex !== -1) {
+        updatedTasks[freshTaskIndex] = {
+          ...updatedTasks[freshTaskIndex],
+          status: "failed",
+          error: "Apply failed",
+          updatedAt: new Date().toISOString(),
+        };
+
+        await writeTasksFile(
+          updatedTasks,
+          fresh.sha,
+          "Mark agent task as failed"
+        );
+      }
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        reason: "Apply failed",
+        applyResult,
+      });
+    }
+
+    const fresh = await readTasksFile();
+
+    const updatedTasks = [...fresh.tasks];
+    const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+    if (freshTaskIndex !== -1) {
+      updatedTasks[freshTaskIndex] = {
+        ...updatedTasks[freshTaskIndex],
+        status: "done",
+        updatedAt: new Date().toISOString(),
+        result: {
+          branchName: proposal.branchName,
+          pullRequestUrl: applyResult.pullRequestUrl,
+          merged: applyResult.merged,
+        },
+      };
+
+      await writeTasksFile(updatedTasks, fresh.sha, "Mark agent task as done");
+    }
+
+    return NextResponse.json({
+      ok: true,
+      mode: "completed-one-task",
+      taskId: task.id,
+      proposal: {
+        summary: proposal.summary,
+        branchName: proposal.branchName,
+        isSafe: proposal.isSafe,
+        changedLines: proposal.changedLines,
+      },
+      applyResult,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
 }
