@@ -5,14 +5,12 @@
     "targetFile": "app/execution/page.tsx",
     "status": "done"
   },
-  {
-    "id": "task-002",
-    "title": "Improve the empty running tasks message copy",
-    "targetFile": "app/execution/page.tsx",
-    "status": "failed",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z",
-    "updatedAt": "2026-05-05T19:02:38.580Z",
-    "error": "Apply failed"
-  }
+ {
+  "id": "task-002",
+  "title": "Improve the empty running tasks message copy",
+  "targetFile": "app/execution/page.tsx",
+  "status": "todo",
+  "priority": "low",
+  "createdAt": "2026-05-05T00:00:00.000Z"
+}
 ]
