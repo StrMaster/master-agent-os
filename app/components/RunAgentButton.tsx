@@ -131,6 +131,14 @@ export default function RunAgentButton() {
                 <div>Merge error: {result.applyResult.mergeError}</div>
               )}
 
+              {result.applyResult.error && (
+  <div>Error: {result.applyResult.error}</div>
+)}
+
+{result.applyResult.details && (
+  <div>Details: {JSON.stringify(result.applyResult.details)}</div>
+)}
+
               {result.applyResult.pullRequestUrl && (
                 <div>
                   Review:{" "}
