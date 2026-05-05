@@ -155,6 +155,30 @@ export default function RunAgentButton() {
             </div>
           )}
 
+          {result.mode === "loop" && result.runs && (
+  <div style={{ marginTop: 20 }}>
+    <strong>Loop results</strong>
+
+    {result.runs.map((run: any, i: number) => (
+      <div
+        key={i}
+        style={{
+          marginTop: 10,
+          padding: 12,
+          borderRadius: 10,
+          border: run.ok ? "1px solid #0f6" : "1px solid #f55",
+          background: run.ok ? "#06210f" : "#260b0b",
+          color: run.ok ? "#8dffb0" : "#ff9a9a",
+        }}
+      >
+        <div>Step {i + 1}</div>
+        <div>Mode: {run.mode}</div>
+        {run.taskId && <div>Task: {run.taskId}</div>}
+      </div>
+    ))}
+  </div>
+)}
+
           {result.applyResult && (
             <div
               style={{
