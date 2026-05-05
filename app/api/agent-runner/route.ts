@@ -19,6 +19,7 @@ type AgentTask = {
     pullRequestUrl?: string;
     merged?: boolean;
   };
+};
 
 type GitHubFile = {
   sha: string;
