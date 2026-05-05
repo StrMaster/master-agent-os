@@ -223,7 +223,6 @@ return NextResponse.json({
   proposal,
   applyResult,
 });
-    });
   } catch (error) {
     return NextResponse.json(
       {
