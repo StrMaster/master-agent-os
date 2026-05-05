@@ -117,12 +117,12 @@ export async function POST() {
   try {
     const { tasks, sha } = await readTasksFile();
 
-    const taskIndex = tasks.findIndex((task) => task.status === "todo");
+    const taskIndex = tasks.findIndex((task) => task.status === "running");
 
     if (taskIndex === -1) {
       return NextResponse.json({
         ok: true,
-        message: "No todo tasks found",
+        message: "No running tasks found",
       });
     }
 
@@ -132,28 +132,47 @@ export async function POST() {
       return NextResponse.json(
         {
           ok: false,
-          error: "Next todo task is missing targetFile",
+          error: "Running task is missing targetFile",
           task,
         },
         { status: 400 }
       );
     }
 
-    const updatedTask: AgentTask = {
-      ...task,
-      status: "running",
-      updatedAt: new Date().toISOString(),
-    };
+    // 👉 Generate prompt
+    const prompt = `
+Make a small safe change in ${task.targetFile}.
 
-    const updatedTasks = [...tasks];
-    updatedTasks[taskIndex] = updatedTask;
+Task:
+${task.title}
 
-    await writeTasksFile(updatedTasks, sha);
+Constraints:
+- Modify only ${task.targetFile}
+- Change exactly one file
+- No imports
+- No refactoring
+- No dependency changes
+- No config changes
+- Keep the change under 30 changed lines
+- Prefer copy, labels, or small UI improvements only
+`;
+
+    // 👉 Call propose-changes
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const proposal = await res.json();
 
     return NextResponse.json({
       ok: true,
-      mode: "mark-running",
-      task: updatedTask,
+      mode: "proposal",
+      task,
+      proposal,
     });
   } catch (error) {
     return NextResponse.json(
