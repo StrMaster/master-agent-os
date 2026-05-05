@@ -9,7 +9,7 @@
     "id": "task-002",
     "title": "Improve the empty running tasks message copy",
     "targetFile": "app/execution/page.tsx",
-    "status": "done",
+    "status": "todo",
     "priority": "low",
     "createdAt": "2026-05-05T00:00:00.000Z",
     "updatedAt": "2026-05-05T19:09:15.958Z",
