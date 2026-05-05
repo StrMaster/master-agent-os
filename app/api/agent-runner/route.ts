@@ -26,15 +26,9 @@ type GitHubFile = {
   content: string;
 };
 
-async function readTasksFile(): Promise<{
-  tasks: AgentTask[];
-  sha: string;
-}> {
+async function readTasksFile(): Promise<{ tasks: AgentTask[]; sha: string }> {
   const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
+  if (!token) throw new Error("Missing GITHUB_TOKEN");
 
   const res = await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
@@ -60,12 +54,13 @@ async function readTasksFile(): Promise<{
   };
 }
 
-async function writeTasksFile(tasks: AgentTask[], sha: string) {
+async function writeTasksFile(
+  tasks: AgentTask[],
+  sha: string,
+  message: string
+) {
   const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
+  if (!token) throw new Error("Missing GITHUB_TOKEN");
 
   const content = Buffer.from(JSON.stringify(tasks, null, 2) + "\n").toString(
     "base64"
@@ -81,7 +76,7 @@ async function writeTasksFile(tasks: AgentTask[], sha: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: "Mark agent task as running",
+        message,
         content,
         sha,
         branch: BRANCH,
@@ -95,57 +90,8 @@ async function writeTasksFile(tasks: AgentTask[], sha: string) {
   }
 }
 
-export async function GET() {
-  try {
-    const { tasks } = await readTasksFile();
-    const nextTask = tasks.find((task) => task.status === "todo");
-
-    return NextResponse.json({
-      ok: true,
-      mode: "dry-run",
-      nextTask: nextTask ?? null,
-      totalTasks: tasks.length,
-      todoCount: tasks.filter((task) => task.status === "todo").length,
-    });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST() {
-  try {
-    const { tasks, sha } = await readTasksFile();
-
-    const taskIndex = tasks.findIndex((task) => task.status === "running");
-
-    if (taskIndex === -1) {
-      return NextResponse.json({
-        ok: true,
-        message: "No running tasks found",
-      });
-    }
-
-    const task = tasks[taskIndex];
-
-    if (!task.targetFile) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Running task is missing targetFile",
-          task,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 👉 Generate prompt
-    const prompt = `
+function buildPrompt(task: AgentTask) {
+  return `
 Make a small safe change in ${task.targetFile}.
 
 Task:
@@ -161,73 +107,204 @@ Constraints:
 - Keep the change under 30 changed lines
 - Prefer copy, labels, or small UI improvements only
 `;
-
-    // 👉 Call propose-changes
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt }),
-    });
-
-    const proposal = await res.json();
-
-    // 👉 Safety check
-if (!proposal.isSafe || proposal.changedLines >= 30) {
-  const updatedTasks = [...tasks];
-  updatedTasks[taskIndex] = {
-    ...task,
-    status: "failed",
-    error: "Proposal not safe or too large",
-    updatedAt: new Date().toISOString(),
-  };
-
-  await writeTasksFile(updatedTasks, sha);
-
-  return NextResponse.json({
-    ok: false,
-    mode: "failed",
-    reason: "Safety check failed",
-    proposal,
-  });
 }
 
-// 👉 Apply changes
-const applyRes = await fetch(
-  `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
-  {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(proposal),
+export async function GET() {
+  try {
+    const { tasks } = await readTasksFile();
+
+    return NextResponse.json({
+      ok: true,
+      mode: "status",
+      runningTask: tasks.find((task) => task.status === "running") ?? null,
+      nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
+      totalTasks: tasks.length,
+      todoCount: tasks.filter((task) => task.status === "todo").length,
+      runningCount: tasks.filter((task) => task.status === "running").length,
+      doneCount: tasks.filter((task) => task.status === "done").length,
+      failedCount: tasks.filter((task) => task.status === "failed").length,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
-);
+}
 
-const applyResult = await applyRes.json();
+export async function POST() {
+  try {
+    let { tasks, sha } = await readTasksFile();
 
-// 👉 Mark done
-const updatedTasks = [...tasks];
-updatedTasks[taskIndex] = {
-  ...task,
-  status: "done",
-  updatedAt: new Date().toISOString(),
-  result: {
-    branchName: proposal.branchName,
-    merged: applyResult.merged,
-  },
-};
+    let taskIndex = tasks.findIndex((task) => task.status === "running");
 
-await writeTasksFile(updatedTasks, sha);
+    if (taskIndex === -1) {
+      taskIndex = tasks.findIndex((task) => task.status === "todo");
 
-// 👉 Final response
-return NextResponse.json({
-  ok: true,
-  mode: "applied",
-  proposal,
-  applyResult,
-});
+      if (taskIndex === -1) {
+        return NextResponse.json({
+          ok: true,
+          mode: "idle",
+          message: "No running or todo tasks found",
+        });
+      }
+
+      tasks = [...tasks];
+      tasks[taskIndex] = {
+        ...tasks[taskIndex],
+        status: "running",
+        updatedAt: new Date().toISOString(),
+      };
+
+      await writeTasksFile(tasks, sha, "Mark agent task as running");
+
+      const fresh = await readTasksFile();
+      tasks = fresh.tasks;
+      sha = fresh.sha;
+    }
+
+    const task = tasks[taskIndex];
+
+    if (!task.targetFile) {
+      tasks = [...tasks];
+      tasks[taskIndex] = {
+        ...task,
+        status: "failed",
+        error: "Task is missing targetFile",
+        updatedAt: new Date().toISOString(),
+      };
+
+      await writeTasksFile(tasks, sha, "Mark agent task as failed");
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        error: "Task is missing targetFile",
+        task,
+      });
+    }
+
+    const prompt = buildPrompt(task);
+
+    const proposeRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      }
+    );
+
+    const proposal = await proposeRes.json();
+
+    if (!proposeRes.ok || !proposal.isSafe || proposal.changedLines >= 30) {
+      const fresh = await readTasksFile();
+
+      const updatedTasks = [...fresh.tasks];
+      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+      if (freshTaskIndex !== -1) {
+        updatedTasks[freshTaskIndex] = {
+          ...updatedTasks[freshTaskIndex],
+          status: "failed",
+          error: "Proposal failed safety check",
+          updatedAt: new Date().toISOString(),
+        };
+
+        await writeTasksFile(
+          updatedTasks,
+          fresh.sha,
+          "Mark agent task as failed"
+        );
+      }
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        reason: "Proposal failed safety check",
+        proposal,
+      });
+    }
+
+    const applyRes = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(proposal),
+      }
+    );
+
+    const applyResult = await applyRes.json();
+
+    if (!applyRes.ok || !applyResult.ok) {
+      const fresh = await readTasksFile();
+
+      const updatedTasks = [...fresh.tasks];
+      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+      if (freshTaskIndex !== -1) {
+        updatedTasks[freshTaskIndex] = {
+          ...updatedTasks[freshTaskIndex],
+          status: "failed",
+          error: "Apply failed",
+          updatedAt: new Date().toISOString(),
+        };
+
+        await writeTasksFile(
+          updatedTasks,
+          fresh.sha,
+          "Mark agent task as failed"
+        );
+      }
+
+      return NextResponse.json({
+        ok: false,
+        mode: "failed",
+        reason: "Apply failed",
+        applyResult,
+      });
+    }
+
+    const fresh = await readTasksFile();
+
+    const updatedTasks = [...fresh.tasks];
+    const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
+
+    if (freshTaskIndex !== -1) {
+      updatedTasks[freshTaskIndex] = {
+        ...updatedTasks[freshTaskIndex],
+        status: "done",
+        updatedAt: new Date().toISOString(),
+        result: {
+          branchName: proposal.branchName,
+          pullRequestUrl: applyResult.pullRequestUrl,
+          merged: applyResult.merged,
+        },
+      };
+
+      await writeTasksFile(updatedTasks, fresh.sha, "Mark agent task as done");
+    }
+
+    return NextResponse.json({
+      ok: true,
+      mode: "completed-one-task",
+      taskId: task.id,
+      proposal: {
+        summary: proposal.summary,
+        branchName: proposal.branchName,
+        isSafe: proposal.isSafe,
+        changedLines: proposal.changedLines,
+      },
+      applyResult,
+    });
   } catch (error) {
     return NextResponse.json(
       {
