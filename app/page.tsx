@@ -3,6 +3,7 @@ import StatCard from "./components/StatCard";
 import SectionHeader from "./components/SectionHeader";
 import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
+import RunAgentButton from "./components/RunAgentButton";
 
 export default function HomePage() {
   const stats = [
@@ -57,7 +58,7 @@ export default function HomePage() {
           />
         ))}
       </div>
-
+      <RunAgentButton />
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
           <div className="flex items-center justify-between">
