@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "task-001",
+    "title": "Improve the empty todo tasks message copy",
+    "targetFile": "app/execution/page.tsx",
+    "status": "todo",
+    "priority": "low",
+    "createdAt": "2026-05-05T00:00:00.000Z"
+  }
+]
