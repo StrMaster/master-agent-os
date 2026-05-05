@@ -36,13 +36,22 @@ function countOccurrences(text: string, find: string) {
 function countChangedLines(before: string, after: string) {
   const beforeLines = before.split('\n');
   const afterLines = after.split('\n');
-  let changed = 0;
 
-  for (let i = 0; i < Math.max(beforeLines.length, afterLines.length); i += 1) {
-    if (beforeLines[i] !== afterLines[i]) changed += 1;
+  const beforeSet = new Set(beforeLines);
+  const afterSet = new Set(afterLines);
+
+  let added = 0;
+  let removed = 0;
+
+  for (const line of afterLines) {
+    if (!beforeSet.has(line)) added++;
   }
 
-  return changed;
+  for (const line of beforeLines) {
+    if (!afterSet.has(line)) removed++;
+  }
+
+  return added + removed;
 }
 
 function extractJson(text: string) {
