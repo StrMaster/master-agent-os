@@ -137,44 +137,21 @@ export async function GET() {
 
 export async function POST() {
   try {
-    let { tasks, sha } = await readTasksFile();
+    let { tasks } = await readTasksFile();
 
-    let taskIndex = tasks.findIndex((task) => task.status === "running");
+    let taskIndex = tasks.findIndex((task) => task.status === "todo");
 
     if (taskIndex === -1) {
-      taskIndex = tasks.findIndex((task) => task.status === "todo");
-
-      if (taskIndex === -1) {
-        return NextResponse.json({
-          ok: true,
-          mode: "idle",
-          message: "No running or todo tasks found",
-        });
-      }
-
-      // no GitHub write — keep in memory only
-tasks = [...tasks];
-tasks[taskIndex] = {
-  ...tasks[taskIndex],
-  status: "running",
-  updatedAt: new Date().toISOString(),
-};
-
-      // skip writing done status to GitHub
+      return NextResponse.json({
+        ok: true,
+        mode: "idle",
+        message: "No todo tasks found",
+      });
+    }
 
     const task = tasks[taskIndex];
 
     if (!task.targetFile) {
-      tasks = [...tasks];
-      tasks[taskIndex] = {
-        ...task,
-        status: "failed",
-        error: "Task is missing targetFile",
-        updatedAt: new Date().toISOString(),
-      };
-
-     // skip writing failed status to GitHub
-
       return NextResponse.json({
         ok: false,
         mode: "failed",
@@ -185,6 +162,7 @@ tasks[taskIndex] = {
 
     const prompt = buildPrompt(task);
 
+    // 🔹 PROPOSE
     const proposeRes = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
       {
@@ -198,35 +176,16 @@ tasks[taskIndex] = {
 
     const proposal = await proposeRes.json();
 
-    if (!proposeRes.ok || !proposal.isSafe || proposal.changedLines >= 30) {
-      const fresh = await readTasksFile();
-
-      const updatedTasks = [...fresh.tasks];
-      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
-
-      if (freshTaskIndex !== -1) {
-        updatedTasks[freshTaskIndex] = {
-          ...updatedTasks[freshTaskIndex],
-          status: "failed",
-          error: "Proposal failed safety check",
-          updatedAt: new Date().toISOString(),
-        };
-
-        await writeTasksFile(
-          updatedTasks,
-          fresh.sha,
-          "Mark agent task as failed"
-        );
-      }
-
+    if (!proposal.isSafe || proposal.changedLines >= 30) {
       return NextResponse.json({
         ok: false,
         mode: "failed",
-        reason: "Proposal failed safety check",
+        reason: "Proposal failed safety",
         proposal,
       });
     }
 
+    // 🔹 APPLY
     const applyRes = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
       {
@@ -240,27 +199,7 @@ tasks[taskIndex] = {
 
     const applyResult = await applyRes.json();
 
-    if (!applyRes.ok || !applyResult.ok) {
-      const fresh = await readTasksFile();
-
-      const updatedTasks = [...fresh.tasks];
-      const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
-
-      if (freshTaskIndex !== -1) {
-        updatedTasks[freshTaskIndex] = {
-          ...updatedTasks[freshTaskIndex],
-          status: "failed",
-          error: "Apply failed",
-          updatedAt: new Date().toISOString(),
-        };
-
-        await writeTasksFile(
-          updatedTasks,
-          fresh.sha,
-          "Mark agent task as failed"
-        );
-      }
-
+    if (!applyResult.ok) {
       return NextResponse.json({
         ok: false,
         mode: "failed",
@@ -269,26 +208,7 @@ tasks[taskIndex] = {
       });
     }
 
-    const fresh = await readTasksFile();
-
-    const updatedTasks = [...fresh.tasks];
-    const freshTaskIndex = updatedTasks.findIndex((t) => t.id === task.id);
-
-    if (freshTaskIndex !== -1) {
-      updatedTasks[freshTaskIndex] = {
-        ...updatedTasks[freshTaskIndex],
-        status: "done",
-        updatedAt: new Date().toISOString(),
-        result: {
-          branchName: proposal.branchName,
-          pullRequestUrl: applyResult.pullRequestUrl,
-          merged: applyResult.merged,
-        },
-      };
-
-      await writeTasksFile(updatedTasks, fresh.sha, "Mark agent task as done");
-    }
-
+    // 🔹 SUCCESS (no GitHub task write)
     return NextResponse.json({
       ok: true,
       mode: "completed-one-task",
@@ -301,6 +221,7 @@ tasks[taskIndex] = {
       },
       applyResult,
     });
+
   } catch (error) {
     return NextResponse.json(
       {
