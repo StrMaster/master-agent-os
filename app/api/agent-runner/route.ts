@@ -14,7 +14,11 @@ type AgentTask = {
   createdAt?: string;
   updatedAt?: string;
   error?: string;
-};
+  result?: {
+    branchName?: string;
+    pullRequestUrl?: string;
+    merged?: boolean;
+  };
 
 type GitHubFile = {
   sha: string;
