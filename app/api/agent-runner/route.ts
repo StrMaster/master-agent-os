@@ -168,11 +168,61 @@ Constraints:
 
     const proposal = await res.json();
 
-    return NextResponse.json({
-      ok: true,
-      mode: "proposal",
-      task,
-      proposal,
+    // 👉 Safety check
+if (!proposal.isSafe || proposal.changedLines >= 30) {
+  const updatedTasks = [...tasks];
+  updatedTasks[taskIndex] = {
+    ...task,
+    status: "failed",
+    error: "Proposal not safe or too large",
+    updatedAt: new Date().toISOString(),
+  };
+
+  await writeTasksFile(updatedTasks, sha);
+
+  return NextResponse.json({
+    ok: false,
+    mode: "failed",
+    reason: "Safety check failed",
+    proposal,
+  });
+}
+
+// 👉 Apply changes
+const applyRes = await fetch(
+  `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(proposal),
+  }
+);
+
+const applyResult = await applyRes.json();
+
+// 👉 Mark done
+const updatedTasks = [...tasks];
+updatedTasks[taskIndex] = {
+  ...task,
+  status: "done",
+  updatedAt: new Date().toISOString(),
+  result: {
+    branchName: proposal.branchName,
+    merged: applyResult.merged,
+  },
+};
+
+await writeTasksFile(updatedTasks, sha);
+
+// 👉 Final response
+return NextResponse.json({
+  ok: true,
+  mode: "applied",
+  proposal,
+  applyResult,
+});
     });
   } catch (error) {
     return NextResponse.json(
