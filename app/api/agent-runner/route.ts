@@ -152,19 +152,15 @@ export async function POST() {
         });
       }
 
-      tasks = [...tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        status: "running",
-        updatedAt: new Date().toISOString(),
-      };
+      // no GitHub write — keep in memory only
+tasks = [...tasks];
+tasks[taskIndex] = {
+  ...tasks[taskIndex],
+  status: "running",
+  updatedAt: new Date().toISOString(),
+};
 
-      await writeTasksFile(tasks, sha, "Mark agent task as running");
-
-      const fresh = await readTasksFile();
-      tasks = fresh.tasks;
-      sha = fresh.sha;
-    }
+      // skip writing done status to GitHub
 
     const task = tasks[taskIndex];
 
@@ -177,7 +173,7 @@ export async function POST() {
         updatedAt: new Date().toISOString(),
       };
 
-      await writeTasksFile(tasks, sha, "Mark agent task as failed");
+     // skip writing failed status to GitHub
 
       return NextResponse.json({
         ok: false,
