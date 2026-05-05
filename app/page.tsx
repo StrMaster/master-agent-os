@@ -89,25 +89,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <button
-  onClick={async () => {
-    const res = await fetch("/api/agent-runner", {
-      method: "POST",
-    });
-    const data = await res.json();
-    console.log(data);
-    alert(JSON.stringify(data, null, 2));
-  }}
-  style={{
-    padding: "10px 16px",
-    background: "black",
-    color: "white",
-    borderRadius: "8px",
-    marginTop: "20px",
-  }}
->
-  Run Agent
-</button>
+        
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
           <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
             Recent Activity
