@@ -32,7 +32,7 @@ export default function ExecutionPage() {
           <div className="mt-4 space-y-3">
             {runningTasks.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No tasks are currently running. Start a task to see it here.
+                There are no tasks running right now. Begin a task to track its progress here.
               </div>
             ) : (
               runningTasks.map((task) => (
