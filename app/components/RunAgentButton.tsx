@@ -28,6 +28,41 @@ export default function RunAgentButton() {
     }
   }
 
+  async function runLoop() {
+  setLoading(true);
+  setResult(null);
+
+  const results = [];
+
+  try {
+    for (let i = 0; i < 3; i++) {
+      const res = await fetch("/api/agent-runner", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+      results.push(data);
+
+      if (data.mode === "idle" || !data.ok) {
+        break;
+      }
+    }
+
+    setResult({
+      ok: true,
+      mode: "loop",
+      runs: results,
+    });
+  } catch (error) {
+    setResult({
+      ok: false,
+      mode: "loop-client-error",
+      error: error instanceof Error ? error.message : "Unknown client error",
+    });
+  } finally {
+    setLoading(false);
+  }
+}
   const change = result?.proposal?.changes?.[0];
 
   return (
@@ -47,6 +82,22 @@ export default function RunAgentButton() {
       >
         {loading ? "Agent running..." : "Run Agent"}
       </button>
+      <button
+  onClick={runLoop}
+  disabled={loading}
+  style={{
+    padding: "12px 18px",
+    borderRadius: 12,
+    border: "1px solid #333",
+    background: loading ? "#333" : "#1f2937",
+    color: "white",
+    cursor: loading ? "not-allowed" : "pointer",
+    fontWeight: 700,
+    marginLeft: 10,
+  }}
+>
+  {loading ? "Loop running..." : "Run Agent Loop"}
+</button>
 
       {loading && (
         <div
