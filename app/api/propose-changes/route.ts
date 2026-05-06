@@ -368,7 +368,7 @@ export async function POST(req: Request) {
   ok: false,
   mode: "blocked",
   error: `Blocked target file: ${targetFile}`,
-}
+},
         { status: 400 }
       );
     }
