@@ -14,5 +14,13 @@
     "status": "todo",
     "priority": "low",
     "createdAt": "2026-05-06T16:15:43.040Z"
+  },
+  {
+    "id": "task-1778084226543",
+    "title": "Improve section title wording",
+    "targetFile": "app/execution/page.tsx",
+    "status": "todo",
+    "priority": "low",
+    "createdAt": "2026-05-06T16:17:06.543Z"
   }
 ]
