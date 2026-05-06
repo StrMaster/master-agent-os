@@ -246,6 +246,7 @@ export async function GET() {
 
 export async function POST() {
   try {
+    const runId = crypto.randomUUID();
     let { tasks } = await readTasksFile();
 
     let taskIndex = tasks.findIndex((task) => task.status === "todo");
@@ -286,6 +287,7 @@ export async function POST() {
     let proposal = await proposeRes.json();
 await logActivity({
   type: "proposal",
+  runId,
   taskId: task.id,
   summary: proposal.summary,
   changedLines: proposal.changedLines,
@@ -295,6 +297,7 @@ await logActivity({
 if (!proposal.isSafe || proposal.changedLines >= 30) {
   await logActivity({
     type: "failed",
+    runId,
     taskId: task.id,
     reason: "Proposal failed safety",
     changedLines: proposal.changedLines,
@@ -318,6 +321,7 @@ if (!proposal.isSafe || proposal.changedLines >= 30) {
 
   await logActivity({
     type: "retry",
+    runId,
     taskId: task.id,
     reason: "Retried proposal with stricter prompt",
     changedLines: proposal.changedLines,
@@ -350,6 +354,7 @@ if (!proposal.isSafe || proposal.changedLines >= 30) {
 
     await logActivity({
   type: "apply",
+  runId,
   taskId: task.id,
   branch: applyResult.branchName,
   merged: applyResult.merged,
@@ -359,6 +364,7 @@ if (!proposal.isSafe || proposal.changedLines >= 30) {
 if (applyResult.merged) {
   await logActivity({
     type: "deploy-triggered",
+    runId,
     taskId: task.id,
     branch: applyResult.branchName,
   });
@@ -367,6 +373,7 @@ if (applyResult.merged) {
     if (!applyResult.ok) {
 await logActivity({
   type: "failed",
+  runId,
   taskId: task.id,
   reason: "Apply failed",
   details: applyResult.error || null,
