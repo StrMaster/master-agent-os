@@ -6,6 +6,7 @@ type ActivityEvent = {
   id: string;
   timestamp: string;
   type: string;
+  runId?: string;
   taskId?: string;
   summary?: string;
   changedLines?: number;
@@ -215,6 +216,12 @@ if (latestEvent?.type === "failed") {
 
     <strong>{latestEvent.type}</strong>
 
+    {latestEvent.runId && (
+  <div style={{ color: "#999", fontSize: 13 }}>
+    Run: {latestEvent.runId.slice(0, 8)}
+  </div>
+)}
+
     {latestEvent.taskId && <div>Task: {latestEvent.taskId}</div>}
     {latestEvent.summary && <div>Summary: {latestEvent.summary}</div>}
     {latestEvent.branch && <div>Branch: {latestEvent.branch}</div>}
@@ -332,6 +339,12 @@ background: getEventColors(event.type).background,
             <div style={{ color: "#999", fontSize: 13 }}>
               {new Date(event.timestamp).toLocaleString()}
             </div>
+
+            {event.runId && (
+  <div style={{ color: "#999", fontSize: 13 }}>
+    Run: {event.runId.slice(0, 8)}
+  </div>
+)}
 
             {event.taskId && <div>Task: {event.taskId}</div>}
             {event.summary && <div>Summary: {event.summary}</div>}
