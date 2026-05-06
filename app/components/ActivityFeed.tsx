@@ -31,8 +31,14 @@ export default function ActivityFeed() {
   }
 
   useEffect(() => {
+  loadActivity();
+
+  const interval = setInterval(() => {
     loadActivity();
-  }, []);
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, []);
 
   return (
     <div
