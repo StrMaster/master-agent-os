@@ -195,6 +195,29 @@ Constraints:
 `;
 }
 
+function buildRetryPrompt(task: AgentTask, reason: string) {
+  return `
+Make a smaller and safer change in ${task.targetFile}.
+
+Original task:
+${task.title}
+
+Previous attempt failed because:
+${reason}
+
+Retry constraints:
+- Modify only ${task.targetFile}
+- Change exactly one file
+- Make the smallest possible change
+- Prefer changing only text/copy
+- No imports
+- No refactoring
+- No dependency changes
+- No config changes
+- Keep the change under 10 changed lines
+`;
+}
+
 export async function GET() {
   try {
     const { tasks } = await readTasksFile();
@@ -270,21 +293,49 @@ export async function POST() {
   safe: proposal.isSafe,
 });
 
-    if (!proposal.isSafe || proposal.changedLines >= 30) {
-      await logActivity({
-  type: "failed",
-  taskId: task.id,
-  reason: "Proposal failed safety",
-  changedLines: proposal.changedLines,
-  safe: proposal.isSafe,
-});
-      return NextResponse.json({
-        ok: false,
-        mode: "failed",
-        reason: "Proposal failed safety",
-        proposal,
-      });
+    let proposal = await proposeRes.json();
+
+if (!proposal.isSafe || proposal.changedLines >= 30) {
+  await logActivity({
+    type: "failed",
+    taskId: task.id,
+    reason: "Proposal failed safety",
+    changedLines: proposal.changedLines,
+    safe: proposal.isSafe,
+  });
+
+  const retryPrompt = buildRetryPrompt(task, "Proposal failed safety check");
+
+  const retryRes = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt: retryPrompt }),
     }
+  );
+
+  proposal = await retryRes.json();
+
+  await logActivity({
+    type: "retry",
+    taskId: task.id,
+    reason: "Retried proposal with stricter prompt",
+    changedLines: proposal.changedLines,
+    safe: proposal.isSafe,
+  });
+
+  if (!proposal.isSafe || proposal.changedLines >= 30) {
+    return NextResponse.json({
+      ok: false,
+      mode: "failed",
+      reason: "Proposal failed safety after retry",
+      proposal,
+    });
+  }
+}
 
     // 🔹 APPLY
     const applyRes = await fetch(
