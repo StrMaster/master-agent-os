@@ -112,10 +112,10 @@ if (recentFailed >= 3) {
 }
 
 const filteredActivity =
-const limitedActivity = filteredActivity.slice(0, 8);
   filter === "all"
     ? activity
     : activity.filter((event) => event.type === filter);
+const limitedActivity = filteredActivity.slice(0, 8);
 
 const latestEvent = activity[0];
 
