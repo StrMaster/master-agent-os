@@ -293,6 +293,14 @@ export async function POST() {
 
     const applyResult = await applyRes.json();
 
+    await logActivity({
+  type: "apply",
+  taskId: task.id,
+  branch: applyResult.branchName,
+  merged: applyResult.merged,
+  pullRequestUrl: applyResult.pullRequestUrl,
+});
+
     if (!applyResult.ok) {
       return NextResponse.json({
         ok: false,
