@@ -40,6 +40,40 @@ export default function ActivityFeed() {
   return () => clearInterval(interval);
 }, []);
 
+function getEventColors(type: string) {
+  switch (type) {
+    case "proposal":
+      return {
+        border: "#2563eb",
+        background: "#0b1220",
+      };
+
+    case "apply":
+      return {
+        border: "#16a34a",
+        background: "#07150d",
+      };
+
+    case "failed":
+      return {
+        border: "#dc2626",
+        background: "#1a0b0b",
+      };
+
+    case "blocked":
+      return {
+        border: "#ca8a04",
+        background: "#1a1607",
+      };
+
+    default:
+      return {
+        border: "#333",
+        background: "#111",
+      };
+  }
+}
+
   return (
     <div
       style={{
@@ -67,8 +101,8 @@ export default function ActivityFeed() {
               marginTop: 12,
               padding: 14,
               borderRadius: 12,
-              border: "1px solid #2a2a2a",
-              background: "#0f0f0f",
+              border: `1px solid ${getEventColors(event.type).border}`,
+background: getEventColors(event.type).background,
               lineHeight: 1.5,
             }}
           >
