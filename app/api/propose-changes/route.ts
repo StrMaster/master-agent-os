@@ -24,6 +24,25 @@ const KNOWN_FILES = [
   'lib/master-types.ts',
 ];
 
+const SAFE_TARGET_FILES = [
+  "app/execution/page.tsx",
+  "app/agents/page.tsx",
+  "app/components/RunAgentButton.tsx",
+];
+
+const BLOCKED_PATH_PATTERNS = [
+  "app/api/",
+  "lib/server/",
+  ".env",
+  "package.json",
+  "package-lock.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+  "vercel.json",
+  "next.config",
+  "tsconfig.json",
+];
+
 function normalizeNewlines(value: string) {
   return value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
@@ -90,6 +109,32 @@ function extractTargetFile(prompt: string) {
   );
 
   return match?.[0] || '';
+}
+
+function isSafeTargetFile(filePath: string) {
+  if (SAFE_TARGET_FILES.includes(filePath)) {
+    return true;
+  }
+
+  return false;
+}
+
+function isBlockedPath(filePath: string) {
+  return BLOCKED_PATH_PATTERNS.some((pattern) => filePath.includes(pattern));
+}
+
+if (isBlockedPath(filePath)) {
+  return NextResponse.json(
+    { error: `Blocked path: ${filePath}` },
+    { status: 400 }
+  );
+}
+
+if (!isSafeTargetFile(filePath)) {
+  return NextResponse.json(
+    { error: `File is not in SAFE_TARGET_FILES: ${filePath}` },
+    { status: 400 }
+  );
 }
 
 function isAllowedFile(filePath: string) {
