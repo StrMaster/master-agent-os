@@ -219,9 +219,6 @@ const groupedEntries = Object.entries(groupedRuns);
   >
     Agent Health
   </div>
-
-
-  </div>
 )}
 
 <div style={{
