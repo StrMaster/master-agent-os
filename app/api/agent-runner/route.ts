@@ -282,8 +282,7 @@ if (agentState.paused) {
 }
 
 let taskIndex = tasks.findIndex((task) => task.status === "todo");
-    let taskIndex = tasks.findIndex((task) => task.status === "todo");
-
+    
     if (taskIndex === -1) {
       return NextResponse.json({
         ok: true,
