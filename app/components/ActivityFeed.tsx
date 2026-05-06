@@ -458,23 +458,14 @@ const groupedEntries = Object.entries(groupedRuns);
         {event.pullRequestUrl && (
 
           <a
-
             href={event.pullRequestUrl}
-
             target="_blank"
-
             rel="noreferrer"
-
             style={{ color: "#8dffb0" }}
-
           >
-
             Open PR
-
           </a>
-
         )}
-
       </div>
         ))}
     </div>
