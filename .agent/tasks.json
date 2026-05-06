@@ -1,13 +1,4 @@
 [
-  
-  {
-    "id": "task-safe-001",
-    "title": "Improve the empty completed tasks message copy",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z"
-  },
   {
 
     "id": "task-blocked-001",
@@ -22,29 +13,5 @@
 
     "createdAt": "2026-05-05T00:00:00.000Z"
 
-  },
-  {
-    "id": "task-003",
-    "title": "Improve empty completed tasks message copy",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z"
-  },
-  {
-    "id": "task-004",
-    "title": "Make section headers clearer (Todo, Running, Completed)",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z"
-  },
-  {
-    "id": "task-005",
-    "title": "Improve spacing and readability of task list items",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z"
   }
 ]
