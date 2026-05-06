@@ -18,6 +18,7 @@ type ActivityEvent = {
 export default function ActivityFeed() {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+const [filter, setFilter] = useState("all");
 
   async function loadActivity() {
     const res = await fetch("/api/activity", { cache: "no-store" });
@@ -96,6 +97,11 @@ if (recentFailed >= 3) {
   healthStatus = "Warning";
   healthColor = "#ca8a04";
 }
+
+const filteredActivity =
+  filter === "all"
+    ? activity
+    : activity.filter((event) => event.type === filter);
   return (
 
     <div
@@ -142,6 +148,25 @@ if (recentFailed >= 3) {
     Agent Health
   </div>
 
+<div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+  {["all", "proposal", "apply", "failed"].map((item) => (
+    <button
+      key={item}
+      onClick={() => setFilter(item)}
+      style={{
+        padding: "8px 12px",
+        borderRadius: 10,
+        border: filter === item ? "1px solid #0f6" : "1px solid #333",
+        background: filter === item ? "#06210f" : "#111",
+        color: filter === item ? "#8dffb0" : "#aaa",
+        cursor: "pointer",
+      }}
+    >
+      {item}
+    </button>
+  ))}
+</div>
+
   <div
     style={{
       fontWeight: 700,
@@ -186,12 +211,12 @@ if (recentFailed >= 3) {
 
       {loading && <div style={{ color: "#999" }}>Loading activity...</div>}
 
-      {!loading && activity.length === 0 && (
+      {!loading && filteredActivity.length === 0 && (
         <div style={{ color: "#999" }}>No activity yet.</div>
       )}
 
       {!loading &&
-        activity.map((event) => (
+        filteredActivity.map((event) => (
           <div
             key={event.id}
             style={{
