@@ -131,6 +131,24 @@ if (latestEvent?.type === "failed") {
   agentState = "Active";
   agentStateColor = "#16a34a";
 }
+
+const groupedRuns = filteredActivity.reduce(
+  (acc: Record<string, ActivityEvent[]>, event) => {
+    const key = event.runId || "no-run";
+
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+
+    acc[key].push(event);
+
+    return acc;
+  },
+  {}
+);
+
+const groupedEntries = Object.entries(groupedRuns);
+
   return (
 
     <div
@@ -323,7 +341,8 @@ if (latestEvent?.type === "failed") {
       )}
 
       {!loading &&
-        filteredActivity.map((event) => (
+        groupedEntries.map(([runId, events]) =>
+  events.map((event) => (
           <div
             key={event.id}
             style={{
@@ -335,6 +354,18 @@ background: getEventColors(event.type).background,
               lineHeight: 1.5,
             }}
           >
+            {event.runId && (
+  <div
+    style={{
+      marginBottom: 8,
+      color: "#8dffb0",
+      fontWeight: 700,
+      fontSize: 13,
+    }}
+  >
+    RUN {event.runId.slice(0, 8)}
+  </div>
+)}
             <strong>{event.type}</strong>
 
             <div style={{ color: "#999", fontSize: 13 }}>
@@ -370,7 +401,7 @@ background: getEventColors(event.type).background,
               </a>
             )}
           </div>
-        ))}
+        )))}
     </div>
   );
 }
