@@ -17,9 +17,7 @@ const KNOWN_FILES = [
   'app/changes/page.tsx',
   'app/execution/page.tsx',
   'app/tasks/page.tsx',
-  'app/api/apply-changes/route.ts',
-  'app/api/propose-changes/route.ts',
-  'app/api/master/route.ts',
+  'app/components/RunAgentButton.tsx',
   'lib/master-store.tsx',
   'lib/master-types.ts',
 ];
@@ -109,18 +107,6 @@ function extractTargetFile(prompt: string) {
   );
 
   return match?.[0] || '';
-}
-
-function isSafeTargetFile(filePath: string) {
-  if (SAFE_TARGET_FILES.includes(filePath)) {
-    return true;
-  }
-
-  return false;
-}
-
-function isBlockedPath(filePath: string) {
-  return BLOCKED_PATH_PATTERNS.some((pattern) => filePath.includes(pattern));
 }
 
 function isAllowedFile(filePath: string) {
@@ -378,7 +364,11 @@ export async function POST(req: Request) {
 
     if (!isAllowedFile(targetFile)) {
       return Response.json(
-        { error: `Blocked target file: ${targetFile}` },
+        {
+  ok: false,
+  mode: "blocked",
+  error: `Blocked target file: ${targetFile}`,
+}
         { status: 400 }
       );
     }
@@ -412,7 +402,12 @@ export async function POST(req: Request) {
 
       if (!isAllowedFile(change.filePath)) {
         return Response.json(
-          { error: `Blocked target file: ${change.filePath}`, parsed },
+          {
+  ok: false,
+  mode: "blocked",
+  error: `Blocked target file: ${change.filePath}`,
+  parsed,
+}
           { status: 400 }
         );
       }
