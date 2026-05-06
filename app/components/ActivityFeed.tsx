@@ -254,6 +254,7 @@ if (latestEvent?.type === "failed") {
   "retry",
   "apply",
   "deploy-triggered",
+  "blocked",
   "failed",
 ].map((item) => (
     <button
