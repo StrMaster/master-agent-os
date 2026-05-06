@@ -200,6 +200,45 @@ if (latestEvent?.type === "failed") {
     Agent Health
   </div>
 
+{latestEvent && (
+  <div
+    style={{
+      marginBottom: 18,
+      padding: 14,
+      borderRadius: 12,
+      border: "1px solid #333",
+      background: "#0f0f0f",
+      lineHeight: 1.6,
+    }}
+  >
+    <div style={{ color: "#999", fontSize: 13 }}>Latest Agent Event</div>
+
+    <strong>{latestEvent.type}</strong>
+
+    {latestEvent.taskId && <div>Task: {latestEvent.taskId}</div>}
+    {latestEvent.summary && <div>Summary: {latestEvent.summary}</div>}
+    {latestEvent.branch && <div>Branch: {latestEvent.branch}</div>}
+
+    {typeof latestEvent.merged === "boolean" && (
+      <div>Merged: {latestEvent.merged ? "✅ yes" : "❌ no"}</div>
+    )}
+
+    {latestEvent.pullRequestUrl && (
+      <div>
+        PR:{" "}
+        <a
+          href={latestEvent.pullRequestUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "#8dffb0" }}
+        >
+          Open
+        </a>
+      </div>
+    )}
+  </div>
+)}
+
 <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
   {[
   "all",
