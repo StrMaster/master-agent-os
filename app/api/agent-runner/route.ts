@@ -356,6 +356,14 @@ if (!proposal.isSafe || proposal.changedLines >= 30) {
   pullRequestUrl: applyResult.pullRequestUrl,
 });
 
+if (applyResult.merged) {
+  await logActivity({
+    type: "deploy-triggered",
+    taskId: task.id,
+    branch: applyResult.branchName,
+  });
+}
+
     if (!applyResult.ok) {
 await logActivity({
   type: "failed",
