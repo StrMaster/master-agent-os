@@ -282,8 +282,6 @@ export async function POST() {
         body: JSON.stringify({ prompt }),
       }
     );
-
-    const proposal = await proposeRes.json();
     
     await logActivity({
   type: "proposal",
