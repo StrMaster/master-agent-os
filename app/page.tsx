@@ -4,6 +4,7 @@ import SectionHeader from "./components/SectionHeader";
 import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
 import RunAgentButton from "./components/RunAgentButton";
+import ActivityFeed from "./components/ActivityFeed";
 
 export default function HomePage() {
   const stats = [
@@ -72,7 +73,7 @@ export default function HomePage() {
             </div>
             <StatusBadge label="High Focus" />
           </div>
-
+<ActivityFeed />
           <div className="mt-6 space-y-4">
             {focusItems.map((item, index) => (
               <div
