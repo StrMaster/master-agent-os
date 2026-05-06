@@ -98,6 +98,31 @@ if (recentFailed >= 3) {
 }
   return (
 
+    <div
+      style={{
+        marginTop: 24,
+        padding: 18,
+        borderRadius: 16,
+        border: "1px solid #333",
+        background: "#151515",
+        color: "white",
+      }}
+    >
+      <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
+
+      <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+    marginBottom: 16,
+  }}
+>
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{activity.length}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Total events</div>
+  </div>
+
 <div
   style={{
     marginBottom: 18,
@@ -137,31 +162,6 @@ if (recentFailed >= 3) {
     Recent failed events: {recentFailed}
   </div>
 </div>
-
-    <div
-      style={{
-        marginTop: 24,
-        padding: 18,
-        borderRadius: 16,
-        border: "1px solid #333",
-        background: "#151515",
-        color: "white",
-      }}
-    >
-      <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
-
-      <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 10,
-    marginBottom: 16,
-  }}
->
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{activity.length}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Total events</div>
-  </div>
 
   <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
     <strong>{proposalCount}</strong>
