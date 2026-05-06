@@ -14,7 +14,7 @@ export default function AgentsPage() {
         <div className="space-y-4">
           {agents.length === 0 ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-white/60">
-              Šiuo metu nėra jokių agentų. Pridėkite naujų agentų, kad galėtumėte pradėti naudotis sistema.
+              Šiuo metu nėra jokių agentų. Pridėkite naujų agentų, kad pradėtumėte naudotis visomis sistemos galimybėmis.
             </div>
           ) : (
             agents.map((agent) => (
