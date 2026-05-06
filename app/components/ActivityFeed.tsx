@@ -469,5 +469,5 @@ const groupedEntries = Object.entries(groupedRuns);
       </div>
         ))}
     </div>
-  ))
+  );
 }
