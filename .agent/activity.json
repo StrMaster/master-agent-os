@@ -1,5 +1,14 @@
 [
   {
+    "id": "dc82cfd0-d9f3-4828-92d6-2af673d6bc93",
+    "timestamp": "2026-05-06T19:02:45.419Z",
+    "type": "proposal",
+    "taskId": "task-activity-002",
+    "summary": "Improve empty agents page message copy",
+    "changedLines": 2,
+    "safe": true
+  },
+  {
     "id": "53546e43-4c57-40bc-885e-492442b0cbe6",
     "timestamp": "2026-05-06T18:42:09.421Z",
     "type": "apply",
