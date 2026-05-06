@@ -114,6 +114,22 @@ const filteredActivity =
   filter === "all"
     ? activity
     : activity.filter((event) => event.type === filter);
+
+const latestEvent = activity[0];
+
+let agentState = "Idle";
+let agentStateColor = "#6b7280";
+
+if (latestEvent?.type === "failed") {
+  agentState = "Failing";
+  agentStateColor = "#dc2626";
+} else if (recentFailed > 0) {
+  agentState = "Warning";
+  agentStateColor = "#ca8a04";
+} else if (latestEvent) {
+  agentState = "Active";
+  agentStateColor = "#16a34a";
+}
   return (
 
     <div
@@ -127,7 +143,31 @@ const filteredActivity =
       }}
     >
       <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
-
+      <div
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 16,
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: `1px solid ${agentStateColor}`,
+    color: agentStateColor,
+    background: "#0f0f0f",
+    fontWeight: 700,
+  }}
+>
+  <span
+    style={{
+      width: 8,
+      height: 8,
+      borderRadius: 999,
+      background: agentStateColor,
+      display: "inline-block",
+    }}
+  />
+  Agent State: {agentState}
+</div>
       <div
   style={{
     display: "grid",
