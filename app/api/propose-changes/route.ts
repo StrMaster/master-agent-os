@@ -123,19 +123,7 @@ function isBlockedPath(filePath: string) {
   return BLOCKED_PATH_PATTERNS.some((pattern) => filePath.includes(pattern));
 }
 
-if (isBlockedPath(filePath)) {
-  return NextResponse.json(
-    { error: `Blocked path: ${filePath}` },
-    { status: 400 }
-  );
-}
 
-if (!isSafeTargetFile(filePath)) {
-  return NextResponse.json(
-    { error: `File is not in SAFE_TARGET_FILES: ${filePath}` },
-    { status: 400 }
-  );
-}
 
 function isAllowedFile(filePath: string) {
   return (
@@ -397,6 +385,20 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    if (isBlockedPath(filePath)) {
+  return NextResponse.json(
+    { error: `Blocked path: ${filePath}` },
+    { status: 400 }
+  );
+}
+
+if (!isSafeTargetFile(filePath)) {
+  return NextResponse.json(
+    { error: `File is not in SAFE_TARGET_FILES: ${filePath}` },
+    { status: 400 }
+  );
+}
 
     const original = await readFileFromGitHub(targetFile);
 
