@@ -131,24 +131,6 @@ if (latestEvent?.type === "failed") {
   agentState = "Active";
   agentStateColor = "#16a34a";
 }
-
-const groupedRuns = filteredActivity.reduce(
-  (acc: Record<string, ActivityEvent[]>, event) => {
-    const key = event.runId || "no-run";
-
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-
-    acc[key].push(event);
-
-    return acc;
-  },
-  {}
-);
-
-const groupedEntries = Object.entries(groupedRuns);
-
   return (
 
     <div
@@ -341,132 +323,53 @@ const groupedEntries = Object.entries(groupedRuns);
       )}
 
       {!loading &&
-        groupedEntries.map(([runId, events]) => (
-
-  <div
-
-    key={runId}
-
-    style={{
-
-      marginBottom: 20,
-
-      padding: 14,
-
-      borderRadius: 14,
-
-      border: "1px solid #2a2a2a",
-
-      background: "#101010",
-
-    }}
-
-  >
-
-    <div
-
-      style={{
-
-        marginBottom: 12,
-
-        fontWeight: 700,
-
-        color: "#8dffb0",
-
-      }}
-
-    >
-
-      RUN {runId.slice(0, 8)}
-
-    </div>
-
-    {events.map((event) => (
-
-      <div
-
-        key={event.id}
-
-        style={{
-
-          marginTop: 12,
-
-          padding: 14,
-
-          borderRadius: 12,
-
-          border: `1px solid ${getEventColors(event.type).border}`,
-
-          background: getEventColors(event.type).background,
-
-          lineHeight: 1.5,
-
-        }}
-
-      >
-
-        <strong>{event.type}</strong>
-
-        <div style={{ color: "#999", fontSize: 13 }}>
-
-          {new Date(event.timestamp).toLocaleString()}
-
-        </div>
-
-        {event.taskId && <div>Task: {event.taskId}</div>}
-
-        {event.summary && <div>Summary: {event.summary}</div>}
-
-        {typeof event.changedLines === "number" && (
-
-          <div>Changed lines: {event.changedLines}</div>
-
-        )}
-
-        {typeof event.safe === "boolean" && (
-
-          <div>Safe: {event.safe ? "✅ yes" : "❌ no"}</div>
-
-        )}
-
-        {event.branch && (
-
+        filteredActivity.map((event) => (
           <div
-
+            key={event.id}
             style={{
-
-              overflowWrap: "break-word",
-
-              wordBreak: "break-word",
-
+              marginTop: 12,
+              padding: 14,
+              borderRadius: 12,
+              border: `1px solid ${getEventColors(event.type).border}`,
+background: getEventColors(event.type).background,
+              lineHeight: 1.5,
             }}
-
           >
+            <strong>{event.type}</strong>
 
-            Branch: {event.branch}
+            <div style={{ color: "#999", fontSize: 13 }}>
+              {new Date(event.timestamp).toLocaleString()}
+            </div>
 
+            {event.runId && (
+  <div style={{ color: "#999", fontSize: 13 }}>
+    Run: {event.runId.slice(0, 8)}
+  </div>
+)}
+
+            {event.taskId && <div>Task: {event.taskId}</div>}
+            {event.summary && <div>Summary: {event.summary}</div>}
+            {typeof event.changedLines === "number" && (
+              <div>Changed lines: {event.changedLines}</div>
+            )}
+            {typeof event.safe === "boolean" && (
+              <div>Safe: {event.safe ? "✅ yes" : "❌ no"}</div>
+            )}
+            {event.branch && <div>Branch: {event.branch}</div>}
+            {typeof event.merged === "boolean" && (
+              <div>Merged: {event.merged ? "✅ yes" : "❌ no"}</div>
+            )}
+            {event.pullRequestUrl && (
+              <a
+                href={event.pullRequestUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#8dffb0" }}
+              >
+                Open PR
+              </a>
+            )}
           </div>
-
-        )}
-
-        {typeof event.merged === "boolean" && (
-
-          <div>Merged: {event.merged ? "✅ yes" : "❌ no"}</div>
-
-        )}
-
-        {event.pullRequestUrl && (
-
-          <a
-            href={event.pullRequestUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "#8dffb0" }}
-          >
-            Open PR
-          </a>
-        ))}
-      </div>
         ))}
     </div>
   );
