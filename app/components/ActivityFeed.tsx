@@ -74,6 +74,13 @@ function getEventColors(type: string) {
   }
 }
 
+const proposalCount = activity.filter((event) => event.type === "proposal").length;
+const applyCount = activity.filter((event) => event.type === "apply").length;
+const mergedCount = activity.filter(
+  (event) => event.type === "apply" && event.merged === true
+).length;
+const failedCount = activity.filter((event) => event.type === "failed").length;
+
   return (
     <div
       style={{
@@ -86,6 +93,40 @@ function getEventColors(type: string) {
       }}
     >
       <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
+
+      <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+    marginBottom: 16,
+  }}
+>
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{activity.length}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Total events</div>
+  </div>
+
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{proposalCount}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Proposals</div>
+  </div>
+
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{applyCount}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Apply events</div>
+  </div>
+
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{mergedCount}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Merged</div>
+  </div>
+
+  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
+    <strong>{failedCount}</strong>
+    <div style={{ color: "#999", fontSize: 13 }}>Failed</div>
+  </div>
+</div>
 
       {loading && <div style={{ color: "#999" }}>Loading activity...</div>}
 
