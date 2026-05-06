@@ -283,15 +283,14 @@ export async function POST() {
       }
     );
     
-    await logActivity({
+    let proposal = await proposeRes.json();
+await logActivity({
   type: "proposal",
   taskId: task.id,
   summary: proposal.summary,
   changedLines: proposal.changedLines,
   safe: proposal.isSafe,
 });
-
-    let proposal = await proposeRes.json();
 
 if (!proposal.isSafe || proposal.changedLines >= 30) {
   await logActivity({
