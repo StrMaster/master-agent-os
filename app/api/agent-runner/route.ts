@@ -271,6 +271,13 @@ export async function POST() {
 });
 
     if (!proposal.isSafe || proposal.changedLines >= 30) {
+      await logActivity({
+  type: "failed",
+  taskId: task.id,
+  reason: "Proposal failed safety",
+  changedLines: proposal.changedLines,
+  safe: proposal.isSafe,
+});
       return NextResponse.json({
         ok: false,
         mode: "failed",
@@ -302,6 +309,12 @@ export async function POST() {
 });
 
     if (!applyResult.ok) {
+await logActivity({
+  type: "failed",
+  taskId: task.id,
+  reason: "Apply failed",
+  details: applyResult.error || null,
+});
       return NextResponse.json({
         ok: false,
         mode: "failed",
