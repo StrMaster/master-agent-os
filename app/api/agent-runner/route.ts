@@ -248,7 +248,6 @@ export async function POST() {
   try {
     const runId = crypto.randomUUID();
     let { tasks } = await readTasksFile();
-    let { tasks } = await readTasksFile();
 
 const stateRes = await fetch(
   `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
