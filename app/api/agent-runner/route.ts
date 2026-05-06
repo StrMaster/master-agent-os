@@ -4,6 +4,7 @@ const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
+const ACTIVITY_PATH = ".agent/activity.json";
 
 type AgentTask = {
   id: string;
@@ -88,6 +89,91 @@ async function writeTasksFile(
     const text = await res.text();
     throw new Error(`Failed to write tasks.json: ${res.status} ${text}`);
   }
+}
+
+async function readActivityFile(): Promise<{
+  activity: any[];
+  sha: string;
+}> {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ACTIVITY_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to read activity.json: ${res.status}`);
+  }
+
+  const file = (await res.json()) as GitHubFile;
+
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+
+  return {
+    activity: JSON.parse(content),
+    sha: file.sha,
+  };
+}
+
+async function writeActivityFile(activity: any[], sha: string) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const content = Buffer.from(
+    JSON.stringify(activity, null, 2) + "\n"
+  ).toString("base64");
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ACTIVITY_PATH}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Update agent activity",
+        content,
+        sha,
+        branch: BRANCH,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to write activity: ${res.status} ${text}`);
+  }
+}
+
+async function logActivity(event: any) {
+  const current = await readActivityFile();
+
+  const updated = [
+    {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      ...event,
+    },
+    ...current.activity,
+  ].slice(0, 100);
+
+  await writeActivityFile(updated, current.sha);
 }
 
 function buildPrompt(task: AgentTask) {
@@ -175,6 +261,14 @@ export async function POST() {
     );
 
     const proposal = await proposeRes.json();
+    
+    await logActivity({
+  type: "proposal",
+  taskId: task.id,
+  summary: proposal.summary,
+  changedLines: proposal.changedLines,
+  safe: proposal.isSafe,
+});
 
     if (!proposal.isSafe || proposal.changedLines >= 30) {
       return NextResponse.json({
