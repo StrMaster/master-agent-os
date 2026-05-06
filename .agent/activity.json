@@ -1,5 +1,13 @@
 [
   {
+    "id": "ef35a710-d7d3-46a6-a20c-13667fdac9b4",
+    "timestamp": "2026-05-06T20:55:01.035Z",
+    "type": "generated-task",
+    "taskId": "task-1778100900305",
+    "summary": "Improve status label clarity",
+    "targetFile": "app/agents/page.tsx"
+  },
+  {
     "id": "66af5e1f-e5dd-44a4-91ae-0c79ca9eed56",
     "timestamp": "2026-05-06T19:47:57.571Z",
     "type": "generated-task",
