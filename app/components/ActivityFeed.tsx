@@ -220,31 +220,7 @@ const groupedEntries = Object.entries(groupedRuns);
     Agent Health
   </div>
 
-{latestEvent && (
-  
-)}
 
-    {latestEvent.taskId && <div>Task: {latestEvent.taskId}</div>}
-    {latestEvent.summary && <div>Summary: {latestEvent.summary}</div>}
-    {latestEvent.branch && <div>Branch: {latestEvent.branch}</div>}
-
-    {typeof latestEvent.merged === "boolean" && (
-      <div>Merged: {latestEvent.merged ? "✅ yes" : "❌ no"}</div>
-    )}
-
-    {latestEvent.pullRequestUrl && (
-      <div>
-        PR:{" "}
-        <a
-          href={latestEvent.pullRequestUrl}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "#8dffb0" }}
-        >
-          Open
-        </a>
-      </div>
-    )}
   </div>
 )}
 
