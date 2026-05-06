@@ -465,7 +465,7 @@ const groupedEntries = Object.entries(groupedRuns);
           >
             Open PR
           </a>
-        )}
+        ))}
       </div>
         ))}
     </div>
