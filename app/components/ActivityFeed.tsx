@@ -112,6 +112,7 @@ if (recentFailed >= 3) {
 }
 
 const filteredActivity =
+const limitedActivity = filteredActivity.slice(0, 8);
   filter === "all"
     ? activity
     : activity.filter((event) => event.type === filter);
@@ -132,7 +133,7 @@ if (latestEvent?.type === "failed") {
   agentStateColor = "#16a34a";
 }
 
-const groupedRuns = filteredActivity.reduce(
+const groupedRuns = limitedActivity.reduce(
   (acc: Record<string, ActivityEvent[]>, event) => {
     const key = event.runId || "no-run";
 
@@ -220,24 +221,7 @@ const groupedEntries = Object.entries(groupedRuns);
   </div>
 
 {latestEvent && (
-  <div
-    style={{
-      marginBottom: 18,
-      padding: 14,
-      borderRadius: 12,
-      border: "1px solid #333",
-      background: "#0f0f0f",
-      lineHeight: 1.6,
-    }}
-  >
-    <div style={{ color: "#999", fontSize: 13 }}>Latest Agent Event</div>
-
-    <strong>{latestEvent.type}</strong>
-
-    {latestEvent.runId && (
-  <div style={{ color: "#999", fontSize: 13 }}>
-    Run: {latestEvent.runId.slice(0, 8)}
-  </div>
+  
 )}
 
     {latestEvent.taskId && <div>Task: {latestEvent.taskId}</div>}
@@ -264,7 +248,13 @@ const groupedEntries = Object.entries(groupedRuns);
   </div>
 )}
 
-<div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+<div style={{
+  display: "flex",
+  gap: 8,
+  overflowX: "auto",
+  paddingBottom: 6,
+  marginBottom: 16,
+}}>
   {[
   "all",
   "generated-task",
@@ -386,7 +376,7 @@ background: getEventColors(event.type).background,
             {typeof event.safe === "boolean" && (
               <div>Safe: {event.safe ? "✅ yes" : "❌ no"}</div>
             )}
-            {event.branch && <div>Branch: {event.branch}</div>}
+            {event.branch && <div>Branch: {event.branch.slice(0, 28)}...</div>}
             {typeof event.merged === "boolean" && (
               <div>Merged: {event.merged ? "✅ yes" : "❌ no"}</div>
             )}
