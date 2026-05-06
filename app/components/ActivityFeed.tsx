@@ -80,8 +80,64 @@ const mergedCount = activity.filter(
   (event) => event.type === "apply" && event.merged === true
 ).length;
 const failedCount = activity.filter((event) => event.type === "failed").length;
+const recentEvents = activity.slice(0, 10);
 
+const recentFailed = recentEvents.filter(
+  (event) => event.type === "failed"
+).length;
+
+let healthStatus = "Healthy";
+let healthColor = "#16a34a";
+
+if (recentFailed >= 3) {
+  healthStatus = "Failing";
+  healthColor = "#dc2626";
+} else if (recentFailed >= 1) {
+  healthStatus = "Warning";
+  healthColor = "#ca8a04";
+}
   return (
+
+<div
+  style={{
+    marginBottom: 18,
+    padding: 14,
+    borderRadius: 12,
+    border: `1px solid ${healthColor}`,
+    background: "#0f0f0f",
+  }}
+>
+  <div
+    style={{
+      fontSize: 13,
+      color: "#999",
+      marginBottom: 6,
+    }}
+  >
+    Agent Health
+  </div>
+
+  <div
+    style={{
+      fontWeight: 700,
+      color: healthColor,
+      fontSize: 18,
+    }}
+  >
+    {healthStatus}
+  </div>
+
+  <div
+    style={{
+      marginTop: 6,
+      color: "#777",
+      fontSize: 13,
+    }}
+  >
+    Recent failed events: {recentFailed}
+  </div>
+</div>
+
     <div
       style={{
         marginTop: 24,
