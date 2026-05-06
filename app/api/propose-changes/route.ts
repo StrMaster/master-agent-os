@@ -383,20 +383,6 @@ export async function POST(req: Request) {
       );
     }
 
-    if (isBlockedPath(filePath)) {
-  return NextResponse.json(
-    { error: `Blocked path: ${filePath}` },
-    { status: 400 }
-  );
-}
-
-if (!isSafeTargetFile(filePath)) {
-  return NextResponse.json(
-    { error: `File is not in SAFE_TARGET_FILES: ${filePath}` },
-    { status: 400 }
-  );
-}
-
     const original = await readFileFromGitHub(targetFile);
 
     let parsed = await generatePatch({
