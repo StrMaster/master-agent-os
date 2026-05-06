@@ -202,15 +202,34 @@ export async function POST() {
     const targetFile = randomItem(SAFE_TARGET_FILES);
 
     const task: AgentTask = {
-      id: `task-${Date.now()}`,
-      title,
-      targetFile,
-      status: "todo",
-      priority: "low",
-      createdAt: new Date().toISOString(),
-    };
+  id: `task-${Date.now()}`,
+  title,
+  targetFile,
+  status: "todo",
+  priority: "low",
+  createdAt: new Date().toISOString(),
+};
 
-    const updatedTasks = [...tasks, task];
+const duplicate = tasks.find(
+  (existingTask) =>
+    existingTask.title?.trim().toLowerCase() ===
+    task.title.trim().toLowerCase()
+);
+
+if (duplicate) {
+  return NextResponse.json({
+    ok: false,
+    mode: "duplicate-task",
+    error: "Similar task already exists",
+    existingTask: {
+      id: duplicate.id,
+      title: duplicate.title,
+      status: duplicate.status,
+    },
+  });
+}
+
+const updatedTasks = [...tasks, task];
 
     await writeTasksFile(updatedTasks, sha);
 await logActivity({
