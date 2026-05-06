@@ -61,6 +61,12 @@ function getEventColors(type: string) {
         background: "#1a0b0b",
       };
 
+case "retry":
+  return {
+    border: "#a855f7",
+    background: "#160b22",
+  };
+
     case "blocked":
       return {
         border: "#ca8a04",
@@ -149,7 +155,7 @@ const filteredActivity =
   </div>
 
 <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-  {["all", "generated-task", "proposal", "apply", "failed"].map((item) => (
+  {["all", "generated-task", "proposal", "retry", "apply", "failed"].map((item) => (
     <button
       key={item}
       onClick={() => setFilter(item)}
