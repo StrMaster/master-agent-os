@@ -149,7 +149,7 @@ const filteredActivity =
   </div>
 
 <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-  {["all", "proposal", "apply", "failed"].map((item) => (
+  {["all", "generated-task", "proposal", "apply", "failed"].map((item) => (
     <button
       key={item}
       onClick={() => setFilter(item)}
