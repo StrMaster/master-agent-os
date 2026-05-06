@@ -123,20 +123,17 @@ function isBlockedPath(filePath: string) {
   return BLOCKED_PATH_PATTERNS.some((pattern) => filePath.includes(pattern));
 }
 
-
-
 function isAllowedFile(filePath: string) {
-  return (
-    (filePath.startsWith('app/') ||
-      filePath.startsWith('lib/') ||
-      filePath.startsWith('components/')) &&
-    !filePath.includes('..') &&
-    !filePath.includes('node_modules') &&
-    !filePath.includes('package-lock') &&
-    !filePath.includes('vercel') &&
-    !filePath.startsWith('.env')
+  const isSafeTarget = SAFE_TARGET_FILES.includes(filePath);
+
+  const isBlocked = BLOCKED_PATH_PATTERNS.some((pattern) =>
+    filePath.includes(pattern)
   );
+
+  return isSafeTarget && !isBlocked && !filePath.includes('..');
 }
+
+
 
 function sanitizeBranchName(value: string) {
   return value
