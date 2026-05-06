@@ -407,7 +407,7 @@ export async function POST(req: Request) {
   mode: "blocked",
   error: `Blocked target file: ${change.filePath}`,
   parsed,
-}
+},
           { status: 400 }
         );
       }
