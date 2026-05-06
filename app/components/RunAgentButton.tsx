@@ -63,6 +63,31 @@ export default function RunAgentButton() {
     setLoading(false);
   }
 }
+
+<button
+  onClick={async () => {
+    const res = await fetch("/api/generate-task", {
+      method: "POST",
+    });
+
+    const data = await res.json();
+    console.log(data);
+    alert(JSON.stringify(data, null, 2));
+  }}
+  style={{
+    padding: "12px 18px",
+    borderRadius: 12,
+    border: "1px solid #333",
+    background: "#4b5563",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: 700,
+    marginLeft: 10,
+  }}
+>
+  Generate Task
+</button>
+
   const change = result?.proposal?.changes?.[0];
 
   return (
