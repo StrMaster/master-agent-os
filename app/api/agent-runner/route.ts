@@ -248,7 +248,41 @@ export async function POST() {
   try {
     const runId = crypto.randomUUID();
     let { tasks } = await readTasksFile();
+    let { tasks } = await readTasksFile();
 
+const stateRes = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  }
+);
+
+if (!stateRes.ok) {
+  throw new Error(`Failed to read state.json: ${stateRes.status}`);
+}
+
+const stateData = await stateRes.json();
+
+const stateContent = Buffer.from(
+  stateData.content,
+  "base64"
+).toString("utf-8");
+
+const agentState = JSON.parse(stateContent);
+
+if (agentState.paused) {
+  return NextResponse.json({
+    ok: false,
+    mode: "paused",
+    message: "Agent is paused",
+  });
+}
+
+let taskIndex = tasks.findIndex((task) => task.status === "todo");
     let taskIndex = tasks.findIndex((task) => task.status === "todo");
 
     if (taskIndex === -1) {
