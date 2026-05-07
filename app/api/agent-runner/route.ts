@@ -522,6 +522,7 @@ await logActivity({
     reason: "Retried proposal with stricter prompt",
     changedLines: proposal.changedLines,
     safe: proposal.isSafe,
+    failureType: "proposal-failed",
   });
 
 if (proposal.mode === "blocked") {
@@ -530,6 +531,7 @@ if (proposal.mode === "blocked") {
     runId,
     taskId: task.id,
     reason: proposal.error,
+    failureType: "blocked",
   });
 
   return NextResponse.json({
@@ -589,6 +591,9 @@ await logActivity({
   taskId: task.id,
   reason: "Apply failed",
   details: applyResult.error || null,
+  failureType: applyResult?.error
+  ? "apply-failed"
+  : "unknown",
 });
       return NextResponse.json({
         ok: false,
