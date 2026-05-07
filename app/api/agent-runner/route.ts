@@ -709,8 +709,6 @@ const memoryContent = Buffer.from(
 
 const memory = JSON.parse(memoryContent);
 
-const memory = JSON.parse(memoryContent);
-
 const recentBranch = memory.lastBranch === applyResult.branchName;
 
 memory.lastRun = new Date().toISOString();
