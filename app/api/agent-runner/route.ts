@@ -348,6 +348,13 @@ const cooldownSeconds = Math.min(
 );
 
 if (secondsSinceFailure < cooldownSeconds) {
+await logActivity({
+  type: "cooldown",
+  runId,
+  reason: `Cooldown active after ${recentFailureCount} recent failures`,
+  cooldownSeconds,
+  recentFailureCount,
+});
   return NextResponse.json({
     ok: false,
     mode: "cooldown",
