@@ -487,12 +487,13 @@ export async function POST(req: Request) {
         : 'Changed lines exceed 100'
       };
 
-    return Response.json({
-      summary: parsed.summary || 'Update files',
-      branchName:
-        sanitizeBranchName(parsed.branchName || 'agent/update-files') ||
-        'agent/update-files',
-      commitMessage: parsed.commitMessage || 'feat: update files',
+    const uniqueSuffix = Date.now().toString().slice(-5);
+
+return Response.json({
+  summary: parsed.summary || 'Update file',
+  branchName:
+    `${sanitizeBranchName(parsed.branchName || 'agent/update-file') || 'agent/update-file'}-${uniqueSuffix}`,
+  commitMessage: parsed.commitMessage || 'feat: update file',
       isSafe,
       changedLines,
       qualityReview,
