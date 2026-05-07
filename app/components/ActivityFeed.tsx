@@ -339,8 +339,9 @@ background: getEventColors(event.type).background,
 >
   {event.type}
 </div>
-              {new Date(event.timestamp).toLocaleString()}
-            </div>
+              <div style={{ color: "#999", fontSize: 13 }}>
+  {new Date(event.timestamp).toLocaleString()}
+</div>
 
             {event.runId && (
   <div style={{ color: "#999", fontSize: 13 }}>
