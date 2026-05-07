@@ -176,6 +176,64 @@ async function logActivity(event: any) {
   await writeActivityFile(updated, current.sha);
 }
 
+async function pauseAgent(reason: string) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to read state.json: ${res.status}`);
+  }
+
+  const file = await res.json();
+
+  const newState = {
+    paused: true,
+    reason,
+    updatedAt: new Date().toISOString(),
+  };
+
+  const content = Buffer.from(
+    JSON.stringify(newState, null, 2) + "\n"
+  ).toString("base64");
+
+  const writeRes = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: "Auto-pause agent after repeated failures",
+        content,
+        sha: file.sha,
+        branch: BRANCH,
+      }),
+    }
+  );
+
+  if (!writeRes.ok) {
+    const text = await writeRes.text();
+    throw new Error(`Failed to pause agent: ${writeRes.status} ${text}`);
+  }
+}
+
 function buildPrompt(task: AgentTask) {
   return `
 Make a small safe change in ${task.targetFile}.
@@ -386,6 +444,8 @@ if (recentFailures >= 3) {
     taskId: task.id,
     failures: recentFailures,
   });
+
+await pauseAgent(`Task ${task.id} failed ${recentFailures} times`);
 
   return NextResponse.json({
     ok: false,
