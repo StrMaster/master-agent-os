@@ -709,9 +709,14 @@ const memoryContent = Buffer.from(
 
 const memory = JSON.parse(memoryContent);
 
+const memory = JSON.parse(memoryContent);
+
+const recentBranch = memory.lastBranch === applyResult.branchName;
+
 memory.lastRun = new Date().toISOString();
 memory.lastTaskId = task.id;
 memory.lastBranch = applyResult.branchName;
+memory.reusedBranch = recentBranch;
 
 const updatedMemory = Buffer.from(
   JSON.stringify(memory, null, 2) + "\n"
