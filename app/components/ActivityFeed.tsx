@@ -98,6 +98,12 @@ case "circular-dependency":
     background: "#220909",
   };
 
+case "cooldown":
+  return {
+    border: "#38bdf8",
+    background: "#071923",
+  };
+
     default:
       return {
         border: "#333",
