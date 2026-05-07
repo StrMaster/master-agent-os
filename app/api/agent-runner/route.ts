@@ -409,12 +409,15 @@ const todoTasks = tasks
       event.taskId === b.task.id
   ).length;
 
-  const aAgeHours =
-  (Date.now() - new Date(a.task.createdAt).getTime()) /
+  const aCreatedAt = a.task.createdAt ?? new Date().toISOString();
+const bCreatedAt = b.task.createdAt ?? new Date().toISOString();
+
+const aAgeHours =
+  (Date.now() - new Date(aCreatedAt).getTime()) /
   (1000 * 60 * 60);
 
 const bAgeHours =
-  (Date.now() - new Date(b.task.createdAt).getTime()) /
+  (Date.now() - new Date(bCreatedAt).getTime()) /
   (1000 * 60 * 60);
 
 const aStaleBoost = Math.min(aAgeHours / 24, 2);
