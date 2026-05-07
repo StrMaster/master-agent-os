@@ -446,7 +446,12 @@ if (recentFailures >= 3) {
   });
 
 await pauseAgent(`Task ${task.id} failed ${recentFailures} times`);
-
+await logActivity({
+  type: "auto-paused",
+  runId,
+  taskId: task.id,
+  reason: `Task ${task.id} failed ${recentFailures} times`,
+});
   return NextResponse.json({
     ok: false,
     mode: "threshold-reached",
