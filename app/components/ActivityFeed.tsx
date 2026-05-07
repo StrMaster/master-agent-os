@@ -92,6 +92,12 @@ case "dependency-blocked":
     background: "#1a1607",
   };
 
+case "circular-dependency":
+  return {
+    border: "#dc2626",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
