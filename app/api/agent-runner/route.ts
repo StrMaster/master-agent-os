@@ -391,6 +391,19 @@ let taskIndex = -1;
 
 const activityFile = await readActivityFile();
 const activity = activityFile.activity;
+const dependencyGraph = tasks.map((task) => ({
+  id: task.id,
+  dependsOn: task.dependsOn ?? [],
+  blockedBy:
+    task.dependsOn?.filter(
+      (dependencyId: string) =>
+        !tasks.some(
+          (t) =>
+            t.id === dependencyId &&
+            t.status === "done"
+        )
+    ) ?? [],
+}));
 const todoTasks = tasks
   .map((task, index) => ({ task, index }))
   .filter(({ task }) => {
@@ -517,6 +530,7 @@ if (dependencyBlockedTasks.length > 0) {
     runId,
     taskId: dependencyBlockedTasks[0].id,
     reason: `Waiting for dependencies: ${dependencyBlockedTasks[0].dependsOn?.join(", ")}`,
+    dependencyGraph,
   });
 }
 
