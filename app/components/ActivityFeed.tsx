@@ -104,6 +104,12 @@ case "cooldown":
     background: "#071923",
   };
 
+case "deploy-pending":
+  return {
+    border: "#06b6d4",
+    background: "#071b22",
+  };
+
     default:
       return {
         border: "#333",
