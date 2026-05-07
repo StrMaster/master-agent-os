@@ -14,6 +14,8 @@ type ActivityEvent = {
   branch?: string;
   merged?: boolean;
   pullRequestUrl?: string;
+  provider?: string;
+status?: string;
 };
 
 export default function ActivityFeed() {
@@ -389,6 +391,8 @@ background: getEventColors(event.type).background,
             {typeof event.merged === "boolean" && (
               <div>Merged: {event.merged ? "✅ yes" : "❌ no"}</div>
             )}
+            {event.provider && <div>Provider: {event.provider}</div>}
+{event.status && <div>Status: {event.status}</div>}
             {event.pullRequestUrl && (
               <a
                 href={event.pullRequestUrl}
