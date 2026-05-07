@@ -13,6 +13,7 @@ type AgentTask = {
   status: "todo" | "running" | "done" | "failed";
   priority?: "low" | "medium" | "high";
   createdAt?: string;
+  dependsOn?: string[];
   updatedAt?: string;
   error?: string;
   result?: {
