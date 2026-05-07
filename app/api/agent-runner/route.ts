@@ -346,6 +346,31 @@ if (proposal.mode === "blocked") {
 if (!proposal.isSafe || proposal.changedLines >= 30) {
   await logActivity({
     type: "failed",
+const activityRes = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/activity.json?ref=${BRANCH}`,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  }
+);
+
+const activityData = await activityRes.json();
+
+const activityContent = Buffer.from(
+  activityData.content,
+  "base64"
+).toString("utf-8");
+
+const activity = JSON.parse(activityContent);
+
+const recentFailures = activity.filter(
+  (event: any) =>
+    event.type === "failed" &&
+    event.taskId === task.id
+).length;
     runId,
     taskId: task.id,
     reason: "Proposal failed safety",
