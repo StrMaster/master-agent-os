@@ -640,6 +640,52 @@ if (applyResult.merged) {
     taskId: task.id,
     branch: applyResult.branchName,
   });
+
+const memoryRes = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json?ref=${BRANCH}`,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  }
+);
+
+const memoryData = await memoryRes.json();
+
+const memoryContent = Buffer.from(
+  memoryData.content,
+  "base64"
+).toString("utf-8");
+
+const memory = JSON.parse(memoryContent);
+
+memory.lastRun = new Date().toISOString();
+memory.lastTaskId = task.id;
+memory.lastBranch = applyResult.branchName;
+
+const updatedMemory = Buffer.from(
+  JSON.stringify(memory, null, 2) + "\n"
+).toString("base64");
+
+await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json`,
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: `Update agent memory for ${task.id}`,
+      content: updatedMemory,
+      sha: memoryData.sha,
+      branch: BRANCH,
+    }),
+  }
+);
 }
 
     if (!applyResult.ok) {
