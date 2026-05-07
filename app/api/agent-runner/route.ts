@@ -559,10 +559,7 @@ const memory = JSON.parse(memoryContent);
 memory.lastFailure = {
   taskId: task.id,
   timestamp: new Date().toISOString(),
-  failureType:
-    applyResult?.error
-      ? "apply-failed"
-      : "unknown",
+  failureType: "proposal-failed",
 };
 
 const updatedMemory = Buffer.from(
