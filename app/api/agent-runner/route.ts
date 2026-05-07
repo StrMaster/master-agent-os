@@ -408,16 +408,6 @@ const dependenciesCompleted = task.dependsOn.every((dependencyId: string) =>
 
 return dependenciesCompleted;
 
-  const dependenciesCompleted = task.dependsOn.every(
-    (dependencyId: string) =>
-      tasks.some(
-        (t) =>
-          t.id === dependencyId &&
-          t.status === "done"
-      )
-  );
-
-  return dependenciesCompleted;
 })
   .sort((a, b) => {
   const aPriority = priorityRank[a.task.priority ?? "low"];
