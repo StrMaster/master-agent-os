@@ -86,6 +86,12 @@ case "auto-paused":
     background: "#1f1207",
   };
 
+case "dependency-blocked":
+  return {
+    border: "#ca8a04",
+    background: "#1a1607",
+  };
+
     default:
       return {
         border: "#333",
