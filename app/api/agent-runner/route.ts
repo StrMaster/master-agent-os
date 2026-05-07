@@ -799,10 +799,12 @@ if (proposal.mode === "blocked") {
 
 if (applyResult.merged) {
   await logActivity({
-    type: "deploy-triggered",
+    type: "deploy-pending",
     runId,
     taskId: task.id,
     branch: applyResult.branchName,
+    provider: "vercel",
+status: "pending",
   });
 
 const memoryRes = await fetch(
