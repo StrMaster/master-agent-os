@@ -392,11 +392,26 @@ const todoTasks = tasks
   .map((task, index) => ({ task, index }))
   .filter(({ task }) => task.status === "todo")
   .sort((a, b) => {
-    const aPriority = priorityRank[a.task.priority ?? "low"];
-    const bPriority = priorityRank[b.task.priority ?? "low"];
+  const aPriority = priorityRank[a.task.priority ?? "low"];
+  const bPriority = priorityRank[b.task.priority ?? "low"];
 
-    return bPriority - aPriority;
-  });
+  const aFailures = activity.filter(
+    (event: any) =>
+      event.type === "failed" &&
+      event.taskId === a.task.id
+  ).length;
+
+  const bFailures = activity.filter(
+    (event: any) =>
+      event.type === "failed" &&
+      event.taskId === b.task.id
+  ).length;
+
+  const aScore = aPriority - aFailures;
+  const bScore = bPriority - bFailures;
+
+  return bScore - aScore;
+});
 
 if (todoTasks.length > 0) {
   taskIndex = todoTasks[0].index;
