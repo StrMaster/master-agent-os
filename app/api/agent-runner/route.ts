@@ -380,7 +380,27 @@ if (agentState.paused) {
   });
 }
 
-let taskIndex = tasks.findIndex((task) => task.status === "todo");
+const priorityRank = {
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+let taskIndex = -1;
+
+const todoTasks = tasks
+  .map((task, index) => ({ task, index }))
+  .filter(({ task }) => task.status === "todo")
+  .sort((a, b) => {
+    const aPriority = priorityRank[a.task.priority ?? "low"];
+    const bPriority = priorityRank[b.task.priority ?? "low"];
+
+    return bPriority - aPriority;
+  });
+
+if (todoTasks.length > 0) {
+  taskIndex = todoTasks[0].index;
+}
     
     if (taskIndex === -1) {
       return NextResponse.json({
