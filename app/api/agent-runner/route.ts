@@ -346,6 +346,13 @@ if (proposal.mode === "blocked") {
 if (!proposal.isSafe || proposal.changedLines >= 30) {
   await logActivity({
     type: "failed",
+    runId,
+    taskId: task.id,
+    reason: "Proposal failed safety",
+    changedLines: proposal.changedLines,
+    safe: proposal.isSafe,
+  });
+
 const activityRes = await fetch(
   `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/activity.json?ref=${BRANCH}`,
   {
@@ -371,12 +378,6 @@ const recentFailures = activity.filter(
     event.type === "failed" &&
     event.taskId === task.id
 ).length;
-    runId,
-    taskId: task.id,
-    reason: "Proposal failed safety",
-    changedLines: proposal.changedLines,
-    safe: proposal.isSafe,
-  });
 
   const retryPrompt = buildRetryPrompt(task, "Proposal failed safety check");
 
