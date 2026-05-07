@@ -328,9 +328,8 @@ background: getEventColors(event.type).background,
     RUN {event.runId.slice(0, 8)}
   </div>
 )}
-            <strong>{event.type}</strong>
 
-            <div
+<div
   style={{
     fontWeight: 700,
     fontSize: 14,
