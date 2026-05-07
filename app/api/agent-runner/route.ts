@@ -399,8 +399,14 @@ const todoTasks = tasks
   }
 
   if (!task.dependsOn?.length) {
-    return true;
-  }
+  return true;
+}
+
+const dependenciesCompleted = task.dependsOn.every((dependencyId: string) =>
+  tasks.some((t) => t.id === dependencyId && t.status === "done")
+);
+
+return dependenciesCompleted;
 
   const dependenciesCompleted = task.dependsOn.every(
     (dependencyId: string) =>
@@ -455,6 +461,29 @@ const bScore =
 
   return bScore - aScore;
 });
+
+const dependencyBlockedTasks = tasks.filter((task) => {
+  if (task.status !== "todo") {
+    return false;
+  }
+
+  if (!task.dependsOn?.length) {
+    return false;
+  }
+
+  return !task.dependsOn.every((dependencyId: string) =>
+    tasks.some((t) => t.id === dependencyId && t.status === "done")
+  );
+});
+
+if (dependencyBlockedTasks.length > 0) {
+  await logActivity({
+    type: "dependency-blocked",
+    runId,
+    taskId: dependencyBlockedTasks[0].id,
+    reason: `Waiting for dependencies: ${dependencyBlockedTasks[0].dependsOn?.join(", ")}`,
+  });
+}
 
 if (todoTasks.length > 0) {
   taskIndex = todoTasks[0].index;
