@@ -286,26 +286,7 @@ export async function GET() {
       runningTask: tasks.find((task) => task.status === "running") ?? null,
       nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
       totalTasks: tasks.length,
-      todoCount: tasks.filter(({ task }) => {
-  if (task.status !== "todo") {
-    return false;
-  }
-
-  if (!task.dependsOn?.length) {
-    return true;
-  }
-
-  const dependenciesCompleted = task.dependsOn.every(
-    (dependencyId: string) =>
-      tasks.some(
-        (t) =>
-          t.id === dependencyId &&
-          t.status === "done"
-      )
-  );
-
-  return dependenciesCompleted;
-}).length,
+      todoCount: tasks.filter((task) => task.status === "todo").length,
       runningCount: tasks.filter((task) => task.status === "running").length,
       doneCount: tasks.filter((task) => task.status === "done").length,
       failedCount: tasks.filter((task) => task.status === "failed").length,
@@ -411,7 +392,26 @@ const activityFile = await readActivityFile();
 const activity = activityFile.activity;
 const todoTasks = tasks
   .map((task, index) => ({ task, index }))
-  .filter(({ task }) => task.status === "todo")
+  .filter(({ task }) => {
+  if (task.status !== "todo") {
+    return false;
+  }
+
+  if (!task.dependsOn?.length) {
+    return true;
+  }
+
+  const dependenciesCompleted = task.dependsOn.every(
+    (dependencyId: string) =>
+      tasks.some(
+        (t) =>
+          t.id === dependencyId &&
+          t.status === "done"
+      )
+  );
+
+  return dependenciesCompleted;
+})
   .sort((a, b) => {
   const aPriority = priorityRank[a.task.priority ?? "low"];
   const bPriority = priorityRank[b.task.priority ?? "low"];
