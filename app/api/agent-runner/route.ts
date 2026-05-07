@@ -409,8 +409,26 @@ const todoTasks = tasks
       event.taskId === b.task.id
   ).length;
 
-  const aScore = aPriority - aFailures;
-  const bScore = bPriority - bFailures;
+  const aAgeHours =
+  (Date.now() - new Date(a.task.createdAt).getTime()) /
+  (1000 * 60 * 60);
+
+const bAgeHours =
+  (Date.now() - new Date(b.task.createdAt).getTime()) /
+  (1000 * 60 * 60);
+
+const aStaleBoost = Math.min(aAgeHours / 24, 2);
+const bStaleBoost = Math.min(bAgeHours / 24, 2);
+
+const aScore =
+  aPriority -
+  aFailures +
+  aStaleBoost;
+
+const bScore =
+  bPriority -
+  bFailures +
+  bStaleBoost;
 
   return bScore - aScore;
 });
