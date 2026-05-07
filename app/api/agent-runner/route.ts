@@ -379,6 +379,21 @@ const recentFailures = activity.filter(
     event.taskId === task.id
 ).length;
 
+if (recentFailures >= 3) {
+  await logActivity({
+    type: "threshold-reached",
+    runId,
+    taskId: task.id,
+    failures: recentFailures,
+  });
+
+  return NextResponse.json({
+    ok: false,
+    mode: "threshold-reached",
+    message: `Task failed ${recentFailures} times`,
+  });
+}
+
   const retryPrompt = buildRetryPrompt(task, "Proposal failed safety check");
 
   const retryRes = await fetch(
