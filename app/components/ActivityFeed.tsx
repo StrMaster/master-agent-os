@@ -80,6 +80,12 @@ case "retry":
         background: "#1a1607",
       };
 
+case "auto-paused":
+  return {
+    border: "#f97316",
+    background: "#1f1207",
+  };
+
     default:
       return {
         border: "#333",
@@ -236,6 +242,7 @@ const groupedEntries = Object.entries(groupedRuns);
   "deploy-triggered",
   "blocked",
   "failed",
+  "auto-paused",
 ].map((item) => (
     <button
       key={item}
