@@ -388,6 +388,8 @@ const priorityRank = {
 
 let taskIndex = -1;
 
+const activityFile = await readActivityFile();
+const activity = activityFile.activity;
 const todoTasks = tasks
   .map((task, index) => ({ task, index }))
   .filter(({ task }) => task.status === "todo")
