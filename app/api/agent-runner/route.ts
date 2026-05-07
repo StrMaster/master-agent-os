@@ -338,15 +338,26 @@ if (latestFailure) {
   const secondsSinceFailure =
     (Date.now() - failureTime) / 1000;
 
-  if (secondsSinceFailure < 30) {
-    return NextResponse.json({
-      ok: false,
-      mode: "cooldown",
-      message: `Cooldown active (${Math.ceil(
-        30 - secondsSinceFailure
-      )}s remaining)`,
-    });
-  }
+  const recentFailureCount = cooldownActivity.filter(
+  (event: any) => event.type === "failed"
+).length;
+
+const cooldownSeconds = Math.min(
+  30 + recentFailureCount * 15,
+  300
+);
+
+if (secondsSinceFailure < cooldownSeconds) {
+  return NextResponse.json({
+    ok: false,
+    mode: "cooldown",
+    message: `Cooldown active (${Math.ceil(
+      cooldownSeconds - secondsSinceFailure
+    )}s remaining)`,
+    cooldownSeconds,
+    recentFailureCount,
+  });
+}
 }
 
 const stateRes = await fetch(
