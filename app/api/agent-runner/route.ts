@@ -464,6 +464,39 @@ const bScore =
   return bScore - aScore;
 });
 
+const circularDependencyTasks = tasks.filter((task) => {
+  if (!task.dependsOn?.length) {
+    return false;
+  }
+
+  return task.dependsOn.some((dependencyId: string) => {
+    const dependencyTask = tasks.find(
+      (t) => t.id === dependencyId
+    );
+
+    if (!dependencyTask?.dependsOn?.length) {
+      return false;
+    }
+
+    return dependencyTask.dependsOn.includes(task.id);
+  });
+});
+
+if (circularDependencyTasks.length > 0) {
+  await logActivity({
+    type: "circular-dependency",
+    runId,
+    taskId: circularDependencyTasks[0].id,
+    reason: "Circular dependency detected",
+  });
+
+  return NextResponse.json({
+    ok: false,
+    mode: "circular-dependency",
+    taskId: circularDependencyTasks[0].id,
+  });
+}
+
 const dependencyBlockedTasks = tasks.filter((task) => {
   if (task.status !== "todo") {
     return false;
