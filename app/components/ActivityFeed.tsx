@@ -309,11 +309,11 @@ const groupedEntries = Object.entries(groupedRuns);
             key={event.id}
             style={{
               marginTop: 12,
-              padding: 14,
-              borderRadius: 12,
+              padding: 10,
+              borderRadius: 10,
               border: `1px solid ${getEventColors(event.type).border}`,
 background: getEventColors(event.type).background,
-              lineHeight: 1.5,
+              lineHeight: 1.35,
             }}
           >
             {event.runId && (
@@ -330,7 +330,16 @@ background: getEventColors(event.type).background,
 )}
             <strong>{event.type}</strong>
 
-            <div style={{ color: "#999", fontSize: 13 }}>
+            <div
+  style={{
+    fontWeight: 700,
+    fontSize: 14,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  }}
+>
+  {event.type}
+</div>
               {new Date(event.timestamp).toLocaleString()}
             </div>
 
@@ -343,10 +352,7 @@ background: getEventColors(event.type).background,
             {event.taskId && <div>Task: {event.taskId}</div>}
             {event.summary && <div>Summary: {event.summary}</div>}
             {typeof event.changedLines === "number" && (
-              <div>Changed lines: {event.changedLines}</div>
-            )}
-            {typeof event.safe === "boolean" && (
-              <div>Safe: {event.safe ? "✅ yes" : "❌ no"}</div>
+              <div>Lines: {event.changedLines}</div>
             )}
             {event.branch && <div>Branch: {event.branch.slice(0, 28)}...</div>}
             {typeof event.merged === "boolean" && (
