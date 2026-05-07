@@ -307,6 +307,47 @@ export async function POST() {
     const runId = crypto.randomUUID();
     let { tasks } = await readTasksFile();
 
+const cooldownRes = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/activity.json?ref=${BRANCH}`,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  }
+);
+
+const cooldownData = await cooldownRes.json();
+
+const cooldownContent = Buffer.from(
+  cooldownData.content,
+  "base64"
+).toString("utf-8");
+
+const cooldownActivity = JSON.parse(cooldownContent);
+
+const latestFailure = cooldownActivity.find(
+  (event: any) => event.type === "failed"
+);
+
+if (latestFailure) {
+  const failureTime = new Date(latestFailure.timestamp).getTime();
+
+  const secondsSinceFailure =
+    (Date.now() - failureTime) / 1000;
+
+  if (secondsSinceFailure < 30) {
+    return NextResponse.json({
+      ok: false,
+      mode: "cooldown",
+      message: `Cooldown active (${Math.ceil(
+        30 - secondsSinceFailure
+      )}s remaining)`,
+    });
+  }
+}
+
 const stateRes = await fetch(
   `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
   {
