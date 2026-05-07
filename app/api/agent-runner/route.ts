@@ -377,6 +377,22 @@ if (!proposal.isSafe || proposal.changedLines >= 30) {
     safe: proposal.isSafe,
   });
 
+if (proposal.mode === "blocked") {
+  await logActivity({
+    type: "blocked",
+    runId,
+    taskId: task.id,
+    reason: proposal.error,
+  });
+
+  return NextResponse.json({
+    ok: false,
+    mode: "blocked",
+    error: proposal.error,
+    proposal,
+  });
+}
+
   if (!proposal.isSafe || proposal.changedLines >= 30) {
     return NextResponse.json({
       ok: false,
