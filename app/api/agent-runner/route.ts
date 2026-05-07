@@ -536,6 +536,57 @@ const recentFailures = activity.filter(
     event.taskId === task.id
 ).length;
 
+const memoryRes = await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json?ref=${BRANCH}`,
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+    },
+    cache: "no-store",
+  }
+);
+
+const memoryData = await memoryRes.json();
+
+const memoryContent = Buffer.from(
+  memoryData.content,
+  "base64"
+).toString("utf-8");
+
+const memory = JSON.parse(memoryContent);
+
+memory.lastFailure = {
+  taskId: task.id,
+  timestamp: new Date().toISOString(),
+  failureType:
+    applyResult?.error
+      ? "apply-failed"
+      : "unknown",
+};
+
+const updatedMemory = Buffer.from(
+  JSON.stringify(memory, null, 2) + "\n"
+).toString("base64");
+
+await fetch(
+  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json`,
+  {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      message: `Update failure memory for ${task.id}`,
+      content: updatedMemory,
+      sha: memoryData.sha,
+      branch: BRANCH,
+    }),
+  }
+);
+
 if (recentFailures >= 3) {
   await logActivity({
     type: "threshold-reached",
