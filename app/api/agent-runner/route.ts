@@ -439,15 +439,27 @@ const bAgeHours =
 const aStaleBoost = Math.min(aAgeHours / 24, 2);
 const bStaleBoost = Math.min(bAgeHours / 24, 2);
 
+const aDependencyBoost = tasks.filter(
+  (t) =>
+    t.dependsOn?.includes(a.task.id)
+).length;
+
+const bDependencyBoost = tasks.filter(
+  (t) =>
+    t.dependsOn?.includes(b.task.id)
+).length;
+
 const aScore =
   aPriority -
   aFailures +
-  aStaleBoost;
+  aStaleBoost +
+  aDependencyBoost;
 
 const bScore =
   bPriority -
   bFailures +
-  bStaleBoost;
+  bStaleBoost +
+  bDependencyBoost;
 
   return bScore - aScore;
 });
