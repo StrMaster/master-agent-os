@@ -1,5 +1,15 @@
 [
   {
+    "id": "28b5196a-eac1-46ce-9b22-0a3ebd0db7b4",
+    "timestamp": "2026-05-08T10:03:48.215Z",
+    "type": "manual-task-created",
+    "taskId": "manual-task-1778234627343",
+    "summary": "Patobulinti pagrindinio puslapio mobilų išdėstymą",
+    "targetFile": "app/page.tsx",
+    "priority": "high",
+    "reasoning": "Vartotojas nurodė pagerinti mobilų išdėstymą, o neseniai buvo sukurta užduotis būtent šiam failui. Kadangi ActivityFeed jau turi atskirą užduotį, šiuo atveju geriausia sutelkti dėmesį į pagrindinį puslapį."
+  },
+  {
     "id": "f2f8f269-49d1-43dd-b104-4e5ca11e408b",
     "timestamp": "2026-05-08T08:47:40.381Z",
     "type": "manual-task-created",
