@@ -1,45 +1,47 @@
 import { NextResponse } from "next/server";
-import {
-  updateTaskStatus,
-} from "@/app/lib/task-runtime";
-import {
-  generateCodePatch,
-} from "@/app/lib/code-patch-generator";
-import {
-  updateGithubFile,
-} from "@/app/lib/github-file-updater";
-import {
-  validatePatch,
-} from "@/app/lib/patch-validator";
+import { generateCodePatch } from "@/app/lib/code-patch-generator";
+import { updateGithubFile } from "@/app/lib/github-file-updater";
 import {
   createGithubBranch,
   createPullRequest,
-  findOpenPullRequest,
+  validatePullRequest,
 } from "@/app/lib/github-pr";
-
-
+import { validatePatch } from "@/app/lib/patch-validator";
+import { updateTaskStatus } from "@/app/lib/task-runtime";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
+
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
+const STATE_PATH = ".agent/state.json";
+
+const SAFE_TARGET_FILES = [
+  "app/page.tsx",
+  "app/components/ActivityFeed.tsx",
+  "app/components/RunAgentButton.tsx",
+  "app/agents/page.tsx",
+  "app/execution/page.tsx",
+];
+
+type Priority = "low" | "medium" | "high";
 
 type AgentTask = {
   id: string;
   title: string;
   summary?: string;
   targetFile?: string;
-  status: "todo" | "running" | "done" | "failed";
-  priority?: "low" | "medium" | "high";
-  createdAt?: string;
+  status: "todo" | "running" | "done" | "failed" | "pending-pr";
+  priority?: Priority;
   dependsOn?: string[];
+  createdAt?: string;
   updatedAt?: string;
   error?: string;
   result?: {
-  branchName?: string;
-  pullRequestUrl?: string;
-  merged?: boolean;
+    branchName?: string;
+    pullRequestUrl?: string;
+    merged?: boolean;
   };
 };
 
@@ -48,12 +50,15 @@ type GitHubFile = {
   content: string;
 };
 
-async function readTasksFile(): Promise<{ tasks: AgentTask[]; sha: string }> {
+async function readGithubJson(path: string) {
   const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("Missing GITHUB_TOKEN");
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
 
   const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -64,32 +69,36 @@ async function readTasksFile(): Promise<{ tasks: AgentTask[]; sha: string }> {
   );
 
   if (!res.ok) {
-    throw new Error(`Failed to read tasks.json: ${res.status}`);
+    throw new Error(`Failed to read ${path}: ${res.status}`);
   }
 
   const file = (await res.json()) as GitHubFile;
   const content = Buffer.from(file.content, "base64").toString("utf-8");
 
   return {
-    tasks: JSON.parse(content),
+    json: JSON.parse(content),
     sha: file.sha,
   };
 }
 
-async function writeTasksFile(
-  tasks: AgentTask[],
+async function writeGithubJson(
+  path: string,
+  json: unknown,
   sha: string,
   message: string
 ) {
   const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("Missing GITHUB_TOKEN");
 
-  const content = Buffer.from(JSON.stringify(tasks, null, 2) + "\n").toString(
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const content = Buffer.from(JSON.stringify(json, null, 2) + "\n").toString(
     "base64"
   );
 
   const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}`,
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
     {
       method: "PUT",
       headers: {
@@ -108,96 +117,48 @@ async function writeTasksFile(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Failed to write tasks.json: ${res.status} ${text}`);
+    throw new Error(`Failed to write ${path}: ${res.status} ${text}`);
   }
 }
 
-async function readActivityFile(): Promise<{
-  activity: any[];
-  sha: string;
-}> {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ACTIVITY_PATH}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to read activity.json: ${res.status}`);
-  }
-
-  const file = (await res.json()) as GitHubFile;
-
-  const content = Buffer.from(file.content, "base64").toString("utf-8");
+async function readTasksFile() {
+  const { json, sha } = await readGithubJson(TASKS_PATH);
 
   return {
-    activity: JSON.parse(content),
-    sha: file.sha,
+    tasks: Array.isArray(json) ? (json as AgentTask[]) : [],
+    sha,
   };
 }
 
-async function writeActivityFile(activity: any[], sha: string) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const content = Buffer.from(
-    JSON.stringify(activity, null, 2) + "\n"
-  ).toString("base64");
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${ACTIVITY_PATH}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "Update agent activity",
-        content,
-        sha,
-        branch: BRANCH,
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to write activity: ${res.status} ${text}`);
-  }
+async function writeTasksFile(tasks: AgentTask[], sha: string, message: string) {
+  await writeGithubJson(TASKS_PATH, tasks, sha, message);
 }
 
-async function logActivity(event: any) {
-  const current = await readActivityFile();
+async function readActivityFile() {
+  const { json, sha } = await readGithubJson(ACTIVITY_PATH);
 
-  const updated = [
+  return {
+    activity: Array.isArray(json) ? json : [],
+    sha,
+  };
+}
+
+async function logActivity(event: Record<string, unknown>) {
+  const { activity, sha } = await readActivityFile();
+
+  const updatedActivity = [
     {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
       ...event,
     },
-    ...current.activity,
-  ].slice(0, 100);
+    ...activity,
+  ].slice(0, 150);
 
-  await writeActivityFile(updated, current.sha);
+  await writeGithubJson(ACTIVITY_PATH, updatedActivity, sha, "Log agent activity");
 }
 
-async function pauseAgent(reason: string) {
+async function readTargetFile(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
   if (!token) {
@@ -205,7 +166,7 @@ async function pauseAgent(reason: string) {
   }
 
   const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -216,85 +177,86 @@ async function pauseAgent(reason: string) {
   );
 
   if (!res.ok) {
-    throw new Error(`Failed to read state.json: ${res.status}`);
+    throw new Error(`Failed to read target file ${path}: ${res.status}`);
   }
 
-  const file = await res.json();
+  const file = (await res.json()) as GitHubFile;
 
-  const newState = {
-    paused: true,
-    reason,
-    updatedAt: new Date().toISOString(),
-  };
+  return Buffer.from(file.content, "base64").toString("utf-8");
+}
 
-  const content = Buffer.from(
-    JSON.stringify(newState, null, 2) + "\n"
-  ).toString("base64");
+function priorityScore(priority?: Priority) {
+  if (priority === "high") return 3;
+  if (priority === "medium") return 2;
+  return 1;
+}
 
-  const writeRes = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "Auto-pause agent after repeated failures",
-        content,
-        sha: file.sha,
-        branch: BRANCH,
-      }),
-    }
+function hasCircularDependency(tasks: AgentTask[]) {
+  return tasks.find((task) => {
+    if (!task.dependsOn?.length) return false;
+
+    return task.dependsOn.some((dependencyId) => {
+      const dependencyTask = tasks.find((candidate) => candidate.id === dependencyId);
+
+      return dependencyTask?.dependsOn?.includes(task.id);
+    });
+  });
+}
+
+function dependenciesCompleted(task: AgentTask, tasks: AgentTask[]) {
+  if (!task.dependsOn?.length) {
+    return true;
+  }
+
+  return task.dependsOn.every((dependencyId) =>
+    tasks.some((candidate) => candidate.id === dependencyId && candidate.status === "done")
   );
-
-  if (!writeRes.ok) {
-    const text = await writeRes.text();
-    throw new Error(`Failed to pause agent: ${writeRes.status} ${text}`);
-  }
 }
 
-function buildPrompt(task: AgentTask) {
-  return `
-Make a small safe change in ${task.targetFile}.
+function selectNextTask(tasks: AgentTask[], activity: any[]) {
+  const candidates = tasks
+    .map((task, index) => ({ task, index }))
+    .filter(({ task }) => task.status === "todo")
+    .filter(({ task }) => dependenciesCompleted(task, tasks))
+    .sort((a, b) => {
+      const aFailures = activity.filter(
+        (event: any) => event.type === "failed" && event.taskId === a.task.id
+      ).length;
 
-Task:
-${task.title}
+      const bFailures = activity.filter(
+        (event: any) => event.type === "failed" && event.taskId === b.task.id
+      ).length;
 
-Constraints:
-- Modify only ${task.targetFile}
-- Change exactly one file
-- No imports
-- No refactoring
-- No dependency changes
-- No config changes
-- Keep the change under 30 changed lines
-- Prefer copy, labels, or small UI improvements only
-`;
-}
+      const aCreatedAt = a.task.createdAt ?? new Date().toISOString();
+      const bCreatedAt = b.task.createdAt ?? new Date().toISOString();
 
-function buildRetryPrompt(task: AgentTask, reason: string) {
-  return `
-Make a smaller and safer change in ${task.targetFile}.
+      const aAgeHours =
+        (Date.now() - new Date(aCreatedAt).getTime()) / (1000 * 60 * 60);
 
-Original task:
-${task.title}
+      const bAgeHours =
+        (Date.now() - new Date(bCreatedAt).getTime()) / (1000 * 60 * 60);
 
-Previous attempt failed because:
-${reason}
+      const aStaleBoost = Math.min(aAgeHours / 24, 2);
+      const bStaleBoost = Math.min(bAgeHours / 24, 2);
 
-Retry constraints:
-- Modify only ${task.targetFile}
-- Change exactly one file
-- Make the smallest possible change
-- Prefer changing only text/copy
-- No imports
-- No refactoring
-- No dependency changes
-- No config changes
-- Keep the change under 10 changed lines
-`;
+      const aDependencyBoost = tasks.filter((task) =>
+        task.dependsOn?.includes(a.task.id)
+      ).length;
+
+      const bDependencyBoost = tasks.filter((task) =>
+        task.dependsOn?.includes(b.task.id)
+      ).length;
+
+      const aScore =
+        priorityScore(a.task.priority) - aFailures + aStaleBoost + aDependencyBoost;
+
+      const bScore =
+        priorityScore(b.task.priority) - bFailures + bStaleBoost + bDependencyBoost;
+
+      return bScore - aScore;
+    });
+
+  return candidates[0] ?? null;
 }
 
 export async function GET() {
@@ -303,14 +265,13 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      mode: "status",
-      runningTask: tasks.find((task) => task.status === "running") ?? null,
-      nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
       totalTasks: tasks.length,
       todoCount: tasks.filter((task) => task.status === "todo").length,
       runningCount: tasks.filter((task) => task.status === "running").length,
+      pendingPrCount: tasks.filter((task) => task.status === "pending-pr").length,
       doneCount: tasks.filter((task) => task.status === "done").length,
       failedCount: tasks.filter((task) => task.status === "failed").length,
+      nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
     });
   } catch (error) {
     return NextResponse.json(
@@ -324,606 +285,150 @@ export async function GET() {
 }
 
 export async function POST() {
+  const runId = crypto.randomUUID();
+
   try {
-    const runId = crypto.randomUUID();
-    let { tasks } = await readTasksFile();
+    const { json: state } = await readGithubJson(STATE_PATH);
 
-const cooldownRes = await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/activity.json?ref=${BRANCH}`,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
-);
-
-const cooldownData = await cooldownRes.json();
-
-const cooldownContent = Buffer.from(
-  cooldownData.content,
-  "base64"
-).toString("utf-8");
-
-const cooldownActivity = JSON.parse(cooldownContent);
-
-const latestFailure = cooldownActivity.find(
-  (event: any) => event.type === "failed"
-);
-
-if (latestFailure) {
-  const failureTime = new Date(latestFailure.timestamp).getTime();
-
-  const secondsSinceFailure =
-    (Date.now() - failureTime) / 1000;
-
-  const recentFailureCount = cooldownActivity.filter(
-  (event: any) => event.type === "failed"
-).length;
-
-const cooldownSeconds = Math.min(
-  30 + recentFailureCount * 15,
-  300
-);
-
-if (secondsSinceFailure < cooldownSeconds) {
-await logActivity({
-  type: "cooldown",
-  runId,
-  reason: `Cooldown active after ${recentFailureCount} recent failures`,
-  cooldownSeconds,
-  recentFailureCount,
-});
-  return NextResponse.json({
-    ok: false,
-    mode: "cooldown",
-    message: `Cooldown active (${Math.ceil(
-      cooldownSeconds - secondsSinceFailure
-    )}s remaining)`,
-    cooldownSeconds,
-    recentFailureCount,
-  });
-}
-}
-
-const stateRes = await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/state.json?ref=${BRANCH}`,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
-);
-
-if (!stateRes.ok) {
-  throw new Error(`Failed to read state.json: ${stateRes.status}`);
-}
-
-const stateData = await stateRes.json();
-
-const stateContent = Buffer.from(
-  stateData.content,
-  "base64"
-).toString("utf-8");
-
-const agentState = JSON.parse(stateContent);
-
-if (agentState.paused) {
-  return NextResponse.json({
-    ok: false,
-    mode: "paused",
-    message: "Agent is paused",
-  });
-}
-
-const priorityRank = {
-  high: 3,
-  medium: 2,
-  low: 1,
-};
-
-let taskIndex = -1;
-
-const activityFile = await readActivityFile();
-const activity = activityFile.activity;
-const dependencyGraph = tasks.map((task) => ({
-  id: task.id,
-  dependsOn: task.dependsOn ?? [],
-  blockedBy:
-    task.dependsOn?.filter(
-      (dependencyId: string) =>
-        !tasks.some(
-          (t) =>
-            t.id === dependencyId &&
-            t.status === "done"
-        )
-    ) ?? [],
-}));
-const todoTasks = tasks
-  .map((task, index) => ({ task, index }))
-  .filter(({ task }) => {
-  if (task.status !== "todo") {
-    return false;
-  }
-
-  if (!task.dependsOn?.length) {
-  return true;
-}
-
-const dependenciesCompleted = task.dependsOn.every((dependencyId: string) =>
-  tasks.some((t) => t.id === dependencyId && t.status === "done")
-);
-
-return dependenciesCompleted;
-
-})
-  .sort((a, b) => {
-  const aPriority = priorityRank[a.task.priority ?? "low"];
-  const bPriority = priorityRank[b.task.priority ?? "low"];
-
-  const aFailures = activity.filter(
-    (event: any) =>
-      event.type === "failed" &&
-      event.taskId === a.task.id
-  ).length;
-
-  const bFailures = activity.filter(
-    (event: any) =>
-      event.type === "failed" &&
-      event.taskId === b.task.id
-  ).length;
-
-  const aCreatedAt = a.task.createdAt ?? new Date().toISOString();
-const bCreatedAt = b.task.createdAt ?? new Date().toISOString();
-
-const aAgeHours =
-  (Date.now() - new Date(aCreatedAt).getTime()) /
-  (1000 * 60 * 60);
-
-const bAgeHours =
-  (Date.now() - new Date(bCreatedAt).getTime()) /
-  (1000 * 60 * 60);
-
-const aStaleBoost = Math.min(aAgeHours / 24, 2);
-const bStaleBoost = Math.min(bAgeHours / 24, 2);
-
-const aDependencyBoost = tasks.filter(
-  (t) =>
-    t.dependsOn?.includes(a.task.id)
-).length;
-
-const bDependencyBoost = tasks.filter(
-  (t) =>
-    t.dependsOn?.includes(b.task.id)
-).length;
-
-const aScore =
-  aPriority -
-  aFailures +
-  aStaleBoost +
-  aDependencyBoost;
-
-const bScore =
-  bPriority -
-  bFailures +
-  bStaleBoost +
-  bDependencyBoost;
-
-  return bScore - aScore;
-});
-
-const circularDependencyTasks = tasks.filter((task) => {
-  if (!task.dependsOn?.length) {
-    return false;
-  }
-
-  return task.dependsOn.some((dependencyId: string) => {
-    const dependencyTask = tasks.find(
-      (t) => t.id === dependencyId
-    );
-
-    if (!dependencyTask?.dependsOn?.length) {
-      return false;
+    if (state?.paused) {
+      return NextResponse.json({
+        ok: false,
+        mode: "paused",
+        message: "Agent is paused",
+      });
     }
 
-    return dependencyTask.dependsOn.includes(task.id);
-  });
-});
+    const { tasks, sha } = await readTasksFile();
+    const { activity } = await readActivityFile();
 
-if (circularDependencyTasks.length > 0) {
-  await logActivity({
-    type: "circular-dependency",
-    runId,
-    taskId: circularDependencyTasks[0].id,
-    reason: "Circular dependency detected",
-  });
+    const circularTask = hasCircularDependency(tasks);
 
-  return NextResponse.json({
-    ok: false,
-    mode: "circular-dependency",
-    taskId: circularDependencyTasks[0].id,
-  });
-}
+    if (circularTask) {
+      await logActivity({
+        type: "circular-dependency",
+        runId,
+        taskId: circularTask.id,
+        reason: "Circular dependency detected",
+      });
 
-const dependencyBlockedTasks = tasks.filter((task) => {
-  if (task.status !== "todo") {
-    return false;
-  }
+      return NextResponse.json({
+        ok: false,
+        mode: "circular-dependency",
+        taskId: circularTask.id,
+      });
+    }
 
-  if (!task.dependsOn?.length) {
-    return false;
-  }
+    const selected = selectNextTask(tasks, activity);
 
-  return !task.dependsOn.every((dependencyId: string) =>
-    tasks.some((t) => t.id === dependencyId && t.status === "done")
-  );
-});
-
-if (dependencyBlockedTasks.length > 0) {
-  await logActivity({
-    type: "dependency-blocked",
-    runId,
-    taskId: dependencyBlockedTasks[0].id,
-    reason: `Waiting for dependencies: ${dependencyBlockedTasks[0].dependsOn?.join(", ")}`,
-    dependencyGraph,
-  });
-}
-
-if (todoTasks.length > 0) {
-  taskIndex = todoTasks[0].index;
-}
-    
-    if (taskIndex === -1) {
+    if (!selected) {
       return NextResponse.json({
         ok: true,
         mode: "idle",
-        message: "No todo tasks found",
+        message: "No runnable todo tasks",
       });
     }
 
-    const task = tasks[taskIndex];
+    const task = selected.task;
+    const taskIndex = selected.index;
 
-const allowedFiles = [
-  "app/page.tsx",
+    if (!task.targetFile || !SAFE_TARGET_FILES.includes(task.targetFile)) {
+      await logActivity({
+        type: "blocked",
+        runId,
+        taskId: task.id,
+        reason: `Unsafe or missing targetFile: ${task.targetFile ?? "missing"}`,
+        failureType: "blocked",
+      });
 
-  "app/components/ActivityFeed.tsx",
-
-  "app/components/RunAgentButton.tsx",
-
-  "app/agents/page.tsx",
-
-  "app/execution/page.tsx",
-];
-
-if (
-  !task.targetFile ||
-  !allowedFiles.includes(
-    task.targetFile
-  )
-)
- {
-  return NextResponse.json(
-    {
-      ok: false,
-
-      error:
-        "Unsafe target file",
-    },
-
-    { status: 400 }
-  );
-}
+      return NextResponse.json(
+        {
+          ok: false,
+          mode: "blocked",
+          error: "Unsafe or missing targetFile",
+          task,
+        },
+        { status: 400 }
+      );
+    }
 
     task.status = "running";
-task.updatedAt = new Date().toISOString();
+    task.updatedAt = new Date().toISOString();
+    tasks[taskIndex] = task;
 
-updateTaskStatus(task.id, "running");
+    updateTaskStatus(task.id, "running");
 
-await writeTasksFile(
-  tasks,
-  (await readTasksFile()).sha,
-  `Mark task ${task.id} as running`
-);
+    await writeTasksFile(tasks, sha, `Mark task ${task.id} as running`);
 
-    if (!task.targetFile) {
-      return NextResponse.json({
-        ok: false,
-        mode: "failed",
-        error: "Task is missing targetFile",
-        task,
-      });
-    }
-
-    const prompt = buildPrompt(task);
-
-    // 🔹 PROPOSE
-    const proposeRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt }),
-      }
-    );
-    
-    let proposal = await proposeRes.json();
-
-await logActivity({
-  type: "proposal",
-  runId,
-  taskId: task.id,
-  summary: proposal.summary,
-  changedLines: proposal.changedLines,
-  safe: proposal.isSafe,
-});
-
-if (proposal.mode === "blocked") {
-  await logActivity({
-    type: "blocked",
-    runId,
-    taskId: task.id,
-    reason: proposal.error,
-  });
-
-  return NextResponse.json({
-    ok: false,
-    mode: "blocked",
-    error: proposal.error,
-    proposal,
-  });
-}
-
-if (!proposal.isSafe || proposal.changedLines >= 30) {
-  await logActivity({
-    type: "failed",
-    runId,
-    taskId: task.id,
-    reason: "Proposal failed safety",
-    changedLines: proposal.changedLines,
-    safe: proposal.isSafe,
-  });
-
-const activityRes = await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/activity.json?ref=${BRANCH}`,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
-);
-
-const activityData = await activityRes.json();
-
-const activityContent = Buffer.from(
-  activityData.content,
-  "base64"
-).toString("utf-8");
-
-const activity = JSON.parse(activityContent);
-
-const recentFailures = activity.filter(
-  (event: any) =>
-    event.type === "failed" &&
-    event.taskId === task.id
-).length;
-
-const memoryRes = await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json?ref=${BRANCH}`,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
-);
-
-const memoryData = await memoryRes.json();
-
-const memoryContent = Buffer.from(
-  memoryData.content,
-  "base64"
-).toString("utf-8");
-
-const memory = JSON.parse(memoryContent);
-
-memory.lastFailure = {
-  taskId: task.id,
-  timestamp: new Date().toISOString(),
-  failureType: "proposal-failed",
-};
-
-const updatedMemory = Buffer.from(
-  JSON.stringify(memory, null, 2) + "\n"
-).toString("base64");
-
-await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json`,
-  {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: `Update failure memory for ${task.id}`,
-      content: updatedMemory,
-      sha: memoryData.sha,
-      branch: BRANCH,
-    }),
-  }
-);
-
-if (recentFailures >= 3) {
-  await logActivity({
-    type: "threshold-reached",
-    runId,
-    taskId: task.id,
-    failures: recentFailures,
-  });
-
-await pauseAgent(`Task ${task.id} failed ${recentFailures} times`);
-await logActivity({
-  type: "auto-paused",
-  runId,
-  taskId: task.id,
-  reason: `Task ${task.id} failed ${recentFailures} times`,
-});
-  return NextResponse.json({
-    ok: false,
-    mode: "threshold-reached",
-    message: `Task failed ${recentFailures} times`,
-  });
-}
-
-  const retryPrompt = buildRetryPrompt(task, "Proposal failed safety check");
-
-  const retryRes = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/propose-changes`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt: retryPrompt }),
-    }
-  );
-
-  proposal = await retryRes.json();
-
-  await logActivity({
-    type: "retry",
-    runId,
-    taskId: task.id,
-    reason: "Retried proposal with stricter prompt",
-    changedLines: proposal.changedLines,
-    safe: proposal.isSafe,
-    failureType: "proposal-failed",
-  });
-
-if (proposal.mode === "blocked") {
-  await logActivity({
-    type: "blocked",
-    runId,
-    taskId: task.id,
-    reason: proposal.error,
-    failureType: "blocked",
-  });
-
-  return NextResponse.json({
-    ok: false,
-    mode: "blocked",
-    error: proposal.error,
-    proposal,
-  });
-}
-
-  if (!proposal.isSafe || proposal.changedLines >= 30) {
-    return NextResponse.json({
-      ok: false,
-      mode: "failed",
-      reason: "Proposal failed safety after retry",
-      proposal,
+    await logActivity({
+      type: "execution-started",
+      runId,
+      taskId: task.id,
+      summary: task.title,
+      targetFile: task.targetFile,
+      priority: task.priority,
     });
-  }
-}
 
-    // 🔹 APPLY
+    const currentContent = await readTargetFile(task.targetFile);
 
-const currentFileRes =
-  await fetch(
-    `https://api.github.com/repos/StrMaster/master-agent-os/contents/${task.targetFile}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+    const patchedContent = await generateCodePatch({
+      filePath: task.targetFile,
+      currentContent,
+      taskTitle: task.title,
+      taskSummary: task.summary ?? task.title,
+    });
 
-        Accept:
-          "application/vnd.github+json",
-      },
+    const validation = validatePatch(patchedContent);
+
+    if (!validation.valid) {
+      const latest = await readTasksFile();
+      const latestTask = latest.tasks.find((candidate) => candidate.id === task.id);
+
+      if (latestTask) {
+        latestTask.status = "failed";
+        latestTask.updatedAt = new Date().toISOString();
+        latestTask.error = `Patch validation failed: ${validation.issues.join(", ")}`;
+      }
+
+      updateTaskStatus(task.id, "failed");
+
+      await writeTasksFile(
+        latest.tasks,
+        latest.sha,
+        `Mark task ${task.id} as failed after patch validation`
+      );
+
+      await logActivity({
+        type: "patch-validation-failed",
+        runId,
+        taskId: task.id,
+        reason: validation.issues.join(", "),
+      });
+
+      return NextResponse.json(
+        {
+          ok: false,
+          mode: "patch-validation-failed",
+          validation,
+        },
+        { status: 400 }
+      );
     }
-  );
 
-const currentFile =
-  await currentFileRes.json();
+    const branchName = `agent-task-${task.id}-${Date.now()}`;
 
-const currentContent =
-  Buffer.from(
-    currentFile.content,
-    "base64"
-  ).toString("utf-8");
+    await createGithubBranch(branchName);
 
-const patchedContent =
-  await generateCodePatch({
-    filePath:
+    await updateGithubFile(
       task.targetFile,
+      patchedContent,
+      `Execution Agent patch: ${task.title}`,
+      branchName
+    );
 
-    currentContent,
-
-    taskTitle:
-      task.title,
-
-    taskSummary: task.summary ?? task.title,
-  });
-
-const branchName =
-  `agent-task-${task.id}-${Date.now()}`;
-
-const existingPr =
-  await findOpenPullRequest(
-    branchName
-  );
-
-if (existingPr) {
-  await logActivity({
-    type:
-      "pull-request-duplicate",
-
-    runId,
-
-    taskId: task.id,
-
-    summary:
-      existingPr.html_url,
-
-    reason:
-      "Open PR already exists for branch",
-  });
-
-  return NextResponse.json({
-    ok: true,
-
-    mode:
-      "pull-request-exists",
-
-    pullRequest:
-      existingPr.html_url,
-  });
-}
-
-await createGithubBranch(
-  branchName
-);
-
-await updateGithubFile(
-  task.targetFile,
-  patchedContent,
-  `Execution Agent patch: ${task.title}`,
-  branchName
-);
-
-try {
-  const pr = await createPullRequest(
-    branchName,
-    `AI Patch: ${task.title}`,
-    `
+    const pr = await createPullRequest(
+      branchName,
+      `AI Patch: ${task.title}`,
+      `
 Autonomous Execution Agent PR
 
 Task:
@@ -932,243 +437,94 @@ ${task.title}
 Summary:
 ${task.summary ?? task.title}
 
+Target file:
+${task.targetFile}
+
 Generated automatically by Master Agent OS.
 `
-  );
-
-  await logActivity({
-    type: "pull-request-created",
-    runId,
-    taskId: task.id,
-    summary: pr.html_url,
-    pullRequestUrl: pr.html_url,
-    branch: branchName,
-    reason: `PR created for ${task.title}`,
-  });
-
-if (
-  typeof pr.number ===
-  "number"
-) {
-  try {
-    const validationRes =
-      await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/validate-pr`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-            prNumber:
-              pr.number,
-          }),
-        }
-      );
-
-    const validation =
-      await validationRes.json();
+    );
 
     await logActivity({
-      type:
-        "pull-request-validated",
-
+      type: "pull-request-created",
       runId,
-
       taskId: task.id,
-
-      reason:
-        validation.validation
-          ?.mergeable
-          ? "PR is mergeable"
-          : "PR not mergeable yet",
-
-      details:
-        JSON.stringify(
-          validation.validation
-        ),
+      summary: pr.html_url,
+      pullRequestUrl: pr.html_url,
+      branch: branchName,
+      reason: `PR created for ${task.title}`,
     });
 
-  if (
-  validation.validation
-    ?.mergeable &&
-  typeof pr.number ===
-    "number"
-) {
-  try {
-    const mergeRes =
-      await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/merge-pr`,
-        {
-          method: "POST",
+    let prValidation = null;
 
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
+    if (typeof pr.number === "number") {
+      try {
+        prValidation = await validatePullRequest(pr.number);
 
-          body: JSON.stringify({
-            prNumber:
-              pr.number,
-          }),
-        }
-      );
+        await logActivity({
+          type: "pull-request-validated",
+          runId,
+          taskId: task.id,
+          reason: prValidation.mergeable ? "PR is mergeable" : "PR not mergeable yet",
+          details: JSON.stringify(prValidation),
+        });
+      } catch (error) {
+        await logActivity({
+          type: "pull-request-validation-failed",
+          runId,
+          taskId: task.id,
+          reason: "PR validation failed",
+          details: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
 
-    const merge =
-      await mergeRes.json();
+    const latest = await readTasksFile();
+    const latestTask = latest.tasks.find((candidate) => candidate.id === task.id);
+
+    if (latestTask) {
+      latestTask.status = "pending-pr";
+      latestTask.updatedAt = new Date().toISOString();
+      latestTask.result = {
+        branchName,
+        pullRequestUrl: pr.html_url,
+        merged: false,
+      };
+    }
+
+    updateTaskStatus(task.id, "completed");
+
+    await writeTasksFile(latest.tasks, latest.sha, `Mark task ${task.id} as pending PR`);
 
     await logActivity({
-      type:
-        "pull-request-merged",
-
+      type: "execution-completed",
       runId,
-
       taskId: task.id,
-
-      summary:
-        merge.mergeResult
-          ?.sha,
-
-      reason:
-        `Merged PR #${pr.number}`,
+      branch: branchName,
+      pullRequestUrl: pr.html_url,
+      reason: "Execution completed and PR created",
     });
-  } catch (error) {
-    await logActivity({
-      type:
-        "pull-request-merge-failed",
 
-      runId,
-
-      taskId: task.id,
-
-      reason:
-        "PR merge failed",
-
-      details:
-        error instanceof Error
-          ? error.message
-          : "Unknown error",
-    });
-  }
-}
-
-  } catch (error) {
-    await logActivity({
-      type:
-        "pull-request-validation-failed",
-
-      runId,
-
-      taskId: task.id,
-
-      reason:
-        "PR validation failed",
-
-      details:
-        error instanceof Error
-          ? error.message
-          : "Unknown error",
-    });
-  }
-}
-
-} catch (error) {
-  await logActivity({
-    type: "pull-request-failed",
-    runId,
-    taskId: task.id,
-    branch: branchName,
-    reason: "Failed to create PR",
-    details: error instanceof Error ? error.message : "Unknown error",
-  });
-
-  return NextResponse.json(
-    {
-      ok: false,
-      mode: "pull-request-failed",
-      error: error instanceof Error ? error.message : "Unknown error",
-    },
-    { status: 500 }
-  );
-}
-
-const validation =
-  validatePatch(
-    patchedContent
-  );
-
-if (!validation.valid) {
-  task.status = "failed";
-
-  updateTaskStatus(
-    task.id,
-    "failed"
-  );
-
-  await logActivity({
-    type: "patch-validation-failed",
-
-    runId,
-
-    taskId: task.id,
-
-    reason:
-      validation.issues.join(
-        ", "
-      ),
-  });
-
-  return NextResponse.json(
-    {
-      ok: false,
-
-      error:
-        "Patch validation failed",
-
-      validation,
-    },
-
-    { status: 400 }
-  );
-}
-
-task.status = "done";
-task.updatedAt = new Date().toISOString();
-task.result = {
-  branchName,
-  pullRequestUrl: undefined,
-  merged: false,
-};
-
-updateTaskStatus(task.id, "completed");
-
-await writeTasksFile(
-  tasks,
-  (await readTasksFile()).sha,
-  `Mark task ${task.id} as done`
-);
-
-    // 🔹 SUCCESS
     return NextResponse.json({
       ok: true,
-      mode: "completed-one-task",
+      mode: "pull-request-created",
+      runId,
       taskId: task.id,
-      proposal: {
-        summary: proposal.summary,
-        branchName: proposal.branchName,
-        isSafe: proposal.isSafe,
-        changedLines: proposal.changedLines,
-      },
-      applyResult,
+      branchName,
+      pullRequestUrl: pr.html_url,
+      validation: prValidation,
     });
-
   } catch (error) {
+    await logActivity({
+      type: "failed",
+      runId,
+      reason: error instanceof Error ? error.message : "Unknown error",
+      failureType: "runner-failed",
+    }).catch(() => {});
+
     return NextResponse.json(
       {
         ok: false,
+        mode: "runner-failed",
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
