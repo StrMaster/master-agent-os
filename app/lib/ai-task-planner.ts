@@ -180,4 +180,3 @@ Respond in plain text with:
   );
 }
 
-  }
