@@ -241,33 +241,90 @@ if (
 }
 
 if (
-  normalizedMessage.includes("what should we improve") ||
-  normalizedMessage.includes("what to improve") ||
-  normalizedMessage.includes("next improvements") ||
-  normalizedMessage.includes("self improvement") ||
-  normalizedMessage.includes("ką pagerinti") ||
-  normalizedMessage.includes("ka pagerinti") ||
-  normalizedMessage.includes("ką toliau") ||
-  normalizedMessage.includes("ka toliau")
+  normalizedMessage.includes(
+    "what should we improve"
+  ) ||
+  normalizedMessage.includes(
+    "what to improve"
+  ) ||
+  normalizedMessage.includes(
+    "next improvements"
+  ) ||
+  normalizedMessage.includes(
+    "self improvement"
+  ) ||
+  normalizedMessage.includes(
+    "ką pagerinti"
+  ) ||
+  normalizedMessage.includes(
+    "ka pagerinti"
+  ) ||
+  normalizedMessage.includes(
+    "ką toliau"
+  ) ||
+  normalizedMessage.includes(
+    "ka toliau"
+  )
 ) {
   addMessage("user", currentMessage);
+
   setMessage("");
   setLoading(true);
 
   try {
-    const res = await fetch("/api/self-improvement", {
-      cache: "no-store",
-    });
+    const res = await fetch(
+      "/api/generate-improvement-tasks",
+      {
+        cache: "no-store",
+      }
+    );
 
     const data = await res.json();
 
     addMessage(
       "agent",
       data.suggestions ||
-        "I could not generate self-improvement suggestions."
+        "No suggestions available."
     );
+
+    if (
+      Array.isArray(
+        data.generatedTasks
+      ) &&
+      data.generatedTasks.length > 0
+    ) {
+      const formattedTasks =
+        data.generatedTasks
+          .map(
+            (
+              task: {
+                title: string;
+                priority: string;
+                targetFile: string;
+              },
+              index: number
+            ) =>
+              `${index + 1}. ${
+                task.title
+              }\nPriority: ${
+                task.priority
+              }\nTarget: ${
+                task.targetFile
+              }`
+          )
+          .join("\n\n");
+
+      addMessage(
+        "system",
+        `🛠️ Suggested execution tasks:\n\n${formattedTasks}`,
+        "success"
+      );
+    }
   } catch {
-    addMessage("agent", "Failed to generate self-improvement suggestions.");
+    addMessage(
+      "agent",
+      "Failed to generate self-improvement suggestions."
+    );
   } finally {
     setLoading(false);
   }
