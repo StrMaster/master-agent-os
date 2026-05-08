@@ -11,6 +11,7 @@ const TARGET_FILES = [
 
 export default function CreateTaskForm() {
   const [title, setTitle] = useState("");
+  const [prompt, setPrompt] = useState("");
   const [targetFile, setTargetFile] = useState(TARGET_FILES[0]);
   const [priority, setPriority] = useState("medium");
   const [autoRun, setAutoRun] = useState(true);
@@ -30,6 +31,7 @@ export default function CreateTaskForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          prompt,
           title,
           targetFile,
           priority,
@@ -84,7 +86,21 @@ export default function CreateTaskForm() {
           flexDirection: "column",
           gap: 12,
         }}
-      >
+      > 
+<textarea
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  placeholder="Describe what the agent should do..."
+  rows={4}
+  style={{
+    padding: 12,
+    borderRadius: 8,
+    border: "1px solid #333",
+    background: "#111",
+    color: "white",
+    resize: "vertical",
+  }}
+/>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
