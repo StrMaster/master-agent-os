@@ -96,5 +96,15 @@
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-08T10:48:18.900Z"
+  },
+  {
+    "id": "manual-task-1778237301400",
+    "title": "Improve agent runner error handling UI feedback",
+    "summary": "Improve agent runner error handling UI feedback",
+    "targetFile": "app/components/RunAgentButton.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-08T10:48:21.400Z"
   }
 ]
