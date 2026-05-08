@@ -143,12 +143,12 @@ export async function POST(req: Request) {
 let title = normalizeTitle(body.title);
 let targetFile = String(body.targetFile ?? "").trim();
 let priority = normalizePriority(body.priority);
+let summary = title || prompt;
 
 if (prompt) {
   title = title || prompt;
 
   const normalizedPrompt = prompt.toLowerCase();
-  let summary = prompt;
 
   if (
   normalizedPrompt.includes("activity") ||
