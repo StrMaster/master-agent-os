@@ -80,7 +80,7 @@ const content = response.choices[0]?.message?.content;
   }
 
   return JSON.parse(content);
-
+}
 export async function generateProjectStatusSummary(context: {
   tasks: unknown[];
   activity: unknown[];
