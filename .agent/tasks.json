@@ -126,5 +126,15 @@
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-08T11:20:28.174Z"
+  },
+  {
+    "id": "manual-task-1778239230834",
+    "title": "Improve wording and clarity on app/agents/page.tsx",
+    "summary": "Improve wording and clarity on app/agents/page.tsx",
+    "targetFile": "app/agents/page.tsx",
+    "status": "todo",
+    "priority": "low",
+    "source": "manual",
+    "createdAt": "2026-05-08T11:20:30.834Z"
   }
 ]
