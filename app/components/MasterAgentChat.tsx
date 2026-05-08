@@ -2,21 +2,41 @@
 
 import { useState } from "react";
 
+type ChatMessage = {
+  role: "user" | "agent";
+  content: string;
+};
+
 export default function MasterAgentChat() {
-  const [message, setMessage] = useState("");
-  const [response, setResponse] =
-    useState<string | null>(null);
+  const [message, setMessage] =
+    useState("");
 
   const [loading, setLoading] =
     useState(false);
+
+  const [messages, setMessages] =
+    useState<ChatMessage[]>([]);
 
   async function handleSend() {
     if (!message.trim()) {
       return;
     }
 
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: message,
+    };
+
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+    ]);
+
     setLoading(true);
-    setResponse(null);
+
+    const currentMessage = message;
+
+    setMessage("");
 
     try {
       const res = await fetch(
@@ -28,27 +48,36 @@ export default function MasterAgentChat() {
               "application/json",
           },
           body: JSON.stringify({
-            prompt: message,
+            prompt: currentMessage,
           }),
         }
       );
 
       const data = await res.json();
 
-      setResponse(
-        [
+      const agentMessage: ChatMessage = {
+        role: "agent",
+        content: [
           data.message,
           data.followUp,
         ]
           .filter(Boolean)
-          .join(" ")
-      );
+          .join(" "),
+      };
 
-      setMessage("");
+      setMessages((prev) => [
+        ...prev,
+        agentMessage,
+      ]);
     } catch (error) {
-      setResponse(
-        "Unexpected error occurred."
-      );
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "agent",
+          content:
+            "Unexpected error occurred.",
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -65,9 +94,9 @@ export default function MasterAgentChat() {
     >
       <div
         style={{
-          fontSize: 20,
-          fontWeight: 700,
-          marginBottom: 16,
+          fontSize: 24,
+          fontWeight: 800,
+          marginBottom: 10,
         }}
       >
         Master Agent
@@ -77,11 +106,84 @@ export default function MasterAgentChat() {
         style={{
           fontSize: 14,
           color: "#888",
-          marginBottom: 16,
+          marginBottom: 20,
         }}
       >
-        Describe what you want the
-        agent to improve.
+        Conversational AI engineering
+        system
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 14,
+          marginBottom: 20,
+        }}
+      >
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            style={{
+              alignSelf:
+                msg.role === "user"
+                  ? "flex-end"
+                  : "flex-start",
+
+              maxWidth: "85%",
+
+              padding: "14px 16px",
+
+              borderRadius: 16,
+
+              background:
+                msg.role === "user"
+                  ? "#2563eb"
+                  : "#111827",
+
+              border:
+                msg.role === "agent"
+                  ? "1px solid #1e3a8a"
+                  : "none",
+
+              color: "white",
+
+              lineHeight: 1.7,
+
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                opacity: 0.7,
+                marginBottom: 6,
+              }}
+            >
+              {msg.role === "user"
+                ? "You"
+                : "Master Agent"}
+            </div>
+
+            {msg.content}
+          </div>
+        ))}
+
+        {loading && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              padding: "12px 14px",
+              borderRadius: 16,
+              background: "#111827",
+              border:
+                "1px solid #1e3a8a",
+              color: "#93c5fd",
+            }}
+          >
+            Master Agent is thinking...
+          </div>
+        )}
       </div>
 
       <textarea
@@ -90,16 +192,16 @@ export default function MasterAgentChat() {
           setMessage(e.target.value)
         }
         placeholder="Improve dashboard mobile UX..."
-        rows={5}
+        rows={4}
         style={{
           width: "100%",
           padding: 14,
-          borderRadius: 10,
+          borderRadius: 12,
           border: "1px solid #333",
           background: "#111",
           color: "white",
           resize: "vertical",
-          marginBottom: 16,
+          marginBottom: 14,
         }}
       />
 
@@ -108,34 +210,19 @@ export default function MasterAgentChat() {
         disabled={loading}
         style={{
           padding: "12px 18px",
-          borderRadius: 10,
+          borderRadius: 12,
           border: "none",
           background: "#2563eb",
           color: "white",
           fontWeight: 700,
           cursor: "pointer",
+          width: "100%",
         }}
       >
         {loading
           ? "Thinking..."
           : "Send to Master Agent"}
       </button>
-
-      {response && (
-        <div
-          style={{
-            marginTop: 18,
-            padding: 14,
-            borderRadius: 10,
-            background: "#111827",
-            border: "1px solid #1e3a8a",
-            color: "#dbeafe",
-            lineHeight: 1.6,
-          }}
-        >
-          {response}
-        </div>
-      )}
     </div>
   );
 }
