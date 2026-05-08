@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { generateTaskPlan } from "@/lib/ai-task-planner";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -175,6 +176,20 @@ let targetFile = String(body.targetFile ?? "").trim();
 let priority = normalizePriority(body.priority);
 let summary = title || prompt;
 let reasoningHint = "";
+
+if (prompt && process.env.OPENAI_API_KEY) {
+  try {
+    const aiPlan = await generateTaskPlan(prompt);
+
+    title = normalizeTitle(aiPlan.title) || title || prompt;
+    summary = aiPlan.summary || summary || title;
+    targetFile = aiPlan.targetFile || targetFile;
+    priority = normalizePriority(aiPlan.priority);
+    reasoningHint = aiPlan.reasoning || reasoningHint;
+  } catch (error) {
+    console.warn("AI task planner failed, using rule-based fallback:", error);
+  }
+}
 
 if (prompt) {
   title = title || prompt;
