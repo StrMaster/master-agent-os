@@ -204,3 +204,46 @@ export async function validatePullRequest(
       pr.draft,
   };
 }
+
+export async function mergePullRequest(
+  prNumber: number
+) {
+  const token =
+    process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "Missing GITHUB_TOKEN"
+    );
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}/merge`,
+    {
+      method: "PUT",
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+
+        Accept:
+          "application/vnd.github+json",
+
+        "Content-Type":
+          "application/json",
+      },
+
+      body: JSON.stringify({
+        merge_method:
+          "squash",
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "Failed to merge PR"
+    );
+  }
+
+  return res.json();
+}
