@@ -19,6 +19,7 @@ type ActivityEvent = {
   message?: string;
   targetFile?: string;
   priority?: string;
+  reasoning?: string;
 };
 
 export default function ActivityFeed() {
@@ -386,6 +387,9 @@ background: getEventColors(event.type).background,
               <div style={{ color: "#999", fontSize: 13 }}>
   {new Date(event.timestamp).toLocaleString()}
 </div>
+
+{event.reasoning && <div>Reasoning: {event.reasoning}</div>}
+
 {event.targetFile && <div>Target: {event.targetFile}</div>}
 {event.priority && <div>Priority: {event.priority}</div>}
 
