@@ -180,3 +180,60 @@ Respond in plain text with:
   );
 }
 
+export async function generateImprovementTasks(
+  suggestions: string
+) {
+  const response =
+    await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          content: `
+You convert improvement suggestions into executable engineering tasks.
+
+Rules:
+- Generate 2 to 5 tasks.
+- Keep tasks safe and specific.
+- Prefer UI/dashboard/runtime improvements.
+- Use only these target files:
+
+- app/page.tsx
+- app/components/ActivityFeed.tsx
+- app/components/RunAgentButton.tsx
+- app/agents/page.tsx
+- app/execution/page.tsx
+
+Respond ONLY valid JSON array.
+
+Format:
+[
+  {
+    "title": "...",
+    "summary": "...",
+    "targetFile": "...",
+    "priority": "low|medium|high"
+  }
+]
+          `,
+        },
+        {
+          role: "user",
+          content: suggestions,
+        },
+      ],
+    });
+
+  const content =
+    response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(
+      "OpenAI returned empty response"
+    );
+  }
+
+  return JSON.parse(content);
+}
+
