@@ -73,6 +73,14 @@ JSON format:
     ],
   });
 
+const content = response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error("OpenAI returned empty response");
+  }
+
+  return JSON.parse(content);
+
 export async function generateProjectStatusSummary(context: {
   tasks: unknown[];
   activity: unknown[];
@@ -114,11 +122,5 @@ Respond in plain text.
   );
 }
 
-  const content = response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("OpenAI returned empty response");
-  }
-
-  return JSON.parse(content);
+  
 }
