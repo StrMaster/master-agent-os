@@ -5,10 +5,13 @@ import {
 import {
   generateCodePatch,
 } from "@/app/lib/code-patch-generator";
-
 import {
   updateGithubFile,
 } from "@/app/lib/github-file-updater";
+import {
+  validatePatch,
+} from "@/app/lib/patch-validator";
+
 
 
 const OWNER = "StrMaster";
@@ -882,6 +885,46 @@ await updateGithubFile(
 
   `Execution Agent patch: ${task.title}`
 );
+
+const validation =
+  validatePatch(
+    patchedContent
+  );
+
+if (!validation.valid) {
+  task.status = "failed";
+
+  updateTaskStatus(
+    task.id,
+    "failed"
+  );
+
+  await logActivity({
+    type: "patch-validation-failed",
+
+    runId,
+
+    taskId: task.id,
+
+    reason:
+      validation.issues.join(
+        ", "
+      ),
+  });
+
+  return NextResponse.json(
+    {
+      ok: false,
+
+      error:
+        "Patch validation failed",
+
+      validation,
+    },
+
+    { status: 400 }
+  );
+}
 
     const applyResult = await applyRes.json();
 
