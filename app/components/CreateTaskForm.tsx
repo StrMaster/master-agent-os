@@ -46,7 +46,12 @@ export default function CreateTaskForm() {
       }
 
       setResult(
-  data.message || `Task created: ${data.task.id}`
+  [
+    data.message,
+    data.followUp,
+  ]
+    .filter(Boolean)
+    .join(" ")
 );
       if (autoRun) {
   await fetch("/api/agent-runner", {
