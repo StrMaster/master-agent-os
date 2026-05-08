@@ -237,3 +237,47 @@ Format:
   return JSON.parse(content);
 }
 
+export async function determineAgentRole(
+  prompt: string
+) {
+  const normalized =
+    prompt.toLowerCase();
+
+  if (
+    normalized.includes(
+      "deploy"
+    ) ||
+    normalized.includes(
+      "production"
+    )
+  ) {
+    return "deploy";
+  }
+
+  if (
+    normalized.includes(
+      "review"
+    ) ||
+    normalized.includes(
+      "analyze"
+    ) ||
+    normalized.includes(
+      "failure"
+    )
+  ) {
+    return "reviewer";
+  }
+
+  if (
+    normalized.includes(
+      "plan"
+    ) ||
+    normalized.includes(
+      "roadmap"
+    )
+  ) {
+    return "planner";
+  }
+
+  return "executor";
+}
