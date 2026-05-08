@@ -536,3 +536,61 @@ Format:
 
   return JSON.parse(content);
 }
+
+export async function generateDeployRecoveryPlan(context: {
+  deployError: unknown;
+  recentActivity: unknown[];
+  tasks: unknown[];
+}) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are the Deploy Recovery Agent for Master Agent OS.
+
+Your job:
+- analyze deployment failures
+- identify likely UI/runtime issue
+- generate ONE safe recovery task
+
+Rules:
+- frontend only
+- no package.json
+- no config edits
+- no backend infra edits
+- only:
+  - app/page.tsx
+  - app/components/*
+  - app/execution/page.tsx
+  - app/agents/page.tsx
+- response must be valid JSON
+- never respond in German
+
+Format:
+{
+  "title": "...",
+  "summary": "...",
+  "targetFile": "...",
+  "priority": "low|medium|high",
+  "reasoning": "..."
+}
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(context, null, 2),
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error("Deploy recovery returned empty response");
+  }
+
+  return JSON.parse(content);
+}
