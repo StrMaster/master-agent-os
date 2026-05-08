@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import {
   updateTaskStatus,
 } from "@/app/lib/task-runtime";
+import {
+  generateCodePatch,
+} from "@/app/lib/code-patch-generator";
 
+import {
+  updateGithubFile,
+} from "@/app/lib/github-file-updater";
 
 
 const OWNER = "StrMaster";
@@ -571,6 +577,35 @@ if (todoTasks.length > 0) {
 
     const task = tasks[taskIndex];
 
+const allowedFiles = [
+  "app/page.tsx",
+
+  "app/components/ActivityFeed.tsx",
+
+  "app/components/RunAgentButton.tsx",
+
+  "app/agents/page.tsx",
+
+  "app/execution/page.tsx",
+];
+
+if (
+  !allowedFiles.includes(
+    task.targetFile
+  )
+) {
+  return NextResponse.json(
+    {
+      ok: false,
+
+      error:
+        "Unsafe target file",
+    },
+
+    { status: 400 }
+  );
+}
+
     task.status = "running";
 task.updatedAt = new Date().toISOString();
 
@@ -801,6 +836,50 @@ if (proposal.mode === "blocked") {
         body: JSON.stringify(proposal),
       }
     );
+
+const currentFileRes =
+  await fetch(
+    `https://api.github.com/repos/StrMaster/master-agent-os/contents/${task.targetFile}`,
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+
+        Accept:
+          "application/vnd.github+json",
+      },
+    }
+  );
+
+const currentFile =
+  await currentFileRes.json();
+
+const currentContent =
+  Buffer.from(
+    currentFile.content,
+    "base64"
+  ).toString("utf-8");
+
+const patchedContent =
+  await generateCodePatch({
+    filePath:
+      task.targetFile,
+
+    currentContent,
+
+    taskTitle:
+      task.title,
+
+    taskSummary:
+      task.summary,
+  });
+
+await updateGithubFile(
+  task.targetFile,
+
+  patchedContent,
+
+  `Execution Agent patch: ${task.title}`
+);
 
     const applyResult = await applyRes.json();
 
