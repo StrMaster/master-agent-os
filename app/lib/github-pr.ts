@@ -107,3 +107,43 @@ export async function createPullRequest(
 
   return prRes.json();
 }
+
+export async function findOpenPullRequest(
+  branchName: string
+) {
+  const token =
+    process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "Missing GITHUB_TOKEN"
+    );
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/pulls?state=open&head=${OWNER}:${branchName}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+
+        Accept:
+          "application/vnd.github+json",
+      },
+
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "Failed to search pull requests"
+    );
+  }
+
+  const pulls =
+    await res.json();
+
+  return Array.isArray(pulls)
+    ? pulls[0]
+    : null;
+}
