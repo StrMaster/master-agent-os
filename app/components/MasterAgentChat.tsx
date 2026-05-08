@@ -413,6 +413,58 @@ addMessage(
   "info"
 );
 
+if (
+  normalizedMessage.includes("review") ||
+  normalizedMessage.includes("analyze") ||
+  normalizedMessage.includes("plan") ||
+  normalizedMessage.includes("roadmap") ||
+  normalizedMessage.includes("deploy status") ||
+  normalizedMessage.includes("deployment") ||
+  normalizedMessage.includes("perziurek") ||
+  normalizedMessage.includes("peržiūrėk") ||
+  normalizedMessage.includes("suplanuok")
+) {
+  addMessage("user", currentMessage);
+  setMessage("");
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/agent-delegate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: currentMessage,
+      }),
+    });
+
+    const data = await res.json();
+
+    const agentLabel =
+      data.agentRole === "planner"
+        ? "Planner Agent"
+        : data.agentRole === "reviewer"
+          ? "Reviewer Agent"
+          : data.agentRole === "deploy"
+            ? "Deploy Agent"
+            : "Execution Agent";
+
+    addMessage("system", `🤖 Delegated to ${agentLabel}`, "info");
+
+    addMessage(
+      "agent",
+      data.response || "No delegated agent response available."
+    );
+  } catch {
+    addMessage("agent", "Agent delegation failed.");
+  } finally {
+    setLoading(false);
+  }
+
+  return;
+}
+
       const res = await fetch("/api/create-task", {
         method: "POST",
         headers: {
