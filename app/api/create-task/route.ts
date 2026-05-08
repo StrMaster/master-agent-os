@@ -136,9 +136,45 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const title = normalizeTitle(body.title);
-    const targetFile = String(body.targetFile ?? "").trim();
-    const priority = normalizePriority(body.priority);
+    const prompt = String(body.prompt ?? "").trim();
+
+let title = normalizeTitle(body.title);
+let targetFile = String(body.targetFile ?? "").trim();
+let priority = normalizePriority(body.priority);
+
+if (prompt) {
+  title = title || prompt;
+
+  const normalizedPrompt = prompt.toLowerCase();
+
+  if (
+    normalizedPrompt.includes("activity") ||
+    normalizedPrompt.includes("feed")
+  ) {
+    targetFile = "app/components/ActivityFeed.tsx";
+  }
+
+  if (
+    normalizedPrompt.includes("dashboard") ||
+    normalizedPrompt.includes("layout")
+  ) {
+    targetFile = "app/page.tsx";
+  }
+
+  if (
+    normalizedPrompt.includes("run button") ||
+    normalizedPrompt.includes("runner")
+  ) {
+    targetFile = "app/components/RunAgentButton.tsx";
+  }
+
+  if (
+    normalizedPrompt.includes("fix") ||
+    normalizedPrompt.includes("urgent")
+  ) {
+    priority = "high";
+  }
+}
 
     if (!title) {
       return NextResponse.json(
