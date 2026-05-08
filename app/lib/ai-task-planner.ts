@@ -124,7 +124,7 @@ Never respond in German.
     response.choices[0]?.message?.content ||
     "No project status summary available."
   );
-
+}
 export async function generateSelfImprovementSuggestions(context: {
   tasks: unknown[];
   activity: unknown[];
