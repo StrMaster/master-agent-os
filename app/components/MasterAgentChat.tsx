@@ -377,6 +377,42 @@ for (const task of data.generatedTasks) {
     try {
       addMessage("system", "Creating task and starting agent...");
 
+let activeAgent =
+  "Execution Agent";
+
+if (
+  currentMessage
+    .toLowerCase()
+    .includes("deploy")
+) {
+  activeAgent =
+    "Deploy Agent";
+}
+
+if (
+  currentMessage
+    .toLowerCase()
+    .includes("review")
+) {
+  activeAgent =
+    "Reviewer Agent";
+}
+
+if (
+  currentMessage
+    .toLowerCase()
+    .includes("plan")
+) {
+  activeAgent =
+    "Planner Agent";
+}
+
+addMessage(
+  "system",
+  `🤖 Active agent: ${activeAgent}`,
+  "info"
+);
+
       const res = await fetch("/api/create-task", {
         method: "POST",
         headers: {
