@@ -322,11 +322,14 @@ if (
       priority: task.priority,
     });
 
-    return NextResponse.json({
-      ok: true,
-      mode: "manual-task-created",
-      task,
-    });
+    const conversationalMessage = `Understood. I created a ${task.priority} priority task for ${task.targetFile} and queued it for execution.`;
+
+return NextResponse.json({
+  ok: true,
+  mode: "manual-task-created",
+  message: conversationalMessage,
+  task,
+});
   } catch (error) {
     return NextResponse.json(
       {
