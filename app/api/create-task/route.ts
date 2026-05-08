@@ -396,8 +396,9 @@ if (
     "Continuing activity feed improvements.";
 }
 
-    const conversationalMessage = `${conversationalPrefix} I created a ${task.priority} priority task for ${task.targetFile} and queued it for execution.`;
+    const primaryTask = generatedTasks[0];
 
+const conversationalMessage = `${conversationalPrefix} I created ${generatedTasks.length} task(s). Primary task: ${primaryTask.priority} priority for ${primaryTask.targetFile}.`;
 const followUp =
   "You can monitor execution progress in the Activity Feed.";
 return NextResponse.json({
