@@ -114,6 +114,9 @@ export default function HomePage() {
         </div>
       </div>
       <div className="mt-8">
+  <MasterAgentChat />
+</div>
+      <div className="mt-8">
   <CreateTaskForm />
 </div>
       <div className="mt-8">
