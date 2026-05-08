@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   determineAgentRole,
   generateAgentDelegationResponse,
+  generateReviewerFixTasks,
 } from "@/app/lib/ai-task-planner";
 
 const OWNER = "StrMaster";
@@ -79,12 +80,27 @@ export async function POST(req: Request) {
       projectContext,
     });
 
-    return NextResponse.json({
-      ok: true,
-      mode: "agent-delegation",
-      agentRole,
-      response,
+let suggestedFixTasks: unknown[] = [];
+
+if (agentRole === "reviewer") {
+  try {
+    suggestedFixTasks = await generateReviewerFixTasks({
+      prompt,
+      reviewerResponse: response,
+      projectContext,
     });
+  } catch (error) {
+    console.error("Reviewer fix task generation failed", error);
+  }
+}
+
+    return NextResponse.json({
+  ok: true,
+  mode: "agent-delegation",
+  agentRole,
+  response,
+  suggestedFixTasks,
+});
   } catch (error) {
     return NextResponse.json(
       {
