@@ -350,10 +350,13 @@ if (
 
     const conversationalMessage = `Understood. I created a ${task.priority} priority task for ${task.targetFile} and queued it for execution.`;
 
+const followUp =
+  "You can monitor execution progress in the Activity Feed.";
 return NextResponse.json({
   ok: true,
   mode: "manual-task-created",
   message: conversationalMessage,
+  followUp,
   task,
 });
   } catch (error) {
