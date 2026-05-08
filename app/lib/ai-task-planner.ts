@@ -108,7 +108,9 @@ Focus on:
 
 Keep it concise and practical.
 Respond in plain text.
-Always respond in the same language as the user.
+If the user message contains Lithuanian words or Lithuanian grammar, respond in Lithuanian.
+Otherwise respond in English.
+Never respond in German.
         `,
       },
       {
