@@ -20,6 +20,7 @@ type ActivityEvent = {
   targetFile?: string;
   priority?: string;
   reasoning?: string;
+  wave?: number;
 };
 
 export default function ActivityFeed() {
