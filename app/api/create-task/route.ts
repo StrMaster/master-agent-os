@@ -193,9 +193,22 @@ if (
   normalizedPrompt.includes("fix") ||
   normalizedPrompt.includes("urgent") ||
   normalizedPrompt.includes("broken") ||
-  normalizedPrompt.includes("error")
+  normalizedPrompt.includes("error") ||
+  normalizedPrompt.includes("crash")
 ) {
   priority = "high";
+}
+
+if (
+  normalizedPrompt.includes("improve") ||
+  normalizedPrompt.includes("cleanup") ||
+  normalizedPrompt.includes("optimize") ||
+  normalizedPrompt.includes("refactor") ||
+  normalizedPrompt.includes("simplify")
+) {
+  priority = priority === "high"
+    ? "high"
+    : "medium";
 }
 }
 
