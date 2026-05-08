@@ -476,3 +476,63 @@ Format:
 
   return JSON.parse(content);
 }
+
+export async function generateRecoveryPlan(context: {
+  failedTask: unknown;
+  recentActivity: unknown[];
+  memory: unknown;
+}) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are the Recovery Planner Agent for Master Agent OS.
+
+Your job:
+- analyze a failed task
+- identify likely cause
+- create one safe recovery task
+
+Rules:
+- Generate exactly one recovery task.
+- Keep it small and safe.
+- Use only allowed target files:
+  - app/page.tsx
+  - app/components/ActivityFeed.tsx
+  - app/components/RunAgentButton.tsx
+  - app/agents/page.tsx
+  - app/execution/page.tsx
+- Do not suggest backend/config/package changes.
+- If Lithuanian is used, respond in Lithuanian.
+- Never respond in German.
+
+Respond ONLY valid JSON.
+
+Format:
+{
+  "title": "...",
+  "summary": "...",
+  "targetFile": "...",
+  "priority": "low|medium|high",
+  "reasoning": "..."
+}
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(context, null, 2),
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error("OpenAI returned empty recovery plan");
+  }
+
+  return JSON.parse(content);
+}
