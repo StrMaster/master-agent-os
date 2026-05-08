@@ -1,3 +1,7 @@
+function countChar(content: string, char: string) {
+  return content.split(char).length - 1;
+}
+
 export function validatePatch(content: string) {
   const issues: string[] = [];
 
@@ -9,15 +13,15 @@ export function validatePatch(content: string) {
     issues.push("Patch contains markdown code fences");
   }
 
-  const openBraces = (content.match(/{/g) || []).length;
-  const closeBraces = (content.match(/}/g) || []).length;
+  const openBraces = countChar(content, "{");
+  const closeBraces = countChar(content, "}");
 
   if (openBraces !== closeBraces) {
     issues.push("Brace count mismatch");
   }
 
-  const openParens = (content.match(/$begin:math:text$\/g\) \|\| \[\]\)\.length\;
-  const closeParens \= \(content\.match\(\/$end:math:text$/g) || []).length;
+  const openParens = countChar(content, "(");
+  const closeParens = countChar(content, ")");
 
   if (openParens !== closeParens) {
     issues.push("Parenthesis mismatch");
