@@ -450,7 +450,7 @@ if (
             ? "Deploy Agent"
             : "Execution Agent";
 
-    addMessage("system", `🤖 Delegated to ${agentLabel}`, "info");
+    addMessage("system", `🧠 Delegated workflow to ${agentLabel}`, "info");
 
     addMessage(
       "agent",
