@@ -389,7 +389,11 @@ background: getEventColors(event.type).background,
 </div>
 
 {event.reasoning && <div>Reasoning: {event.reasoning}</div>}
-
+{event.wave !== undefined && (
+  <div className="text-xs text-cyan-400">
+    Wave: {event.wave}
+  </div>
+)} 
 {event.targetFile && <div>Target: {event.targetFile}</div>}
 {event.priority && <div>Priority: {event.priority}</div>}
 
@@ -401,6 +405,7 @@ background: getEventColors(event.type).background,
 
             {event.taskId && <div>Task: {event.taskId}</div>}
             {event.summary && <div>Summary: {event.summary}</div>}
+            
             {typeof event.changedLines === "number" && (
               <div>Lines: {event.changedLines}</div>
             )}
