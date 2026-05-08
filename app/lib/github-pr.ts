@@ -1,0 +1,109 @@
+const OWNER = "StrMaster";
+
+const REPO =
+  "master-agent-os";
+
+export async function createGithubBranch(
+  branchName: string
+) {
+  const token =
+    process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "Missing GITHUB_TOKEN"
+    );
+  }
+
+  const mainRefRes =
+    await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/git/ref/heads/main`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+
+          Accept:
+            "application/vnd.github+json",
+        },
+      }
+    );
+
+  const mainRef =
+    await mainRefRes.json();
+
+  const sha =
+    mainRef.object.sha;
+
+  const createRes =
+    await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/git/refs`,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+
+          Accept:
+            "application/vnd.github+json",
+
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          ref: `refs/heads/${branchName}`,
+
+          sha,
+        }),
+      }
+    );
+
+  return createRes.json();
+}
+
+export async function createPullRequest(
+  branchName: string,
+
+  title: string,
+
+  body: string
+) {
+  const token =
+    process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "Missing GITHUB_TOKEN"
+    );
+  }
+
+  const prRes =
+    await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/pulls`,
+      {
+        method: "POST",
+
+        headers: {
+          Authorization: `Bearer ${token}`,
+
+          Accept:
+            "application/vnd.github+json",
+
+          "Content-Type":
+            "application/json",
+        },
+
+        body: JSON.stringify({
+          title,
+
+          body,
+
+          head: branchName,
+
+          base: "main",
+        }),
+      }
+    );
+
+  return prRes.json();
+}
