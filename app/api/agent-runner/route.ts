@@ -11,6 +11,10 @@ import {
 import {
   validatePatch,
 } from "@/app/lib/patch-validator";
+import {
+  createGithubBranch,
+  createPullRequest,
+} from "@/app/lib/github-pr";
 
 
 
@@ -878,13 +882,50 @@ const patchedContent =
     taskSummary: task.summary ?? task.title,
   });
 
+const branchName =
+  `agent-task-${task.id}`;
+
+await createGithubBranch(
+  branchName
+);
+
 await updateGithubFile(
   task.targetFile,
-
   patchedContent,
-
-  `Execution Agent patch: ${task.title}`
+  `Execution Agent patch: ${task.title}`,
+  branchName
 );
+
+const pr =
+  await createPullRequest(
+    branchName,
+
+    `AI Patch: ${task.title}`,
+
+    `
+Autonomous Execution Agent PR
+
+Task:
+${task.title}
+Summary:
+${task.summary}
+Generated automatically by Master Agent OS.
+`
+  );
+
+await logActivity({
+  type: "pull-request-created",
+
+  runId,
+
+  taskId: task.id,
+
+  summary:
+    pr.html_url,
+
+  reason:
+    `PR created for ${task.title}`,
+});
 
 const validation =
   validatePatch(
