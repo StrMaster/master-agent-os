@@ -1001,6 +1001,70 @@ if (
           validation.validation
         ),
     });
+
+  if (
+  validation.validation
+    ?.mergeable &&
+  typeof pr.number ===
+    "number"
+) {
+  try {
+    const mergeRes =
+      await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/merge-pr`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            prNumber:
+              pr.number,
+          }),
+        }
+      );
+
+    const merge =
+      await mergeRes.json();
+
+    await logActivity({
+      type:
+        "pull-request-merged",
+
+      runId,
+
+      taskId: task.id,
+
+      summary:
+        merge.mergeResult
+          ?.sha,
+
+      reason:
+        `Merged PR #${pr.number}`,
+    });
+  } catch (error) {
+    await logActivity({
+      type:
+        "pull-request-merge-failed",
+
+      runId,
+
+      taskId: task.id,
+
+      reason:
+        "PR merge failed",
+
+      details:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+}
+
   } catch (error) {
     await logActivity({
       type:
