@@ -370,7 +370,33 @@ const updatedTasks = [...tasks, ...generatedTasks];
       priority: task.priority,
     });
 
-    const conversationalMessage = `Understood. I created a ${task.priority} priority task for ${task.targetFile} and queued it for execution.`;
+let conversationalPrefix = "Understood.";
+
+const recentDashboardTasks = tasks.filter((task: any) =>
+  String(task.targetFile).includes("page.tsx")
+);
+
+const recentActivityTasks = tasks.filter((task: any) =>
+  String(task.targetFile).includes("ActivityFeed")
+);
+
+if (
+  targetFile.includes("page.tsx") &&
+  recentDashboardTasks.length > 2
+) {
+  conversationalPrefix =
+    "Continuing dashboard improvement work.";
+}
+
+if (
+  targetFile.includes("ActivityFeed") &&
+  recentActivityTasks.length > 2
+) {
+  conversationalPrefix =
+    "Continuing activity feed improvements.";
+}
+
+    const conversationalMessage = `${conversationalPrefix} I created a ${task.priority} priority task for ${task.targetFile} and queued it for execution.`;
 
 const followUp =
   "You can monitor execution progress in the Activity Feed.";
