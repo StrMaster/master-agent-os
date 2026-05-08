@@ -327,3 +327,61 @@ Rules:
     "No agent response available."
   );
 }
+
+export async function generateReviewerFixTasks(context: {
+  prompt: string;
+  reviewerResponse: string;
+  projectContext: unknown;
+}) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are the Reviewer Agent task generator.
+
+Convert reviewer findings into safe executable fix tasks.
+
+Rules:
+- Generate 1 to 3 tasks.
+- Keep tasks small and safe.
+- Only use allowed target files:
+  - app/page.tsx
+  - app/components/ActivityFeed.tsx
+  - app/components/RunAgentButton.tsx
+  - app/agents/page.tsx
+  - app/execution/page.tsx
+- Do not suggest backend/config/package changes.
+- If Lithuanian is used, respond in Lithuanian.
+- Never respond in German.
+
+Respond ONLY valid JSON array.
+
+Format:
+[
+  {
+    "title": "...",
+    "summary": "...",
+    "targetFile": "...",
+    "priority": "low|medium|high"
+  }
+]
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(context, null, 2),
+      },
+    ],
+  });
+
+  const content = response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error("OpenAI returned empty reviewer fix task response");
+  }
+
+  return JSON.parse(content);
+}
