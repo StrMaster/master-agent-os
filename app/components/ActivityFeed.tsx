@@ -141,6 +141,12 @@ case "deploy-recovery-failed":
     background: "#220909",
   };
 
+case "patch-validation-failed":
+  return {
+    border: "#dc2626",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
@@ -301,7 +307,8 @@ const groupedEntries = Object.entries(groupedRuns);
   "manual-task-created",
   "recovery-task-created",
   "deploy-recovery-created",
-  "deploy-recovery-failed"
+  "deploy-recovery-failed",
+  "patch-validation-failed"
 ].map((item) => (
     <button
       key={item}
