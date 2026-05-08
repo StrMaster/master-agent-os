@@ -837,16 +837,6 @@ if (proposal.mode === "blocked") {
 }
 
     // 🔹 APPLY
-    const applyRes = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/apply-changes`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(proposal),
-      }
-    );
 
 const currentFileRes =
   await fetch(
@@ -1145,115 +1135,12 @@ if (!validation.valid) {
   );
 }
 
-    const applyResult = await applyRes.json();
-
-    await logActivity({
-  type: "apply",
-  runId,
-  taskId: task.id,
-  branch: applyResult.branchName,
-  merged: applyResult.merged,
-  pullRequestUrl: applyResult.pullRequestUrl,
-});
-
-if (applyResult.merged) {
-  await logActivity({
-    type: "deploy-pending",
-    runId,
-    taskId: task.id,
-    branch: applyResult.branchName,
-    provider: "vercel",
-status: "pending",
-    message: "Merge completed; Vercel deployment should start automatically",
-  });
-
-const memoryRes = await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json?ref=${BRANCH}`,
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-    },
-    cache: "no-store",
-  }
-);
-
-const memoryData = await memoryRes.json();
-
-const memoryContent = Buffer.from(
-  memoryData.content,
-  "base64"
-).toString("utf-8");
-
-const memory = JSON.parse(memoryContent);
-
-const recentBranch = memory.lastBranch === applyResult.branchName;
-
-memory.lastRun = new Date().toISOString();
-memory.lastTaskId = task.id;
-memory.lastBranch = applyResult.branchName;
-memory.reusedBranch = recentBranch;
-
-const updatedMemory = Buffer.from(
-  JSON.stringify(memory, null, 2) + "\n"
-).toString("base64");
-
-await fetch(
-  `https://api.github.com/repos/${OWNER}/${REPO}/contents/.agent/memory.json`,
-  {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      message: `Update agent memory for ${task.id}`,
-      content: updatedMemory,
-      sha: memoryData.sha,
-      branch: BRANCH,
-    }),
-  }
-);
-}
-
-    if (!applyResult.ok) {
-task.status = "failed";
-task.updatedAt = new Date().toISOString();
-task.error = applyResult.error || "Apply failed";
-
-updateTaskStatus(task.id, "failed");
-
-await writeTasksFile(
-  tasks,
-  (await readTasksFile()).sha,
-  `Mark task ${task.id} as failed`
-);
-
-await logActivity({
-  type: "failed",
-  runId,
-  taskId: task.id,
-  reason: "Apply failed",
-  details: applyResult.error || null,
-  failureType: applyResult?.error
-  ? "apply-failed"
-  : "unknown",
-});
-      return NextResponse.json({
-        ok: false,
-        mode: "failed",
-        reason: "Apply failed",
-        applyResult,
-      });
-    }
-
 task.status = "done";
 task.updatedAt = new Date().toISOString();
 task.result = {
-  branchName: applyResult.branchName,
-  pullRequestUrl: applyResult.pullRequestUrl,
-  merged: applyResult.merged,
+  branchName,
+  pullRequestUrl: undefined,
+  merged: false,
 };
 
 updateTaskStatus(task.id, "completed");
