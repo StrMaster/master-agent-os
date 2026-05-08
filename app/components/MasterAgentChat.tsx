@@ -240,6 +240,41 @@ if (
   return;
 }
 
+if (
+  normalizedMessage.includes("what should we improve") ||
+  normalizedMessage.includes("what to improve") ||
+  normalizedMessage.includes("next improvements") ||
+  normalizedMessage.includes("self improvement") ||
+  normalizedMessage.includes("ką pagerinti") ||
+  normalizedMessage.includes("ka pagerinti") ||
+  normalizedMessage.includes("ką toliau") ||
+  normalizedMessage.includes("ka toliau")
+) {
+  addMessage("user", currentMessage);
+  setMessage("");
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/self-improvement", {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+
+    addMessage(
+      "agent",
+      data.suggestions ||
+        "I could not generate self-improvement suggestions."
+    );
+  } catch {
+    addMessage("agent", "Failed to generate self-improvement suggestions.");
+  } finally {
+    setLoading(false);
+  }
+
+  return;
+}
+
     addMessage("user", currentMessage);
 
     setMessage("");
