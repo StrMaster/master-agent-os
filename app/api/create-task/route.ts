@@ -24,6 +24,7 @@ type AgentTask = {
   priority: Priority;
   createdAt: string;
   source: "manual";
+  summary?: string;
 };
 
 type GitHubFile = {
@@ -147,6 +148,7 @@ if (prompt) {
   title = title || prompt;
 
   const normalizedPrompt = prompt.toLowerCase();
+  let summary = prompt;
 
   if (
   normalizedPrompt.includes("activity") ||
@@ -232,6 +234,29 @@ if (
 ) {
   targetFile = "app/components/RunAgentButton.tsx";
 }
+if (
+  normalizedPrompt.includes("mobile") &&
+  normalizedPrompt.includes("dashboard")
+) {
+  summary =
+    "Improve dashboard mobile layout and spacing for smaller screens";
+}
+
+if (
+  normalizedPrompt.includes("activity") &&
+  normalizedPrompt.includes("layout")
+) {
+  summary =
+    "Improve activity feed layout and visual hierarchy";
+}
+
+if (
+  normalizedPrompt.includes("run") &&
+  normalizedPrompt.includes("button")
+) {
+  summary =
+    "Improve run agent button execution experience";
+}
 }
 
     if (!title) {
@@ -298,6 +323,7 @@ if (
     const task: AgentTask = {
       id: `manual-task-${Date.now()}`,
       title,
+      summary,
       targetFile,
       status: "todo",
       priority,
