@@ -116,9 +116,20 @@ export default function HomePage() {
       <div className="mt-8">
   <MasterAgentChat />
 </div>
-      <div className="mt-8">
+      <details className="mt-8">
+  <summary
+    style={{
+      cursor: "pointer",
+      color: "#888",
+      fontWeight: 700,
+      marginBottom: 12,
+    }}
+  >
+    Advanced: Manual Task Form
+  </summary>
+
   <CreateTaskForm />
-</div>
+</details>
       <div className="mt-8">
         <ActivityFeed />
       </div>
