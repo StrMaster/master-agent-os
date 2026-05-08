@@ -20,6 +20,7 @@ const ACTIVITY_PATH = ".agent/activity.json";
 type AgentTask = {
   id: string;
   title: string;
+  summary?: string;
   targetFile?: string;
   status: "todo" | "running" | "done" | "failed";
   priority?: "low" | "medium" | "high";
@@ -28,9 +29,9 @@ type AgentTask = {
   updatedAt?: string;
   error?: string;
   result?: {
-    branchName?: string;
-    pullRequestUrl?: string;
-    merged?: boolean;
+  branchName?: string;
+  pullRequestUrl?: string;
+  merged?: boolean;
   };
 };
 
@@ -871,8 +872,7 @@ const patchedContent =
     taskTitle:
       task.title,
 
-    taskSummary:
-      task.summary,
+    taskSummary: task.summary ?? task.title,
   });
 
 await updateGithubFile(
