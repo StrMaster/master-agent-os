@@ -177,6 +177,18 @@ case "pull-request-validation-failed":
     background: "#220909",
   };
 
+case "pull-request-merged":
+  return {
+    border: "#22c55e",
+    background: "#071a12",
+  };
+
+case "pull-request-merge-failed":
+  return {
+    border: "#ef4444",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
@@ -343,7 +355,9 @@ const groupedEntries = Object.entries(groupedRuns);
   "pull-request-failed",
   "pull-request-duplicate",
   "pull-request-validated",
-  "pull-request-validation-failed"
+  "pull-request-validation-failed",
+  "pull-request-merged",
+  "pull-request-merge-failed"
 ].map((item) => (
     <button
       key={item}
