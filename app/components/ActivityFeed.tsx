@@ -153,6 +153,12 @@ case "pull-request-created":
     background: "#0b1220",
   };
 
+case "pull-request-failed":
+  return {
+    border: "#ef4444",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
@@ -315,7 +321,8 @@ const groupedEntries = Object.entries(groupedRuns);
   "deploy-recovery-created",
   "deploy-recovery-failed",
   "patch-validation-failed",
-  "pull-request-created"
+  "pull-request-created",
+  "pull-request-failed"
 ].map((item) => (
     <button
       key={item}
