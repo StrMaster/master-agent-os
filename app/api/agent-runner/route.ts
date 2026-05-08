@@ -25,6 +25,7 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
 
+
 type AgentTask = {
   id: string;
   title: string;
