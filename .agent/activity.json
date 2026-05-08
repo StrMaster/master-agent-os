@@ -1,5 +1,15 @@
 [
   {
+    "id": "06c382d3-3308-4c34-96f6-87e5facb9386",
+    "timestamp": "2026-05-08T10:18:34.564Z",
+    "type": "manual-task-created",
+    "taskId": "manual-task-1778235513454",
+    "summary": "Patobulinti pagrindinio puslapio mobilų išdėstymą ir tarpus",
+    "targetFile": "app/page.tsx",
+    "priority": "high",
+    "reasoning": "Detected dashboard/layout related keywords."
+  },
+  {
     "id": "28b5196a-eac1-46ce-9b22-0a3ebd0db7b4",
     "timestamp": "2026-05-08T10:03:48.215Z",
     "type": "manual-task-created",
