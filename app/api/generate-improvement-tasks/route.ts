@@ -110,11 +110,42 @@ export async function GET() {
         suggestions
       );
 
-    return NextResponse.json({
-      ok: true,
-      suggestions,
-      generatedTasks,
-    });
+    const executableTasks =
+  generatedTasks.map(
+    (
+      task: {
+        title: string;
+        summary: string;
+        targetFile: string;
+        priority: string;
+      },
+      index: number
+    ) => ({
+      id: `improvement-task-${Date.now()}-${index}`,
+
+      title: task.title,
+
+      summary: task.summary,
+
+      targetFile:
+        task.targetFile,
+
+      status: "todo",
+
+      priority:
+        task.priority,
+
+      source:
+        "self-improvement",
+    })
+  );
+
+return NextResponse.json({
+  ok: true,
+  suggestions,
+  generatedTasks:
+    executableTasks,
+});
   } catch (error) {
     return NextResponse.json(
       {
