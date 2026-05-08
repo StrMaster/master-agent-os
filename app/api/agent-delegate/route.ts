@@ -8,7 +8,9 @@ import {
 import {
   AGENT_IDENTITIES,
 } from "@/app/lib/agent-memory";
-
+import {
+  buildExecutionWaves,
+} from "@/app/lib/execution-wave-manager";
 import {
   addCoordinationEvent,
   getCoordinationMemory,
@@ -122,12 +124,42 @@ if (agentRole === "reviewer") {
 
 if (agentRole === "planner") {
   try {
-    executionSequence =
-      await generateExecutionSequence({
-        prompt,
+    const rawSequence =
+  await generateExecutionSequence({
+    prompt,
 
-        projectContext,
-      });
+    projectContext,
+  });
+
+executionSequence =
+  buildExecutionWaves(
+    rawSequence.map(
+      (
+        step: {
+          id: string;
+
+          title: string;
+
+          summary: string;
+
+          targetFile: string;
+
+          priority:
+            | "low"
+            | "medium"
+            | "high";
+
+          dependsOn: string[];
+        }
+      ) => ({
+        ...step,
+
+        status: "queued",
+
+        wave: 0,
+      })
+    )
+  );
   } catch (error) {
     console.error(
       "Execution sequence generation failed",
