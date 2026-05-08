@@ -2,9 +2,27 @@
 
 import { useState } from "react";
 
+type AgentResult = {
+  ok?: boolean;
+  mode?: string;
+  message?: string;
+  error?: string;
+  runId?: string;
+  taskId?: string;
+  branchName?: string;
+  pullRequestUrl?: string;
+  validation?: {
+    mergeable?: boolean | null;
+    state?: string;
+    merged?: boolean;
+    draft?: boolean;
+  } | null;
+};
+
 export default function RunAgentButton() {
-  const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [loopLoading, setLoopLoading] = useState(false);
+  const [result, setResult] = useState<AgentResult | null>(null);
 
   async function runAgent() {
     setLoading(true);
@@ -16,284 +34,171 @@ export default function RunAgentButton() {
       });
 
       const data = await res.json();
+
       setResult(data);
     } catch (error) {
       setResult({
         ok: false,
-        mode: "client-error",
-        error: error instanceof Error ? error.message : "Unknown client error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
       });
     } finally {
       setLoading(false);
     }
   }
 
-  async function runLoop() {
-  setLoading(true);
-  setResult(null);
+  async function runAgentLoop() {
+    setLoopLoading(true);
+    setResult(null);
 
-  const results = [];
+    try {
+      let lastResult: AgentResult | null = null;
 
-  try {
-    for (let i = 0; i < 3; i++) {
-      const res = await fetch("/api/agent-runner", {
-        method: "POST",
-      });
+      for (let i = 0; i < 5; i++) {
+        const res = await fetch("/api/agent-runner", {
+          method: "POST",
+        });
 
-      const data = await res.json();
-      results.push(data);
+        const data = await res.json();
+        lastResult = data;
 
-      if (data.mode === "idle" || !data.ok) {
-        break;
+        if (!data.ok || data.mode === "idle" || data.mode === "paused") {
+          break;
+        }
       }
+
+      setResult(lastResult);
+    } catch (error) {
+      setResult({
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
+      });
+    } finally {
+      setLoopLoading(false);
     }
-
-    setResult({
-      ok: true,
-      mode: "loop",
-      runs: results,
-    });
-  } catch (error) {
-    setResult({
-      ok: false,
-      mode: "loop-client-error",
-      error: error instanceof Error ? error.message : "Unknown client error",
-    });
-  } finally {
-    setLoading(false);
   }
-}
-
-  const change = result?.proposal?.changes?.[0];
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <button
-        onClick={runAgent}
-        disabled={loading}
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
+      <div
         style={{
-          padding: "12px 18px",
-          borderRadius: 12,
-          border: "1px solid #333",
-          background: loading ? "#333" : "#111",
-          color: "white",
-          cursor: loading ? "not-allowed" : "pointer",
-          fontWeight: 700,
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
         }}
       >
-        {loading ? "Agent running..." : "Run Agent"}
-      </button>
-      <button
-  onClick={runLoop}
-  disabled={loading}
-  style={{
-    padding: "12px 18px",
-    borderRadius: 12,
-    border: "1px solid #333",
-    background: loading ? "#333" : "#1f2937",
-    color: "white",
-    cursor: loading ? "not-allowed" : "pointer",
-    fontWeight: 700,
-    marginLeft: 10,
-  }}
->
-  {loading ? "Loop running..." : "Run Agent Loop"}
-</button>
-
-<button
-  onClick={async () => {
-    const res = await fetch("/api/generate-task", {
-      method: "POST",
-    });
-
-    const data = await res.json();
-    console.log(data);
-    alert(JSON.stringify(data, null, 2));
-  }}
-  style={{
-    padding: "12px 18px",
-    borderRadius: 12,
-    border: "1px solid #333",
-    background: "#4b5563",
-    color: "white",
-    cursor: "pointer",
-    fontWeight: 700,
-    marginLeft: 10,
-  }}
->
-  Generate Task
-</button>
-      {loading && (
-        <div
+        <button
+          onClick={runAgent}
+          disabled={loading || loopLoading}
           style={{
-            marginTop: 16,
-            padding: 16,
-            borderRadius: 14,
+            padding: "12px 18px",
+            borderRadius: 12,
             border: "1px solid #333",
-            background: "#151515",
-            color: "#aaa",
+            background: "#111",
+            color: "white",
+            fontWeight: 700,
+            cursor: loading || loopLoading ? "not-allowed" : "pointer",
           }}
         >
-          Generating proposal → checking safety → applying changes...
+          {loading ? "Running..." : "Run Agent"}
+        </button>
+
+        <button
+          onClick={runAgentLoop}
+          disabled={loading || loopLoading}
+          style={{
+            padding: "12px 18px",
+            borderRadius: 12,
+            border: "1px solid #334155",
+            background: "#1e293b",
+            color: "white",
+            fontWeight: 700,
+            cursor: loading || loopLoading ? "not-allowed" : "pointer",
+          }}
+        >
+          {loopLoading ? "Running loop..." : "Run Agent Loop"}
+        </button>
+      </div>
+
+      {(loading || loopLoading) && (
+        <div
+          style={{
+            padding: 14,
+            borderRadius: 12,
+            border: "1px solid #334155",
+            background: "#0f172a",
+            color: "#cbd5e1",
+            lineHeight: 1.6,
+          }}
+        >
+          Running agent → generating patch → validating → creating PR...
         </div>
       )}
 
       {result && (
-        <div style={{ marginTop: 20, display: "grid", gap: 16 }}>
-          <div
-            style={{
-              padding: 18,
-              borderRadius: 16,
-              border: result.ok ? "1px solid #0f6" : "1px solid #f55",
-              background: result.ok ? "#06210f" : "#260b0b",
-              color: result.ok ? "#8dffb0" : "#ff9a9a",
-              lineHeight: 1.6,
-            }}
-          >
-            <strong>
-              {result.ok ? "Agent run completed ✅" : "Agent run failed ❌"}
-            </strong>
-
-            <div>Mode: {result.mode ?? "unknown"}</div>
-            {result.taskId && <div>Task: {result.taskId}</div>}
-            {result.reason && <div>Reason: {result.reason}</div>}
-            {result.error && <div>Error: {result.error}</div>}
+        <div
+          style={{
+            padding: 16,
+            borderRadius: 14,
+            border: result.ok ? "1px solid #166534" : "1px solid #991b1b",
+            background: result.ok ? "#052e16" : "#450a0a",
+            color: result.ok ? "#bbf7d0" : "#fecaca",
+            lineHeight: 1.7,
+          }}
+        >
+          <div style={{ fontWeight: 800, marginBottom: 8 }}>
+            {result.ok ? "Agent run completed" : "Agent run failed"}
           </div>
 
-          {result.proposal && (
-            <div
-              style={{
-                padding: 18,
-                borderRadius: 16,
-                border: "1px solid #0a6",
-                background: "#06210f",
-                color: "#b6ffd0",
-                lineHeight: 1.6,
-              }}
-            >
-              <strong>Proposal</strong>
-              <div>Summary: {result.proposal.summary}</div>
-              <div>Branch: {result.proposal.branchName}</div>
-              <div>Changed lines: {result.proposal.changedLines}</div>
-              <div>Safe: {String(result.proposal.isSafe)}</div>
+          {result.mode && <div>Mode: {result.mode}</div>}
+          {result.message && <div>Message: {result.message}</div>}
+          {result.error && <div>Error: {result.error}</div>}
+          {result.taskId && <div>Task: {result.taskId}</div>}
+          {result.branchName && <div>Branch: {result.branchName}</div>}
+
+          {result.pullRequestUrl && (
+            <div>
+              PR:{" "}
+              <a
+                href={result.pullRequestUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  color: "#93c5fd",
+                  textDecoration: "underline",
+                }}
+              >
+                Open pull request
+              </a>
             </div>
           )}
 
-          {result.mode === "loop" && result.runs && (
-  <div style={{ marginTop: 20 }}>
-    <strong>Loop results</strong>
-
-    {result.runs.map((run: any, i: number) => (
-      <div
-        key={i}
-        style={{
-          marginTop: 10,
-          padding: 12,
-          borderRadius: 10,
-          border: run.ok ? "1px solid #0f6" : "1px solid #f55",
-          background: run.ok ? "#06210f" : "#260b0b",
-          color: run.ok ? "#8dffb0" : "#ff9a9a",
-        }}
-      >
-        <div>Step {i + 1}</div>
-        <div>Mode: {run.mode}</div>
-        {run.taskId && <div>Task: {run.taskId}</div>}
-      </div>
-    ))}
-  </div>
-)}
-
-          {result.applyResult && (
-            <div
-              style={{
-                padding: 18,
-                borderRadius: 16,
-                border: result.applyResult.ok
-                  ? "1px solid #0f6"
-                  : "1px solid #f55",
-                background: result.applyResult.ok ? "#06210f" : "#260b0b",
-                color: result.applyResult.ok ? "#8dffb0" : "#ff9a9a",
-                lineHeight: 1.6,
-                wordBreak: "break-word",
-              }}
-            >
-              <strong>
-                PR created {result.applyResult.ok ? "✅" : "❌"}
-              </strong>
-
-              <div>Branch: {result.applyResult.branchName}</div>
+          {result.validation && (
+            <div style={{ marginTop: 8 }}>
+              <div>Validation:</div>
+              <div>State: {result.validation.state ?? "unknown"}</div>
               <div>
-                Merged: {result.applyResult.merged ? "✅ yes" : "❌ no"}
+                Mergeable:{" "}
+                {result.validation.mergeable === null ||
+                result.validation.mergeable === undefined
+                  ? "unknown"
+                  : result.validation.mergeable
+                    ? "yes"
+                    : "no"}
               </div>
-
-              {result.applyResult.mergeError && (
-                <div>Merge error: {result.applyResult.mergeError}</div>
-              )}
-
-              {result.applyResult.error && (
-  <div>Error: {result.applyResult.error}</div>
-)}
-
-{result.applyResult.details && (
-  <div>Details: {JSON.stringify(result.applyResult.details)}</div>
-)}
-
-              {result.applyResult.pullRequestUrl && (
-                <div>
-                  Review:{" "}
-                  <a
-                    href={result.applyResult.pullRequestUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {result.applyResult.pullRequestUrl}
-                  </a>
-                </div>
-              )}
-
-              {result.applyResult.pullRequestUrl && (
-                <div>
-                  Review diff:{" "}
-                  <a
-                    href={`${result.applyResult.pullRequestUrl}/files`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {result.applyResult.pullRequestUrl}/files
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
-
-          {change && (
-            <div
-              style={{
-                padding: 18,
-                borderRadius: 16,
-                border: "1px solid #333",
-                background: "#111",
-                color: "#ddd",
-                lineHeight: 1.45,
-                fontFamily:
-                  "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                whiteSpace: "pre-wrap",
-                overflowX: "auto",
-              }}
-            >
-              <strong>Diff preview</strong>
-
-              <div style={{ marginTop: 10, color: "#999" }}>
-                File: {change.filePath}
-              </div>
-
-              <div style={{ marginTop: 12, color: "#f88" }}>--- before</div>
-              <div>{change.originalContent?.slice(0, 1200)}</div>
-
-              <div style={{ marginTop: 12, color: "#8f8" }}>+++ after</div>
-              <div>{change.content?.slice(0, 1200)}</div>
+              <div>Draft: {result.validation.draft ? "yes" : "no"}</div>
+              <div>Merged: {result.validation.merged ? "yes" : "no"}</div>
             </div>
           )}
         </div>
