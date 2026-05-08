@@ -422,6 +422,7 @@ const updatedTasks = [...tasks, ...generatedTasks];
   summary: generatedTasks[0].title,
   targetFile: generatedTasks[0].targetFile,
   priority: generatedTasks[0].priority,
+  reasoning: reasoningHint,
 });
 
 await updateConversationMemory({
