@@ -144,6 +144,7 @@ let title = normalizeTitle(body.title);
 let targetFile = String(body.targetFile ?? "").trim();
 let priority = normalizePriority(body.priority);
 let summary = title || prompt;
+let reasoningHint = "";
 
 if (prompt) {
   title = title || prompt;
@@ -157,6 +158,8 @@ if (prompt) {
   normalizedPrompt.includes("logs")
 ) {
   targetFile = "app/components/ActivityFeed.tsx";
+  reasoningHint =
+  "Detected activity/feed related keywords.";
 }
 
 if (
@@ -166,6 +169,8 @@ if (
   normalizedPrompt.includes("page")
 ) {
   targetFile = "app/page.tsx";
+  reasoningHint =
+  "Detected dashboard/layout related keywords.";
 }
 
 if (
@@ -174,6 +179,8 @@ if (
   normalizedPrompt.includes("execution")
 ) {
   targetFile = "app/components/RunAgentButton.tsx";
+  reasoningHint =
+  "Detected execution/runner related keywords.";
 }
 
 if (
@@ -181,6 +188,8 @@ if (
   normalizedPrompt.includes("agents")
 ) {
   targetFile = "app/agents/page.tsx";
+  reasoningHint =
+  "Detected agent management related keywords.";
 }
 
 if (
@@ -399,8 +408,9 @@ if (
     const primaryTask = generatedTasks[0];
 
 const conversationalMessage = `${conversationalPrefix} I created ${generatedTasks.length} task(s). Primary task: ${primaryTask.priority} priority for ${primaryTask.targetFile}.`;
-const followUp =
-  "You can monitor execution progress in the Activity Feed.";
+const followUp = reasoningHint
+  ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
+  : "You can monitor execution progress in the Activity Feed.";
 return NextResponse.json({
   ok: true,
   mode: "manual-task-created",
