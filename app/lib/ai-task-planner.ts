@@ -281,3 +281,49 @@ export async function determineAgentRole(
 
   return "executor";
 }
+
+export async function generateAgentDelegationResponse(context: {
+  prompt: string;
+  agentRole: "planner" | "executor" | "reviewer" | "deploy";
+  projectContext?: unknown;
+}) {
+  const roleInstructions = {
+    planner:
+      "You are the Planner Agent. Create a concise execution plan. Do not create code. Focus on sequencing and safe next steps.",
+    executor:
+      "You are the Execution Agent. Convert the request into a safe executable engineering task.",
+    reviewer:
+      "You are the Reviewer Agent. Analyze risks, failures, recent activity, and quality issues. Recommend what should be fixed.",
+    deploy:
+      "You are the Deploy Agent. Analyze deployment status, production readiness, and deploy risks.",
+  };
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+${roleInstructions[context.agentRole]}
+
+Rules:
+- Be concise.
+- Be practical.
+- If Lithuanian is used, respond in Lithuanian.
+- Never respond in German.
+- Do not invent facts not present in context.
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(context, null, 2),
+      },
+    ],
+  });
+
+  return (
+    response.choices[0]?.message?.content ||
+    "No agent response available."
+  );
+}
