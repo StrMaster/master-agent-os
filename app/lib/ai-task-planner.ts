@@ -1,29 +1,47 @@
 import { openai } from "./openai";
 
-export async function generateTaskPlan(
-  prompt: string
-) {
-  const response =
-    await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content: `
-You are an AI engineering task planner.
+type ProjectContext = {
+  recentTasks: unknown[];
+  recentActivity: unknown[];
+  conversationMemory: unknown[];
+};
+
+export async function generateTaskPlan(prompt: string, context?: ProjectContext) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.2,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are the planning brain for Master Agent OS.
+
+You receive:
+- user request
+- recent tasks
+- recent activity
+- conversation memory
 
 Your job:
-- analyze user requests
-- determine the best target file
-- generate a short execution summary
-- determine priority
+- understand the user's intent
+- choose the safest target file
+- generate one small task
+- keep the task safe and specific
 
 Allowed target files:
 - app/page.tsx
 - app/components/ActivityFeed.tsx
 - app/components/RunAgentButton.tsx
 - app/agents/page.tsx
+- app/execution/page.tsx
+
+Rules:
+- Only choose one allowed targetFile.
+- Prefer small UI/copy/layout improvements.
+- Do not suggest backend/API/config/package changes.
+- Do not create broad refactors.
+- If request is vague, choose the safest likely UI file.
+- Use recent context to avoid repeating the same work.
 
 Respond ONLY valid JSON.
 
@@ -35,22 +53,30 @@ JSON format:
   "priority": "low|medium|high",
   "reasoning": "..."
 }
-          `,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(
+          {
+            prompt,
+            context: {
+              recentTasks: context?.recentTasks ?? [],
+              recentActivity: context?.recentActivity ?? [],
+              conversationMemory: context?.conversationMemory ?? [],
+            },
+          },
+          null,
+          2
+        ),
+      },
+    ],
+  });
 
-  const content =
-    response.choices[0]?.message?.content;
+  const content = response.choices[0]?.message?.content;
 
   if (!content) {
-    throw new Error(
-      "OpenAI returned empty response"
-    );
+    throw new Error("OpenAI returned empty response");
   }
 
   return JSON.parse(content);
