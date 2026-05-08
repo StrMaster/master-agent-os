@@ -140,7 +140,7 @@ const activityContent = Buffer.from(
   "base64"
 ).toString("utf-8");
 
-const activity = JSON.parse(activityContent);
+const existingActivity = JSON.parse(activityContent);
 
 const updatedActivity = [
   {
@@ -153,7 +153,7 @@ const updatedActivity = [
     priority: queuedRecoveryTask.priority,
     reason: recoveryTask.reasoning,
   },
-  ...(Array.isArray(activity) ? activity : []),
+  ...(Array.isArray(existingActivity) ? existingActivity : []),
 ].slice(0, 100);
 
 await fetch(
