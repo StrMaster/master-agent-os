@@ -7,6 +7,7 @@ const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
 
 const SAFE_TARGET_FILES = [
+  "app/page.tsx",
   "app/execution/page.tsx",
   "app/agents/page.tsx",
   "app/components/RunAgentButton.tsx",
@@ -209,6 +210,27 @@ if (
   priority = priority === "high"
     ? "high"
     : "medium";
+}
+if (
+  normalizedPrompt.includes("ui") ||
+  normalizedPrompt.includes("ux") ||
+  normalizedPrompt.includes("design")
+) {
+  targetFile = "app/page.tsx";
+}
+
+if (
+  normalizedPrompt.includes("activity timeline") ||
+  normalizedPrompt.includes("activity card")
+) {
+  targetFile = "app/components/ActivityFeed.tsx";
+}
+
+if (
+  normalizedPrompt.includes("agent execution") ||
+  normalizedPrompt.includes("run flow")
+) {
+  targetFile = "app/components/RunAgentButton.tsx";
 }
 }
 
