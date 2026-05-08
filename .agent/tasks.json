@@ -86,5 +86,15 @@
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-08T10:18:33.454Z"
+  },
+  {
+    "id": "manual-task-1778237298900",
+    "title": "Consolidate and implement mobile layout improvements in app/page.tsx",
+    "summary": "Consolidate and implement mobile layout improvements in app/page.tsx",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-08T10:48:18.900Z"
   }
 ]
