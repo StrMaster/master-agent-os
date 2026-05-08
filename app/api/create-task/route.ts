@@ -359,14 +359,14 @@ const updatedTasks = [...tasks, ...generatedTasks];
       TASKS_PATH,
       updatedTasks,
       sha,
-      `Create manual agent task: ${task.id}`
+      `Create manual agent task: ${generatedTasks[0].id}`
     );
 
     await logActivity({
       type: "manual-task-created",
-      taskId: task.id,
-      summary: task.title,
-      targetFile: task.targetFile,
+      generatedTasks[0].id
+generatedTasks[0].title
+generatedTasks[0].targetFile
       priority: task.priority,
     });
 
