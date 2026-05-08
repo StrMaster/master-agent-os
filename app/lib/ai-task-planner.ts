@@ -120,7 +120,4 @@ Respond in plain text.
     response.choices[0]?.message?.content ||
     "No project status summary available."
   );
-}
-
-  
-}
+  }
