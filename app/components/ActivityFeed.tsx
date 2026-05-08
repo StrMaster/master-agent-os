@@ -299,9 +299,9 @@ const groupedEntries = Object.entries(groupedRuns);
   "failed",
   "auto-paused",
   "manual-task-created",
-"recovery-task-created"
+  "recovery-task-created",
   "deploy-recovery-created",
-"deploy-recovery-failed"
+  "deploy-recovery-failed"
 ].map((item) => (
     <button
       key={item}
