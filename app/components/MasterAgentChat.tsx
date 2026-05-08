@@ -207,6 +207,39 @@ try {
 
     const currentMessage = message;
 
+    const normalizedMessage = currentMessage.toLowerCase();
+
+if (
+  normalizedMessage.includes("project status") ||
+  normalizedMessage.includes("current status") ||
+  normalizedMessage.includes("kas dabar") ||
+  normalizedMessage.includes("kas vyksta") ||
+  normalizedMessage.includes("status")
+) {
+  addMessage("user", currentMessage);
+  setMessage("");
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/project-status", {
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+
+    addMessage(
+      "agent",
+      data.summary || "I could not generate a project status summary."
+    );
+  } catch {
+    addMessage("agent", "Failed to read project status.");
+  } finally {
+    setLoading(false);
+  }
+
+  return;
+}
+
     addMessage("user", currentMessage);
 
     setMessage("");
