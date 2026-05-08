@@ -6,6 +6,7 @@ import ActionButton from "./components/ActionButton";
 import RunAgentButton from "./components/RunAgentButton";
 import ActivityFeed from "./components/ActivityFeed";
 import CreateTaskForm from "./components/CreateTaskForm";
+import MasterAgentChat from "./components/MasterAgentChat";
 
 export default function HomePage() {
   const stats = [
