@@ -320,18 +320,40 @@ if (
       );
     }
 
-    const task: AgentTask = {
-      id: `manual-task-${Date.now()}`,
-      title,
-      summary,
-      targetFile,
-      status: "todo",
-      priority,
-      source: "manual",
-      createdAt: new Date().toISOString(),
-    };
+    const generatedTasks: AgentTask[] = [];
 
-    const updatedTasks = [...tasks, task];
+    const baseTask: AgentTask = {
+  id: `manual-task-${Date.now()}`,
+  title,
+  summary,
+  targetFile,
+  status: "todo",
+  priority,
+  source: "manual",
+  createdAt: new Date().toISOString(),
+};
+
+generatedTasks.push(baseTask);
+
+if (
+  prompt &&
+  prompt.toLowerCase().includes("dashboard") &&
+  prompt.toLowerCase().includes("activity")
+) {
+  generatedTasks.push({
+    id: `manual-task-${Date.now()}-activity`,
+    title: "Improve activity feed layout",
+    summary:
+      "Improve activity feed layout and visual hierarchy",
+    targetFile: "app/components/ActivityFeed.tsx",
+    status: "todo",
+    priority,
+    source: "manual",
+    createdAt: new Date().toISOString(),
+  });
+}
+
+const updatedTasks = [...tasks, ...generatedTasks];
 
     await writeGithubJson(
       TASKS_PATH,
@@ -357,7 +379,7 @@ return NextResponse.json({
   mode: "manual-task-created",
   message: conversationalMessage,
   followUp,
-  task,
+  tasks: generatedTasks,
 });
   } catch (error) {
     return NextResponse.json(
