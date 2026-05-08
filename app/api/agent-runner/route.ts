@@ -571,6 +571,17 @@ if (todoTasks.length > 0) {
 
     const task = tasks[taskIndex];
 
+    task.status = "running";
+task.updatedAt = new Date().toISOString();
+
+updateTaskStatus(task.id, "running");
+
+await writeTasksFile(
+  tasks,
+  (await readTasksFile()).sha,
+  `Mark task ${task.id} as running`
+);
+
     if (!task.targetFile) {
       return NextResponse.json({
         ok: false,
@@ -864,6 +875,18 @@ await fetch(
 }
 
     if (!applyResult.ok) {
+task.status = "failed";
+task.updatedAt = new Date().toISOString();
+task.error = applyResult.error || "Apply failed";
+
+updateTaskStatus(task.id, "failed");
+
+await writeTasksFile(
+  tasks,
+  (await readTasksFile()).sha,
+  `Mark task ${task.id} as failed`
+);
+
 await logActivity({
   type: "failed",
   runId,
@@ -882,7 +905,23 @@ await logActivity({
       });
     }
 
-    // 🔹 SUCCESS (no GitHub task write)
+task.status = "done";
+task.updatedAt = new Date().toISOString();
+task.result = {
+  branchName: applyResult.branchName,
+  pullRequestUrl: applyResult.pullRequestUrl,
+  merged: applyResult.merged,
+};
+
+updateTaskStatus(task.id, "completed");
+
+await writeTasksFile(
+  tasks,
+  (await readTasksFile()).sha,
+  `Mark task ${task.id} as done`
+);
+
+    // 🔹 SUCCESS
     return NextResponse.json({
       ok: true,
       mode: "completed-one-task",
