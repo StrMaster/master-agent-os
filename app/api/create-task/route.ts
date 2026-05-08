@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { generateTaskPlan } from "@/app/lib/ai-task-planner";
+import {
+  addRuntimeTask,
+} from "@/app/lib/task-runtime";
+
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -493,6 +497,15 @@ const conversationalMessage =
 const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
+
+for (const task of generatedTasks) {
+  addRuntimeTask({
+    id: task.id,
+    title: task.title,
+    status: "queued",
+  });
+}
+
 return NextResponse.json({
   ok: true,
   mode: "manual-task-created",
