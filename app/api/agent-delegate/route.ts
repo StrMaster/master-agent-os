@@ -4,6 +4,14 @@ import {
   generateAgentDelegationResponse,
   generateReviewerFixTasks,
 } from "@/app/lib/ai-task-planner";
+import {
+  AGENT_IDENTITIES,
+} from "@/app/lib/agent-memory";
+
+import {
+  addCoordinationEvent,
+  getCoordinationMemory,
+} from "@/app/lib/coordination-memory";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -74,11 +82,26 @@ export async function POST(req: Request) {
         : [],
     };
 
-    const response = await generateAgentDelegationResponse({
-      prompt,
-      agentRole,
-      projectContext,
-    });
+const coordinationMemory =
+  getCoordinationMemory();
+
+    const response =
+  await generateAgentDelegationResponse({
+    prompt,
+
+    agentRole,
+
+    projectContext: {
+      ...projectContext,
+
+      coordinationMemory,
+
+      agentIdentity:
+        AGENT_IDENTITIES[
+          agentRole
+        ],
+    },
+  });
 
 let suggestedFixTasks: unknown[] = [];
 
@@ -93,6 +116,16 @@ if (agentRole === "reviewer") {
     console.error("Reviewer fix task generation failed", error);
   }
 }
+
+addCoordinationEvent({
+  timestamp: Date.now(),
+
+  agent: agentRole,
+
+  type: "delegation",
+
+  summary: prompt,
+});
 
     return NextResponse.json({
   ok: true,
