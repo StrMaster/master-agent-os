@@ -883,8 +883,7 @@ const patchedContent =
   });
 
 const branchName =
-  `agent-task-${task.id}`;
-
+  `agent-task-${task.id}-${Date.now()}`;
 await createGithubBranch(
   branchName
 );
@@ -896,36 +895,51 @@ await updateGithubFile(
   branchName
 );
 
-const pr =
-  await createPullRequest(
+try {
+  const pr = await createPullRequest(
     branchName,
-
     `AI Patch: ${task.title}`,
-
     `
 Autonomous Execution Agent PR
 
 Task:
 ${task.title}
+
 Summary:
-${task.summary}
+${task.summary ?? task.title}
+
 Generated automatically by Master Agent OS.
 `
   );
 
-await logActivity({
-  type: "pull-request-created",
+  await logActivity({
+    type: "pull-request-created",
+    runId,
+    taskId: task.id,
+    summary: pr.html_url,
+    pullRequestUrl: pr.html_url,
+    branch: branchName,
+    reason: `PR created for ${task.title}`,
+  });
+} catch (error) {
+  await logActivity({
+    type: "pull-request-failed",
+    runId,
+    taskId: task.id,
+    branch: branchName,
+    reason: "Failed to create PR",
+    details: error instanceof Error ? error.message : "Unknown error",
+  });
 
-  runId,
-
-  taskId: task.id,
-
-  summary:
-    pr.html_url,
-
-  reason:
-    `PR created for ${task.title}`,
-});
+  return NextResponse.json(
+    {
+      ok: false,
+      mode: "pull-request-failed",
+      error: error instanceof Error ? error.message : "Unknown error",
+    },
+    { status: 500 }
+  );
+}
 
 const validation =
   validatePatch(
