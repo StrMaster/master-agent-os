@@ -485,7 +485,11 @@ if (
 
     const primaryTask = generatedTasks[0];
 
-const conversationalMessage = `${conversationalPrefix} I created ${generatedTasks.length} task(s). Primary task: ${primaryTask.priority} priority for ${primaryTask.targetFile}.`;
+const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
+
+const conversationalMessage =
+  `${conversationalPrefix} I created ${generatedTasks.length} ${taskWord}. ` +
+  `Primary task: ${primaryTask.priority} priority for ${primaryTask.targetFile}.`;
 const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
