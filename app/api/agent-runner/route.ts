@@ -805,6 +805,7 @@ if (applyResult.merged) {
     branch: applyResult.branchName,
     provider: "vercel",
 status: "pending",
+    message: "Merge completed; Vercel deployment should start automatically",
   });
 
 const memoryRes = await fetch(
