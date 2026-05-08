@@ -3,6 +3,7 @@ import {
   determineAgentRole,
   generateAgentDelegationResponse,
   generateReviewerFixTasks,
+  generateExecutionSequence,
 } from "@/app/lib/ai-task-planner";
 import {
   AGENT_IDENTITIES,
@@ -104,6 +105,8 @@ const coordinationMemory =
   });
 
 let suggestedFixTasks: unknown[] = [];
+let executionSequence:
+  unknown[] = [];
 
 if (agentRole === "reviewer") {
   try {
@@ -114,6 +117,22 @@ if (agentRole === "reviewer") {
     });
   } catch (error) {
     console.error("Reviewer fix task generation failed", error);
+  }
+}
+
+if (agentRole === "planner") {
+  try {
+    executionSequence =
+      await generateExecutionSequence({
+        prompt,
+
+        projectContext,
+      });
+  } catch (error) {
+    console.error(
+      "Execution sequence generation failed",
+      error
+    );
   }
 }
 
@@ -133,6 +152,7 @@ addCoordinationEvent({
   agentRole,
   response,
   suggestedFixTasks,
+  executionSequence,
 });
   } catch (error) {
     return NextResponse.json(
