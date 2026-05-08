@@ -129,6 +129,18 @@ case "recovery-task-created":
     background: "#211008",
   };
 
+case "deploy-recovery-created":
+  return {
+    border: "#22c55e",
+    background: "#071a12",
+  };
+
+case "deploy-recovery-failed":
+  return {
+    border: "#ef4444",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
@@ -288,6 +300,8 @@ const groupedEntries = Object.entries(groupedRuns);
   "auto-paused",
   "manual-task-created",
 "recovery-task-created"
+  "deploy-recovery-created",
+"deploy-recovery-failed"
 ].map((item) => (
     <button
       key={item}
