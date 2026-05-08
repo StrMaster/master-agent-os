@@ -44,6 +44,7 @@ Rules:
 - Use recent context to avoid repeating the same work.
 
 Respond ONLY valid JSON.
+Always respond in the same language as the user.
 
 JSON format:
 {
