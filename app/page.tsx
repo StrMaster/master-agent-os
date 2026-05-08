@@ -5,6 +5,7 @@ import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
 import RunAgentButton from "./components/RunAgentButton";
 import ActivityFeed from "./components/ActivityFeed";
+import CreateTaskForm from "./components/CreateTaskForm";
 
 export default function HomePage() {
   const stats = [
@@ -59,6 +60,7 @@ export default function HomePage() {
           />
         ))}
       </div>
+      
       <RunAgentButton />
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
@@ -73,7 +75,7 @@ export default function HomePage() {
             </div>
             <StatusBadge label="High Focus" />
           </div>
-<ActivityFeed />
+
           <div className="mt-6 space-y-4">
             {focusItems.map((item, index) => (
               <div
@@ -109,6 +111,12 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+      </div>
+      <div className="mt-8">
+  <CreateTaskForm />
+</div>
+      <div className="mt-8">
+        <ActivityFeed />
       </div>
     </section>
   );
