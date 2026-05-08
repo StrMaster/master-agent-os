@@ -146,5 +146,15 @@
     "priority": "low",
     "source": "manual",
     "createdAt": "2026-05-08T11:20:33.749Z"
+  },
+  {
+    "id": "manual-task-1778277730092",
+    "title": "Slightly improve Run Agent button label",
+    "summary": "Improve run agent button execution experience",
+    "targetFile": "app/agents/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-08T22:02:10.093Z"
   }
 ]
