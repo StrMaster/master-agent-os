@@ -15,8 +15,10 @@ type ActivityEvent = {
   merged?: boolean;
   pullRequestUrl?: string;
   provider?: string;
-status?: string;
+  status?: string;
   message?: string;
+  targetFile?: string;
+  priority?: string;
 };
 
 export default function ActivityFeed() {
@@ -111,6 +113,12 @@ case "deploy-pending":
   return {
     border: "#06b6d4",
     background: "#071b22",
+  };
+
+case "manual-task-created":
+  return {
+    border: "#8b5cf6",
+    background: "#160b22",
   };
 
     default:
@@ -270,6 +278,7 @@ const groupedEntries = Object.entries(groupedRuns);
   "blocked",
   "failed",
   "auto-paused",
+  "manual-task-created"
 ].map((item) => (
     <button
       key={item}
@@ -377,6 +386,8 @@ background: getEventColors(event.type).background,
               <div style={{ color: "#999", fontSize: 13 }}>
   {new Date(event.timestamp).toLocaleString()}
 </div>
+{event.targetFile && <div>Target: {event.targetFile}</div>}
+{event.priority && <div>Priority: {event.priority}</div>}
 
             {event.runId && (
   <div style={{ color: "#999", fontSize: 13 }}>
