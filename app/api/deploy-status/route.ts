@@ -38,16 +38,19 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json({
-      ok: true,
-      deployment: {
-        id: deployment.uid,
-        state: deployment.state,
-        url: deployment.url,
-        createdAt:
-          deployment.createdAt,
-      },
-    });
+    const deploymentStatus = {
+  id: deployment.uid,
+  state: deployment.state,
+  url: deployment.url,
+  createdAt: deployment.createdAt,
+};
+
+return NextResponse.json({
+  ok: true,
+  deployment: deploymentStatus,
+  deployFailed: deployment.state === "ERROR",
+});
+
   } catch (error) {
     return NextResponse.json(
       {
