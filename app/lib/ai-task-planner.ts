@@ -108,6 +108,7 @@ Focus on:
 
 Keep it concise and practical.
 Respond in plain text.
+Always respond in the same language as the user.
         `,
       },
       {
