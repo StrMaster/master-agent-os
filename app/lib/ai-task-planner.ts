@@ -124,4 +124,60 @@ Never respond in German.
     response.choices[0]?.message?.content ||
     "No project status summary available."
   );
+
+export async function generateSelfImprovementSuggestions(context: {
+  tasks: unknown[];
+  activity: unknown[];
+  memory: unknown;
+  conversationMemory: unknown[];
+}) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.25,
+    messages: [
+      {
+        role: "system",
+        content: `
+You are the self-improvement planner for Master Agent OS.
+
+Analyze the current project context and suggest the best next improvements.
+
+Focus on:
+- stability
+- UX clarity
+- execution reliability
+- dashboard simplicity
+- agent safety
+- deploy visibility
+- reducing repeated failures
+- improving conversational workflow
+
+Rules:
+- Suggest 3 to 5 improvements.
+- Keep each improvement small and actionable.
+- Prefer safe UI/runtime improvements.
+- Do not suggest broad rewrites.
+- Do not suggest external services unless clearly useful.
+- If Lithuanian context is present, respond in Lithuanian.
+- Never respond in German.
+
+Respond in plain text with:
+1. Short status summary
+2. Recommended improvements
+3. Best next step
+        `,
+      },
+      {
+        role: "user",
+        content: JSON.stringify(context, null, 2),
+      },
+    ],
+  });
+
+  return (
+    response.choices[0]?.message?.content ||
+    "No self-improvement suggestions available."
+  );
+}
+
   }
