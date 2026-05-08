@@ -43,7 +43,7 @@ export default function MasterAgentChat() {
   async function pollExecution(taskIds: string[]) {
     const seenEvents = new Set<string>();
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 15; i++) {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const res = await fetch("/api/activity", {
@@ -109,6 +109,62 @@ export default function MasterAgentChat() {
   `🚀 Deploy pending for ${event.taskId}`,
   "success"
 );
+
+try {
+  const deployRes = await fetch(
+    "/api/deploy-status",
+    {
+      cache: "no-store",
+    }
+  );
+
+  const deployData =
+    await deployRes.json();
+
+  if (
+    deployData.ok &&
+    deployData.deployment
+  ) {
+    const deployment =
+      deployData.deployment;
+
+    if (
+      deployment.state === "READY"
+    ) {
+      addMessage(
+        "system",
+        `🌍 Production deploy successful: https://${deployment.url}`,
+        "success"
+      );
+    }
+
+    if (
+      deployment.state === "ERROR"
+    ) {
+      addMessage(
+        "system",
+        `❌ Deploy failed: https://${deployment.url}`,
+        "error"
+      );
+    }
+
+    if (
+      deployment.state ===
+      "BUILDING"
+    ) {
+      addMessage(
+        "system",
+        "🏗️ Deployment is building...",
+        "info"
+      );
+    }
+  }
+} catch (error) {
+  console.error(
+    "Deploy monitoring failed",
+    error
+  );
+}
         }
 
         if (event.type === "blocked") {
