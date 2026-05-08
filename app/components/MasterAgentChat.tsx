@@ -458,6 +458,64 @@ if (
     );
 
 if (
+  data.agentRole ===
+    "planner" &&
+  Array.isArray(
+    data.executionSequence
+  ) &&
+  data.executionSequence
+    .length > 0
+) {
+  const formattedSequence =
+    data.executionSequence
+      .map(
+        (
+          step: {
+            title: string;
+
+            agentRole: string;
+
+            priority: string;
+
+            dependsOn: string[];
+          },
+
+          index: number
+        ) =>
+          `${index + 1}. ${
+            step.title
+          }
+
+Agent: ${
+            step.agentRole
+          }
+
+Priority: ${
+            step.priority
+          }
+
+Depends on: ${
+            step.dependsOn
+              ?.length
+              ? step.dependsOn.join(
+                  ", "
+                )
+              : "none"
+          }`
+      )
+
+      .join("\n\n");
+
+  addMessage(
+    "system",
+
+    `🧭 Planned execution sequence:\n\n${formattedSequence}`,
+
+    "success"
+  );
+}
+
+if (
   data.agentRole === "reviewer" &&
   Array.isArray(data.suggestedFixTasks) &&
   data.suggestedFixTasks.length > 0
