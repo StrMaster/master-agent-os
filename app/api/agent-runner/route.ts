@@ -590,10 +590,12 @@ const allowedFiles = [
 ];
 
 if (
+  !task.targetFile ||
   !allowedFiles.includes(
     task.targetFile
   )
-) {
+)
+ {
   return NextResponse.json(
     {
       ok: false,
