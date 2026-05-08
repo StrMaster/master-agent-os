@@ -16,6 +16,7 @@ type ActivityEvent = {
   pullRequestUrl?: string;
   provider?: string;
 status?: string;
+  message?: string;
 };
 
 export default function ActivityFeed() {
@@ -372,6 +373,7 @@ background: getEventColors(event.type).background,
 >
   {event.type}
 </div>
+{event.message && <div>Message: {event.message}</div>}
               <div style={{ color: "#999", fontSize: 13 }}>
   {new Date(event.timestamp).toLocaleString()}
 </div>
