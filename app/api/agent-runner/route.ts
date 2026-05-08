@@ -14,6 +14,7 @@ import {
 import {
   createGithubBranch,
   createPullRequest,
+  findOpenPullRequest,
 } from "@/app/lib/github-pr";
 
 
@@ -884,6 +885,39 @@ const patchedContent =
 
 const branchName =
   `agent-task-${task.id}-${Date.now()}`;
+
+const existingPr =
+  await findOpenPullRequest(
+    branchName
+  );
+
+if (existingPr) {
+  await logActivity({
+    type:
+      "pull-request-duplicate",
+
+    runId,
+
+    taskId: task.id,
+
+    summary:
+      existingPr.html_url,
+
+    reason:
+      "Open PR already exists for branch",
+  });
+
+  return NextResponse.json({
+    ok: true,
+
+    mode:
+      "pull-request-exists",
+
+    pullRequest:
+      existingPr.html_url,
+  });
+}
+
 await createGithubBranch(
   branchName
 );
