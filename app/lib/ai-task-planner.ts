@@ -385,3 +385,94 @@ Format:
 
   return JSON.parse(content);
 }
+
+export async function generateExecutionSequence(
+  context: {
+    prompt: string;
+
+    projectContext: unknown;
+  }
+) {
+  const response =
+    await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+
+      temperature: 0.2,
+
+      messages: [
+        {
+          role: "system",
+
+          content: `
+You are the Planner Agent.
+
+Your job:
+- create a safe execution sequence
+- define execution order
+- define dependencies
+- minimize execution chaos
+
+Rules:
+- Generate 2 to 5 steps.
+- Prefer small safe improvements.
+- Avoid backend refactors.
+- Use only these target files:
+
+- app/page.tsx
+- app/components/ActivityFeed.tsx
+- app/components/RunAgentButton.tsx
+- app/agents/page.tsx
+- app/execution/page.tsx
+
+Allowed agent roles:
+- planner
+- executor
+- reviewer
+- deploy
+
+Respond ONLY valid JSON array.
+
+Format:
+[
+  {
+    "id": "step-1",
+
+    "title": "...",
+
+    "summary": "...",
+
+    "agentRole": "executor",
+
+    "targetFile": "...",
+
+    "priority": "low|medium|high",
+
+    "dependsOn": []
+  }
+]
+          `,
+        },
+
+        {
+          role: "user",
+
+          content: JSON.stringify(
+            context,
+            null,
+            2
+          ),
+        },
+      ],
+    });
+
+  const content =
+    response.choices[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(
+      "Execution sequence generation failed"
+    );
+  }
+
+  return JSON.parse(content);
+}
