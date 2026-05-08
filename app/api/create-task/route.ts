@@ -66,6 +66,31 @@ async function readGithubJson(path: string) {
   };
 }
 
+async function readOptionalGithubJson(path: string, fallback: unknown) {
+  try {
+    const { json } = await readGithubJson(path);
+    return json;
+  } catch {
+    return fallback;
+  }
+}
+
+async function getProjectContext() {
+  const [tasks, activity, conversationMemory] = await Promise.all([
+    readOptionalGithubJson(TASKS_PATH, []),
+    readOptionalGithubJson(ACTIVITY_PATH, []),
+    readOptionalGithubJson(".agent/conversation-memory.json", []),
+  ]);
+
+  return {
+    recentTasks: Array.isArray(tasks) ? tasks.slice(-10) : [],
+    recentActivity: Array.isArray(activity) ? activity.slice(0, 15) : [],
+    conversationMemory: Array.isArray(conversationMemory)
+      ? conversationMemory.slice(0, 10)
+      : [],
+  };
+}
+
 async function writeGithubJson(path: string, json: unknown, sha: string, message: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -179,7 +204,8 @@ let reasoningHint = "";
 
 if (prompt && process.env.OPENAI_API_KEY) {
   try {
-    const aiPlan = await generateTaskPlan(prompt);
+    const projectContext = await getProjectContext();
+const aiPlan = await generateTaskPlan(prompt, projectContext);
 
     title = normalizeTitle(aiPlan.title) || title || prompt;
     summary = aiPlan.summary || summary || title;
