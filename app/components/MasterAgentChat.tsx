@@ -148,6 +148,23 @@ try {
       );
     }
 
+await fetch("/api/deploy-recovery", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    source: "deploy-status",
+    deployment,
+  }),
+});
+
+addMessage(
+  "system",
+  "🛟 Deploy recovery analysis started.",
+  "warning"
+);
+
     if (
       deployment.state ===
       "BUILDING"
