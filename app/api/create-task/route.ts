@@ -148,32 +148,55 @@ if (prompt) {
   const normalizedPrompt = prompt.toLowerCase();
 
   if (
-    normalizedPrompt.includes("activity") ||
-    normalizedPrompt.includes("feed")
-  ) {
-    targetFile = "app/components/ActivityFeed.tsx";
-  }
+  normalizedPrompt.includes("activity") ||
+  normalizedPrompt.includes("feed") ||
+  normalizedPrompt.includes("timeline") ||
+  normalizedPrompt.includes("logs")
+) {
+  targetFile = "app/components/ActivityFeed.tsx";
+}
 
-  if (
-    normalizedPrompt.includes("dashboard") ||
-    normalizedPrompt.includes("layout")
-  ) {
-    targetFile = "app/page.tsx";
-  }
+if (
+  normalizedPrompt.includes("dashboard") ||
+  normalizedPrompt.includes("layout") ||
+  normalizedPrompt.includes("home") ||
+  normalizedPrompt.includes("page")
+) {
+  targetFile = "app/page.tsx";
+}
 
-  if (
-    normalizedPrompt.includes("run button") ||
-    normalizedPrompt.includes("runner")
-  ) {
-    targetFile = "app/components/RunAgentButton.tsx";
-  }
+if (
+  normalizedPrompt.includes("run button") ||
+  normalizedPrompt.includes("runner") ||
+  normalizedPrompt.includes("execution")
+) {
+  targetFile = "app/components/RunAgentButton.tsx";
+}
 
-  if (
-    normalizedPrompt.includes("fix") ||
-    normalizedPrompt.includes("urgent")
-  ) {
-    priority = "high";
-  }
+if (
+  normalizedPrompt.includes("agent") ||
+  normalizedPrompt.includes("agents")
+) {
+  targetFile = "app/agents/page.tsx";
+}
+
+if (
+  normalizedPrompt.includes("mobile") ||
+  normalizedPrompt.includes("responsive") ||
+  normalizedPrompt.includes("spacing") ||
+  normalizedPrompt.includes("overflow")
+) {
+  priority = "high";
+}
+
+if (
+  normalizedPrompt.includes("fix") ||
+  normalizedPrompt.includes("urgent") ||
+  normalizedPrompt.includes("broken") ||
+  normalizedPrompt.includes("error")
+) {
+  priority = "high";
+}
 }
 
     if (!title) {
