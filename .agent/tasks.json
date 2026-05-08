@@ -46,5 +46,25 @@
     "status": "todo",
     "priority": "low",
     "createdAt": "2026-05-06T20:55:00.305Z"
+  },
+  {
+    "id": "manual-task-1778230059660",
+    "title": "Enhance mobile layout of dashboard page",
+    "summary": "Improve dashboard mobile layout and spacing for smaller screens",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-08T08:47:39.660Z"
+  },
+  {
+    "id": "manual-task-1778230059660-activity",
+    "title": "Improve activity feed layout",
+    "summary": "Improve activity feed layout and visual hierarchy",
+    "targetFile": "app/components/ActivityFeed.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-08T08:47:39.660Z"
   }
 ]
