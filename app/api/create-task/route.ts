@@ -363,12 +363,12 @@ const updatedTasks = [...tasks, ...generatedTasks];
     );
 
     await logActivity({
-      type: "manual-task-created",
-      generatedTasks[0].id
-generatedTasks[0].title
-generatedTasks[0].targetFile
-      priority: task.priority,
-    });
+  type: "manual-task-created",
+  taskId: generatedTasks[0].id,
+  summary: generatedTasks[0].title,
+  targetFile: generatedTasks[0].targetFile,
+  priority: generatedTasks[0].priority,
+});
 
 let conversationalPrefix = "Understood.";
 
