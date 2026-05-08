@@ -3,14 +3,17 @@ const OWNER = "StrMaster";
 const REPO =
   "master-agent-os";
 
-const BRANCH = "main";
+const DEFAULT_BRANCH =
+  "main";
 
 export async function updateGithubFile(
   path: string,
 
   content: string,
 
-  message: string
+  message: string,
+
+  branch = "main"
 ) {
   const token =
     process.env.GITHUB_TOKEN;
@@ -23,7 +26,7 @@ export async function updateGithubFile(
 
   const existingRes =
     await fetch(
-      `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
+      `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${branch || DEFAULT_BRANCH}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -70,7 +73,7 @@ export async function updateGithubFile(
 
         sha: existing.sha,
 
-        branch: BRANCH,
+        branch: branch || DEFAULT_BRANCH,
       }),
     }
   );
