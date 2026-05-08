@@ -955,6 +955,72 @@ Generated automatically by Master Agent OS.
     branch: branchName,
     reason: `PR created for ${task.title}`,
   });
+
+if (
+  typeof pr.number ===
+  "number"
+) {
+  try {
+    const validationRes =
+      await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/validate-pr`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            prNumber:
+              pr.number,
+          }),
+        }
+      );
+
+    const validation =
+      await validationRes.json();
+
+    await logActivity({
+      type:
+        "pull-request-validated",
+
+      runId,
+
+      taskId: task.id,
+
+      reason:
+        validation.validation
+          ?.mergeable
+          ? "PR is mergeable"
+          : "PR not mergeable yet",
+
+      details:
+        JSON.stringify(
+          validation.validation
+        ),
+    });
+  } catch (error) {
+    await logActivity({
+      type:
+        "pull-request-validation-failed",
+
+      runId,
+
+      taskId: task.id,
+
+      reason:
+        "PR validation failed",
+
+      details:
+        error instanceof Error
+          ? error.message
+          : "Unknown error",
+    });
+  }
+}
+
 } catch (error) {
   await logActivity({
     type: "pull-request-failed",
