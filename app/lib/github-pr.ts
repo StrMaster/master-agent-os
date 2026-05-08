@@ -147,3 +147,60 @@ export async function findOpenPullRequest(
     ? pulls[0]
     : null;
 }
+
+export async function getPullRequest(
+  prNumber: number
+) {
+  const token =
+    process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error(
+      "Missing GITHUB_TOKEN"
+    );
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+
+        Accept:
+          "application/vnd.github+json",
+      },
+
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(
+      "Failed to fetch PR"
+    );
+  }
+
+  return res.json();
+}
+
+export async function validatePullRequest(
+  prNumber: number
+) {
+  const pr =
+    await getPullRequest(
+      prNumber
+    );
+
+  return {
+    mergeable:
+      pr.mergeable,
+
+    state: pr.state,
+
+    merged:
+      pr.merged,
+
+    draft:
+      pr.draft,
+  };
+}
