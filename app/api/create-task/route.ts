@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateTaskPlan } from "@/lib/ai-task-planner";
+import { generateTaskPlan } from "@/app/lib/ai-task-planner";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
