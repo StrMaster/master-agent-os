@@ -13,6 +13,7 @@ export default function CreateTaskForm() {
   const [title, setTitle] = useState("");
   const [targetFile, setTargetFile] = useState(TARGET_FILES[0]);
   const [priority, setPriority] = useState("medium");
+  const [autoRun, setAutoRun] = useState(true);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
@@ -43,7 +44,11 @@ export default function CreateTaskForm() {
       }
 
       setResult(`Task created: ${data.task.id}`);
-
+      if (autoRun) {
+  await fetch("/api/agent-runner", {
+    method: "POST",
+  });
+}
       setTitle("");
       setPriority("medium");
     } catch (error) {
@@ -126,6 +131,24 @@ export default function CreateTaskForm() {
           <option value="medium">medium</option>
           <option value="high">high</option>
         </select>
+
+        <label
+  style={{
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontSize: 14,
+    color: "#aaa",
+  }}
+>
+  <input
+    type="checkbox"
+    checked={autoRun}
+    onChange={(e) => setAutoRun(e.target.checked)}
+  />
+
+  Auto run agent after task creation
+</label>
 
         <button
           type="submit"
