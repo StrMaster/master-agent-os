@@ -5,6 +5,8 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
+const CONVERSATION_MEMORY_PATH =
+  ".agent/conversation-memory.json";
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -131,6 +133,34 @@ async function logActivity(event: Record<string, unknown>) {
     updatedActivity,
     sha,
     "Log manual task creation"
+  );
+}
+
+async function updateConversationMemory(entry: {
+  prompt?: string;
+  summary?: string;
+  targetFile?: string;
+}) {
+  const { json, sha } = await readGithubJson(
+    CONVERSATION_MEMORY_PATH
+  );
+
+  const memory = Array.isArray(json) ? json : [];
+
+  const updatedMemory = [
+    {
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      ...entry,
+    },
+    ...memory,
+  ].slice(0, 25);
+
+  await writeGithubJson(
+    CONVERSATION_MEMORY_PATH,
+    updatedMemory,
+    sha,
+    "Update conversation memory"
   );
 }
 
@@ -377,6 +407,12 @@ const updatedTasks = [...tasks, ...generatedTasks];
   summary: generatedTasks[0].title,
   targetFile: generatedTasks[0].targetFile,
   priority: generatedTasks[0].priority,
+});
+
+await updateConversationMemory({
+  prompt,
+  summary,
+  targetFile,
 });
 
 let conversationalPrefix = "Understood.";
