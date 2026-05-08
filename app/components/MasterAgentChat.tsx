@@ -5,6 +5,7 @@ import { useState } from "react";
 type ChatMessage = {
   role: "user" | "agent" | "system";
   content: string;
+  status?: "info" | "success" | "warning" | "error";
 };
 
 type ActivityEvent = {
@@ -24,9 +25,20 @@ export default function MasterAgentChat() {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  function addMessage(role: ChatMessage["role"], content: string) {
-    setMessages((prev) => [...prev, { role, content }]);
-  }
+  function addMessage(
+  role: ChatMessage["role"],
+  content: string,
+  status: ChatMessage["status"] = "info"
+) {
+  setMessages((prev) => [
+    ...prev,
+    {
+      role,
+      content,
+      status,
+    },
+  ]);
+}
 
   async function pollExecution(taskIds: string[]) {
     const seenEvents = new Set<string>();
@@ -59,53 +71,60 @@ export default function MasterAgentChat() {
 
         if (event.type === "manual-task-created") {
           addMessage(
-            "system",
-            `Queued task: ${event.summary ?? event.taskId}`
-          );
+  "system",
+  `⚡ Queued: ${event.summary ?? event.taskId}`,
+  "info"
+);
         }
 
         if (event.type === "proposal") {
           addMessage(
-            "system",
-            `Proposal created for ${event.taskId}.`
-          );
+  "system",
+  `🧠 Proposal generated for ${event.taskId}`,
+  "info"
+);
         }
 
         if (event.type === "retry") {
           addMessage(
-            "system",
-            `Retry started for ${event.taskId}.`
-          );
+  "system",
+  `🔁 Retry started for ${event.taskId}`,
+  "warning"
+);
         }
 
         if (event.type === "apply") {
           addMessage(
-            "system",
-            `Apply completed for ${event.taskId}. Merged: ${
-              event.merged ? "yes" : "no"
-            }.`
-          );
+  "system",
+  event.merged
+    ? `✅ Changes merged for ${event.taskId}`
+    : `⚠️ Apply completed without merge for ${event.taskId}`,
+  event.merged ? "success" : "warning"
+);
         }
 
         if (event.type === "deploy-pending") {
           addMessage(
-            "system",
-            `Deploy pending for ${event.taskId}. Vercel should start automatically.`
-          );
+  "system",
+  `🚀 Deploy pending for ${event.taskId}`,
+  "success"
+);
         }
 
         if (event.type === "blocked") {
           addMessage(
-            "system",
-            `Blocked: ${event.taskId}. This task was stopped by safety rules.`
-          );
+  "system",
+  `⛔ Blocked by safety rules: ${event.taskId}`,
+  "error"
+);
         }
 
         if (event.type === "failed") {
           addMessage(
-            "system",
-            `Failed: ${event.taskId}. Check Activity Feed for details.`
-          );
+  "system",
+  `❌ Execution failed for ${event.taskId}`,
+  "error"
+);
         }
 
         if (event.type === "cooldown") {
@@ -227,23 +246,41 @@ export default function MasterAgentChat() {
               padding: "14px 16px",
               borderRadius: 16,
               background:
-                msg.role === "user"
-                  ? "#2563eb"
-                  : msg.role === "system"
-                    ? "#111"
-                    : "#111827",
-              border:
-                msg.role === "system"
-                  ? "1px solid #333"
-                  : msg.role === "agent"
-                    ? "1px solid #1e3a8a"
-                    : "none",
-              color:
-                msg.role === "system"
-                  ? "#aaa"
-                  : "white",
-              lineHeight: 1.7,
-              whiteSpace: "pre-wrap",
+  msg.role === "user"
+    ? "#2563eb"
+    : msg.role === "system"
+      ? msg.status === "success"
+        ? "#052e16"
+        : msg.status === "warning"
+          ? "#3f2a04"
+          : msg.status === "error"
+            ? "#450a0a"
+            : "#111"
+      : "#111827",
+
+border:
+  msg.role === "system"
+    ? msg.status === "success"
+      ? "1px solid #166534"
+      : msg.status === "warning"
+        ? "1px solid #a16207"
+        : msg.status === "error"
+          ? "1px solid #b91c1c"
+          : "1px solid #333"
+    : msg.role === "agent"
+      ? "1px solid #1e3a8a"
+      : "none",
+
+color:
+  msg.role === "system"
+    ? msg.status === "success"
+      ? "#bbf7d0"
+      : msg.status === "warning"
+        ? "#fde68a"
+        : msg.status === "error"
+          ? "#fecaca"
+          : "#aaa"
+    : "white",
             }}
           >
             <div
