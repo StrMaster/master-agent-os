@@ -355,6 +355,14 @@ function dependenciesCompleted(task: AgentTask, tasks: AgentTask[]) {
     return true;
   }
 
+  return task.dependsOn.every((dependencyId) =>
+    tasks.some(
+      (candidate) =>
+        candidate.id === dependencyId && candidate.status === "done"
+    )
+  );
+}
+
 function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
   if (!task.parentTaskId || !task.wave || task.wave <= 1) {
     return true;
@@ -373,14 +381,6 @@ function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
   return (
     previousWave.status === "done" ||
     previousWave.status === "pending-pr"
-  );
-}
-
-  return task.dependsOn.every((dependencyId) =>
-    tasks.some(
-      (candidate) =>
-        candidate.id === dependencyId && candidate.status === "done"
-    )
   );
 }
 
