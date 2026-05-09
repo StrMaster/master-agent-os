@@ -17,16 +17,10 @@ export const metadata: Metadata = {
 const navItems = [
 
   { href: '/', label: 'Dashboard' },
-
   { href: '/chat', label: 'Master Chat' },
-
   { href: '/agents', label: 'Agents' },
-
   { href: '/tasks', label: 'Tasks' },
-
   { href: '/execution', label: 'Execution' },
-
-  { href: '/changes', label: 'Changes' },
 
 ];
 
