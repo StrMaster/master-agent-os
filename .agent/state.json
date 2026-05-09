@@ -3,13 +3,13 @@
   "runnerLocked": false,
   "autoRunEnabled": false,
   "autoMergeEnabled": false,
-  "emergencyStop": false
+  "emergencyStop": false,
 
   "recentFailedRuns": 0,
-"recentValidationFailures": 0,
+  "recentValidationFailures": 0,
 "recentMergeFailures": 0,
 "recentDeployFailures": 0,
-"recoveryActive": false
+"recoveryActive": false,
 
 "lastDeploymentId": null,
 "lastDeploymentState": null,
