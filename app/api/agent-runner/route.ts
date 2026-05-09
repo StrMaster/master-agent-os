@@ -9,6 +9,7 @@ import {
 import { validatePatch } from "@/app/lib/patch-validator";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
 
+export const runtime = "nodejs";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -17,6 +18,8 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
 const STATE_PATH = ".agent/state.json";
+
+const RUNNER_COOLDOWN_MS = 15_000;
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -28,12 +31,19 @@ const SAFE_TARGET_FILES = [
 
 type Priority = "low" | "medium" | "high";
 
+type AgentTaskStatus =
+  | "todo"
+  | "running"
+  | "done"
+  | "failed"
+  | "pending-pr";
+
 type AgentTask = {
   id: string;
   title: string;
   summary?: string;
   targetFile?: string;
-  status: "todo" | "running" | "done" | "failed" | "pending-pr";
+  status: AgentTaskStatus;
   priority?: Priority;
   dependsOn?: string[];
   createdAt?: string;
@@ -46,13 +56,16 @@ type AgentTask = {
   };
 };
 
+type AgentState = {
+  paused?: boolean;
+  runnerLocked?: boolean;
+  lastRunAt?: number;
+};
+
 type GitHubFile = {
   sha: string;
   content: string;
 };
-
-let isRunnerActive = false;
-let lastRunAt = 0;
 
 async function readGithubJson(path: string) {
   const token = process.env.GITHUB_TOKEN;
@@ -159,7 +172,46 @@ async function logActivity(event: Record<string, unknown>) {
     ...activity,
   ].slice(0, 150);
 
-  await writeGithubJson(ACTIVITY_PATH, updatedActivity, sha, "Log agent activity");
+  await writeGithubJson(
+    ACTIVITY_PATH,
+    updatedActivity,
+    sha,
+    "Log agent activity"
+  );
+}
+
+async function readStateFile() {
+  const { json, sha } = await readGithubJson(STATE_PATH);
+
+  return {
+    state: (json || {}) as AgentState,
+    sha,
+  };
+}
+
+async function writeStateFile(
+  state: AgentState,
+  sha: string,
+  message: string
+) {
+  await writeGithubJson(STATE_PATH, state, sha, message);
+}
+
+async function releaseRunnerLock() {
+  try {
+    const { state, sha } = await readStateFile();
+
+    await writeStateFile(
+      {
+        ...state,
+        runnerLocked: false,
+      },
+      sha,
+      "Release agent runner lock"
+    );
+  } catch {
+    // Do not throw from cleanup.
+  }
 }
 
 async function readTargetFile(path: string) {
@@ -197,10 +249,14 @@ function priorityScore(priority?: Priority) {
 
 function hasCircularDependency(tasks: AgentTask[]) {
   return tasks.find((task) => {
-    if (!task.dependsOn?.length) return false;
+    if (!task.dependsOn?.length) {
+      return false;
+    }
 
     return task.dependsOn.some((dependencyId) => {
-      const dependencyTask = tasks.find((candidate) => candidate.id === dependencyId);
+      const dependencyTask = tasks.find(
+        (candidate) => candidate.id === dependencyId
+      );
 
       return dependencyTask?.dependsOn?.includes(task.id);
     });
@@ -213,7 +269,10 @@ function dependenciesCompleted(task: AgentTask, tasks: AgentTask[]) {
   }
 
   return task.dependsOn.every((dependencyId) =>
-    tasks.some((candidate) => candidate.id === dependencyId && candidate.status === "done")
+    tasks.some(
+      (candidate) =>
+        candidate.id === dependencyId && candidate.status === "done"
+    )
   );
 }
 
@@ -252,10 +311,16 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
       ).length;
 
       const aScore =
-        priorityScore(a.task.priority) - aFailures + aStaleBoost + aDependencyBoost;
+        priorityScore(a.task.priority) -
+        aFailures +
+        aStaleBoost +
+        aDependencyBoost;
 
       const bScore =
-        priorityScore(b.task.priority) - bFailures + bStaleBoost + bDependencyBoost;
+        priorityScore(b.task.priority) -
+        bFailures +
+        bStaleBoost +
+        bDependencyBoost;
 
       return bScore - aScore;
     });
@@ -272,7 +337,8 @@ export async function GET() {
       totalTasks: tasks.length,
       todoCount: tasks.filter((task) => task.status === "todo").length,
       runningCount: tasks.filter((task) => task.status === "running").length,
-      pendingPrCount: tasks.filter((task) => task.status === "pending-pr").length,
+      pendingPrCount: tasks.filter((task) => task.status === "pending-pr")
+        .length,
       doneCount: tasks.filter((task) => task.status === "done").length,
       failedCount: tasks.filter((task) => task.status === "failed").length,
       nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
@@ -289,68 +355,60 @@ export async function GET() {
 }
 
 export async function POST() {
-
-  if (isRunnerActive) {
-    return NextResponse.json({
-      ok: false,
-      mode: "runner-busy",
-      error: "Agent runner already active",
-    });
-  }
-
-  const now = Date.now();
-
-  if (now - lastRunAt < 15000) {
-    return NextResponse.json({
-      ok: false,
-      mode: "cooldown",
-      error: "Runner cooldown active",
-    });
-  }
-
-  isRunnerActive = true;
-  lastRunAt = now;
-
-  try {
-
-    // visas runner code
-
-  }catch (error) {
-    await logActivity({
-      type: "failed",
-      runId,
-      reason: error instanceof Error ? error.message : "Unknown error",
-      failureType: "runner-failed",
-    }).catch(() => {});
-
-    return NextResponse.json(
-      {
-        ok: false,
-        mode: "runner-failed",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  } finally {
-    isRunnerActive = false;
-  }
-}
-
-isRunnerActive = true;
-lastRunAt = now;
-
   const runId = crypto.randomUUID();
+  let lockAcquired = false;
 
   try {
-    const { json: state } = await readGithubJson(STATE_PATH);
+    const { state, sha: stateSha } = await readStateFile();
+    const now = Date.now();
 
-    if (state?.paused) {
+    if (state.paused) {
       return NextResponse.json({
         ok: false,
         mode: "paused",
         message: "Agent is paused",
       });
     }
+
+    if (state.runnerLocked) {
+      await logActivity({
+        type: "runner-busy",
+        runId,
+        reason: "Agent runner already active",
+      }).catch(() => {});
+
+      return NextResponse.json({
+        ok: false,
+        mode: "runner-busy",
+        error: "Agent runner already active",
+      });
+    }
+
+    if (state.lastRunAt && now - state.lastRunAt < RUNNER_COOLDOWN_MS) {
+      await logActivity({
+        type: "runner-cooldown",
+        runId,
+        reason: "Runner cooldown active",
+      }).catch(() => {});
+
+      return NextResponse.json({
+        ok: false,
+        mode: "cooldown",
+        error: "Runner cooldown active",
+      });
+    }
+
+    await writeStateFile(
+      {
+        ...state,
+        runnerLocked: true,
+        lastRunAt: now,
+      },
+      stateSha,
+      "Acquire agent runner lock"
+    );
+
+    lockAcquired = true;
 
     const { tasks, sha } = await readTasksFile();
     const { activity } = await readActivityFile();
@@ -435,12 +493,16 @@ lastRunAt = now;
 
     if (!validation.valid) {
       const latest = await readTasksFile();
-      const latestTask = latest.tasks.find((candidate) => candidate.id === task.id);
+      const latestTask = latest.tasks.find(
+        (candidate) => candidate.id === task.id
+      );
 
       if (latestTask) {
         latestTask.status = "failed";
         latestTask.updatedAt = new Date().toISOString();
-        latestTask.error = `Patch validation failed: ${validation.issues.join(", ")}`;
+        latestTask.error = `Patch validation failed: ${validation.issues.join(
+          ", "
+        )}`;
       }
 
       updateTaskStatus(task.id, "failed");
@@ -518,7 +580,9 @@ Generated automatically by Master Agent OS.
           type: "pull-request-validated",
           runId,
           taskId: task.id,
-          reason: prValidation.mergeable ? "PR is mergeable" : "PR not mergeable yet",
+          reason: prValidation.mergeable
+            ? "PR is mergeable"
+            : "PR not mergeable yet",
           details: JSON.stringify(prValidation),
         });
       } catch (error) {
@@ -533,7 +597,9 @@ Generated automatically by Master Agent OS.
     }
 
     const latest = await readTasksFile();
-    const latestTask = latest.tasks.find((candidate) => candidate.id === task.id);
+    const latestTask = latest.tasks.find(
+      (candidate) => candidate.id === task.id
+    );
 
     if (latestTask) {
       latestTask.status = "pending-pr";
@@ -547,7 +613,11 @@ Generated automatically by Master Agent OS.
 
     updateTaskStatus(task.id, "completed");
 
-    await writeTasksFile(latest.tasks, latest.sha, `Mark task ${task.id} as pending PR`);
+    await writeTasksFile(
+      latest.tasks,
+      latest.sha,
+      `Mark task ${task.id} as pending PR`
+    );
 
     await logActivity({
       type: "execution-completed",
@@ -583,5 +653,9 @@ Generated automatically by Master Agent OS.
       },
       { status: 500 }
     );
+  } finally {
+    if (lockAcquired) {
+      await releaseRunnerLock();
+    }
   }
 }
