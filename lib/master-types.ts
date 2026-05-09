@@ -1,4 +1,4 @@
-export type ChatRole = 'user' | 'assistant';
+export type ChatRole = "user" | "assistant";
 
 export type ChatMessage = {
   id: string;
@@ -12,56 +12,70 @@ export type SubtaskItem = {
   done: boolean;
 };
 
+export type TaskStatus =
+  | "todo"
+  | "in_progress"
+  | "running"
+  | "pending-pr"
+  | "failed"
+  | "done";
+
+export type TaskPriority = "low" | "medium" | "high";
+
 export type TaskItem = {
   id: string;
   title: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'todo' | 'in_progress' | 'done';
+  priority: TaskPriority;
+  status: TaskStatus;
   subtasks: SubtaskItem[];
   assignedAgentId?: string;
+  branchName?: string;
+  pullRequestUrl?: string;
+  pullRequestNumber?: number;
+  lastError?: string;
 };
 
 export type AgentItem = {
   id: string;
   name: string;
   role: string;
-  status: 'idle' | 'active';
-  specialty?: 'frontend' | 'backend' | 'qa' | 'general';
+  status: "idle" | "active";
+  specialty?: "frontend" | "backend" | "qa" | "general";
 };
 
 export type MasterAction =
-    | {
-      type: 'BREAKDOWN_TASK';
+  | {
+      type: "BREAKDOWN_TASK";
       payload: {
         taskTitle: string;
         subtasks: string[];
       };
     }
   | {
-      type: 'CREATE_TASK';
+      type: "CREATE_TASK";
       payload: {
         title: string;
-        priority: 'low' | 'medium' | 'high';
+        priority: TaskPriority;
       };
     }
   | {
-      type: 'CREATE_AGENT';
+      type: "CREATE_AGENT";
       payload: {
         name: string;
         role: string;
       };
     }
   | {
-      type: 'SEND_TO_EXECUTION';
+      type: "SEND_TO_EXECUTION";
       payload: {
-        targetType: 'task' | 'agent';
+        targetType: "task" | "agent";
         targetId?: string;
         note?: string;
       };
     }
   | {
-      type: 'NONE';
-      payload?: {};
+      type: "NONE";
+      payload?: Record<string, never>;
     };
 
 export type MasterResponse = {
