@@ -5,9 +5,14 @@ import { useMasterStore } from '@/lib/master-store';
 export default function ExecutionPage() {
   const { tasks, agents, executeTask, completeTask } = useMasterStore();
 
-  const runningTasks = tasks.filter((task) => task.status === 'in_progress');
-  const completedTasks = tasks.filter((task) => task.status === 'done');
-  const todoTasks = tasks.filter((task) => task.status === 'todo');
+  const runningTasks = tasks.filter(
+  (task) => task.status === 'in_progress' || task.status === 'running',
+);
+
+const pendingPrTasks = tasks.filter((task) => task.status === 'pending-pr');
+const failedTasks = tasks.filter((task) => task.status === 'failed');
+const completedTasks = tasks.filter((task) => task.status === 'done');
+const todoTasks = tasks.filter((task) => task.status === 'todo');
 
   function getAgentName(agentId?: string) {
     if (!agentId) return 'Unassigned';
