@@ -15,6 +15,11 @@ type ControlState = {
   autoRunEnabled?: boolean;
   autoMergeEnabled?: boolean;
   emergencyStop?: boolean;
+  recoveryActive?: boolean;
+  recentFailedRuns?: number;
+  recentValidationFailures?: number;
+  recentMergeFailures?: number;
+  recentDeployFailures?: number;
 };
 
 type GitHubFile = {
@@ -106,6 +111,14 @@ export async function GET() {
         autoRunEnabled: state.autoRunEnabled ?? false,
         autoMergeEnabled: state.autoMergeEnabled ?? false,
         emergencyStop: state.emergencyStop ?? false,
+        recoveryActive: state.recoveryActive ?? false,
+recentFailedRuns: state.recentFailedRuns ?? 0,
+recentValidationFailures:
+  state.recentValidationFailures ?? 0,
+recentMergeFailures:
+  state.recentMergeFailures ?? 0,
+recentDeployFailures:
+  state.recentDeployFailures ?? 0,
       },
     });
   } catch (error) {
@@ -143,6 +156,14 @@ export async function POST(req: Request) {
     if (typeof body.emergencyStop === "boolean") {
       nextState.emergencyStop = body.emergencyStop;
     }
+
+    if (body.clearRecovery === true) {
+  nextState.recoveryActive = false;
+  nextState.recentFailedRuns = 0;
+  nextState.recentValidationFailures = 0;
+  nextState.recentMergeFailures = 0;
+  nextState.recentDeployFailures = 0;
+}
 
     await writeStateFile(nextState, sha, "Update Master Agent control state");
 
