@@ -10,6 +10,8 @@ import {
 } from "@/app/lib/github-pr";
 import { validatePatch } from "@/app/lib/patch-validator";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
+import { evaluateStopConditions } from "@/app/lib/stop-conditions";
+
 
 export const runtime = "nodejs";
 
@@ -370,28 +372,25 @@ export async function POST() {
   try {
     const { state, sha: stateSha } = await readStateFile();
     const now = Date.now();
+    
+    const stopCheck = evaluateStopConditions({
+  emergencyStop: state.emergencyStop,
+  paused: state.paused,
+});
 
-    if (state.emergencyStop) {
+if (stopCheck.stop) {
   await logActivity({
-    type: "emergency-stop-active",
+    type: stopCheck.code ?? "runner-stopped",
     runId,
-    reason: "Emergency stop is active",
+    reason: stopCheck.reason ?? "Runner stopped by safety condition",
   }).catch(() => {});
 
   return NextResponse.json({
     ok: false,
-    mode: "emergency-stop",
-    message: "Emergency stop is active",
+    mode: stopCheck.code ?? "runner-stopped",
+    message: stopCheck.reason ?? "Runner stopped by safety condition",
   });
 }
-
-    if (state.paused) {
-      return NextResponse.json({
-        ok: false,
-        mode: "paused",
-        message: "Agent is paused",
-      });
-    }
 
     if (state.runnerLocked) {
   const lockAge = state.runnerLockStartedAt
