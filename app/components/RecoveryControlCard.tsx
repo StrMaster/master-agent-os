@@ -154,24 +154,27 @@ async function createRecoveryTask() {
       </div>
 
       {state.recoveryActive && (
-        <button
-          type="button"
-          disabled={loading}
-          onClick={clearRecovery}
-          className="mt-5 rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-200 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          Clear recovery mode
-        </button>
-        <button
-  type="button"
-  disabled={loading}
-  onClick={createRecoveryTask}
-  className="mt-3 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
->
-  Create recovery task
-</button>
-    </div>
+  <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+    <button
+      type="button"
+      disabled={loading}
+      onClick={clearRecovery}
+      className="rounded-xl border border-orange-500/30 bg-orange-500/10 px-4 py-3 text-sm text-orange-200 transition hover:bg-orange-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Clear recovery mode
+    </button>
+
+    <button
+      type="button"
+      disabled={loading}
+      onClick={createRecoveryTask}
+      className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Create recovery task
+    </button>
+  </div>
 )}
+
 {taskMessage && (
   <div className="mt-3 text-sm text-white/60">
     {taskMessage}
