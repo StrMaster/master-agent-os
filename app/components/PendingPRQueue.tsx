@@ -9,6 +9,9 @@ type PendingTask = {
   branchName?: string;
   executionMode?: string;
   riskLevel?: string;
+  wave?: number;
+parentTaskId?: string;
+plannerNotes?: string;
   result?: {
     pullRequestUrl?: string;
     merged?: boolean;
@@ -140,12 +143,36 @@ async function createPlannerWaves(taskId?: string) {
                   Status: {task.status ?? 'unknown'}
                 </div>
 
+                {typeof task.wave === 'number' && (
+  <div className="mt-1 text-xs text-white/50">
+    Wave: {task.wave}
+  </div>
+)}
+
+{task.parentTaskId && (
+  <div className="mt-1 text-xs text-white/50">
+    Parent task: {task.parentTaskId}
+  </div>
+)}
+
+{task.plannerNotes && (
+  <div className="mt-2 rounded-lg border border-purple-500/20 bg-purple-500/10 p-2 text-xs text-purple-100/80">
+    {task.plannerNotes}
+  </div>
+)}
+
                 {task.branchName && (
                   <div className="mt-1 text-xs text-white/50">
                     Branch: {task.branchName}
                   </div>
                 )}
               </div>
+
+                {task.status === 'planner-split' && (
+  <div className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-2 py-1 text-xs text-purple-200">
+    Split into waves
+  </div>
+)}
 
               <div className="flex items-center gap-2">
                 {task.result?.merged ? (
