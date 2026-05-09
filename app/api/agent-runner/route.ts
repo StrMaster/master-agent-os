@@ -771,17 +771,6 @@ if (state.autoMergeEnabled && typeof pr.number === "number") {
   }
 }
 
-    if (state.autoMergeEnabled) {
-  await logActivity({
-    type: "auto-merge-blocked",
-    runId,
-    taskId: task.id,
-    branch: branchName,
-    pullRequestUrl: pr.html_url,
-    reason: "Auto-merge is enabled in control state, but merge execution is not connected yet",
-  });
-}
-
     const latest = await readTasksFile();
     const latestTask = latest.tasks.find(
       (candidate) => candidate.id === task.id
