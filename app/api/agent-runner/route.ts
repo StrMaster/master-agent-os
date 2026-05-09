@@ -5,6 +5,7 @@ import {
   createGithubBranch,
   createPullRequest,
   findOpenPullRequest,
+  mergePullRequest,
   validatePullRequest,
 } from "@/app/lib/github-pr";
 import { validatePatch } from "@/app/lib/patch-validator";
@@ -713,6 +714,64 @@ Generated automatically by Master Agent OS.
       }
     }
 
+    let mergeResult = null;
+
+if (state.autoMergeEnabled && typeof pr.number === "number") {
+  const canAutoMerge =
+    prValidation &&
+    prValidation.mergeable === true &&
+    prValidation.draft !== true &&
+    prValidation.merged !== true &&
+    prValidation.state === "open" &&
+    task.targetFile &&
+    SAFE_TARGET_FILES.includes(task.targetFile);
+
+  if (canAutoMerge) {
+    try {
+      mergeResult = await mergePullRequest(pr.number);
+
+      await logActivity({
+        type: "pull-request-merged",
+        runId,
+        taskId: task.id,
+        branch: branchName,
+        pullRequestUrl: pr.html_url,
+        reason: "Auto-merge completed successfully",
+        details: JSON.stringify(mergeResult),
+      });
+    } catch (error) {
+      await logActivity({
+        type: "pull-request-merge-failed",
+        runId,
+        taskId: task.id,
+        branch: branchName,
+        pullRequestUrl: pr.html_url,
+        reason: "Auto-merge failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  } else {
+    await logActivity({
+      type: "auto-merge-blocked",
+      runId,
+      taskId: task.id,
+      branch: branchName,
+      pullRequestUrl: pr.html_url,
+      reason: "Auto-merge blocked by safety checks",
+      details: JSON.stringify({
+        autoMergeEnabled: state.autoMergeEnabled,
+        hasValidation: Boolean(prValidation),
+        mergeable: prValidation?.mergeable,
+        draft: prValidation?.draft,
+        merged: prValidation?.merged,
+        state: prValidation?.state,
+        safeTargetFile:
+          Boolean(task.targetFile) && SAFE_TARGET_FILES.includes(task.targetFile),
+      }),
+    });
+  }
+}
+
     if (state.autoMergeEnabled) {
   await logActivity({
     type: "auto-merge-blocked",
@@ -733,11 +792,11 @@ Generated automatically by Master Agent OS.
       latestTask.status = "pending-pr";
       latestTask.updatedAt = new Date().toISOString();
       latestTask.result = {
-        branchName,
-        pullRequestUrl: pr.html_url,
-        pullRequestNumber: pr.number,
-        merged: false,
-      };
+  branchName,
+  pullRequestUrl: pr.html_url,
+  pullRequestNumber: pr.number,
+  merged: Boolean(mergeResult),
+};
     }
 
     updateTaskStatus(task.id, "pending-pr");
@@ -758,14 +817,15 @@ Generated automatically by Master Agent OS.
     });
 
     return NextResponse.json({
-      ok: true,
-      mode: "pull-request-created",
-      runId,
-      taskId: task.id,
-      branchName,
-      pullRequestUrl: pr.html_url,
-      validation: prValidation,
-    });
+  ok: true,
+  mode: mergeResult ? "pull-request-merged" : "pull-request-created",
+  runId,
+  taskId: task.id,
+  branchName,
+  pullRequestUrl: pr.html_url,
+  validation: prValidation,
+  mergeResult,
+});
   } catch (error) {
     await logActivity({
       type: "failed",
