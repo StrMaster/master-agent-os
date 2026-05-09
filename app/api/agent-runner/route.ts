@@ -21,6 +21,7 @@ const ACTIVITY_PATH = ".agent/activity.json";
 const STATE_PATH = ".agent/state.json";
 
 const RUNNER_COOLDOWN_MS = 15_000;
+const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -61,6 +62,7 @@ type AgentTask = {
 type AgentState = {
   paused?: boolean;
   runnerLocked?: boolean;
+  runnerLockStartedAt?: number;
   lastRunAt?: number;
 };
 
@@ -204,13 +206,14 @@ async function releaseRunnerLock() {
     const { state, sha } = await readStateFile();
 
     await writeStateFile(
-      {
-        ...state,
-        runnerLocked: false,
-      },
-      sha,
-      "Release agent runner lock"
-    );
+  {
+    ...state,
+    runnerLocked: false,
+    runnerLockStartedAt: undefined,
+  },
+  sha,
+  "Release agent runner lock"
+);
   } catch {
     // Do not throw from cleanup.
   }
@@ -373,42 +376,63 @@ export async function POST() {
     }
 
     if (state.runnerLocked) {
-      await logActivity({
-        type: "runner-busy",
-        runId,
-        reason: "Agent runner already active",
-      }).catch(() => {});
+  const lockAge = state.runnerLockStartedAt
+    ? now - state.runnerLockStartedAt
+    : 0;
 
-      return NextResponse.json({
-        ok: false,
-        mode: "runner-busy",
-        error: "Agent runner already active",
-      });
-    }
+  const isStaleLock =
+    !state.runnerLockStartedAt || lockAge > RUNNER_STALE_LOCK_MS;
+
+  if (!isStaleLock) {
+    await logActivity({
+      type: "runner-busy",
+      runId,
+      reason: "Agent runner already active",
+      lockAgeMs: lockAge,
+    }).catch(() => {});
+
+    return NextResponse.json({
+      ok: false,
+      mode: "runner-busy",
+      error: "Agent runner already active",
+      lockAgeMs: lockAge,
+    });
+  }
+
+  await logActivity({
+    type: "runner-stale-lock-recovered",
+    runId,
+    reason: "Recovered stale runner lock",
+    lockAgeMs: lockAge,
+  }).catch(() => {});
+}
 
     if (state.lastRunAt && now - state.lastRunAt < RUNNER_COOLDOWN_MS) {
-      await logActivity({
+      const retryAfterMs = RUNNER_COOLDOWN_MS - (now - state.lastRunAt);
+        await logActivity({
         type: "runner-cooldown",
         runId,
         reason: "Runner cooldown active",
       }).catch(() => {});
 
       return NextResponse.json({
-        ok: false,
-        mode: "cooldown",
-        error: "Runner cooldown active",
-      });
+  ok: false,
+  mode: "cooldown",
+  error: "Runner cooldown active",
+  retryAfterMs,
+});
     }
 
     await writeStateFile(
-      {
-        ...state,
-        runnerLocked: true,
-        lastRunAt: now,
-      },
-      stateSha,
-      "Acquire agent runner lock"
-    );
+  {
+    ...state,
+    runnerLocked: true,
+    runnerLockStartedAt: now,
+    lastRunAt: now,
+  },
+  stateSha,
+  "Acquire agent runner lock"
+);
 
     lockAcquired = true;
 
