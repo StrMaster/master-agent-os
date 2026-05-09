@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import Link from 'next/link';
 import { useMasterStore } from '@/lib/master-store';
 
 export default function TasksPage() {
   const { tasks, agents, createTask, executeTask, completeTask } =
-  useMasterStore();
+    useMasterStore();
 
   function getAgentName(agentId?: string) {
     if (!agentId) return 'Unassigned';
@@ -15,27 +13,16 @@ export default function TasksPage() {
     return agent?.name ?? 'Unknown agent';
   }
 
-  function getChangesPrompt(task: { title: string }) {
-  return `File: app/execution/page.tsx
+  function getStatusLabel(status: string) {
+    if (status === 'todo') return 'Todo';
+    if (status === 'in_progress') return 'In progress';
+    if (status === 'running') return 'Running';
+    if (status === 'pending-pr') return 'Pending PR';
+    if (status === 'failed') return 'Failed';
+    if (status === 'done') return 'Done';
 
-Rules:
-- EXACT match
-- One change only
-- Do not refactor
-- Keep change under 10 lines`;
-}
-
-  useEffect(() => {
-  const interval = setInterval(() => {
-    const nextTask = tasks.find((t) => t.status === 'todo');
-
-  return () => clearInterval(interval);
-}, [tasks]);
-Find:
-"No completed tasks"
-
-Replace:
-"No completed tasks (${task.title})"
+    return status;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
@@ -43,18 +30,16 @@ Replace:
         <div>
           <h1 className="text-2xl font-semibold sm:text-3xl">Tasks</h1>
           <p className="mt-2 text-sm text-white/60">
-            Master Agent task queue. Send tasks into the Changes autopilot flow.
+            Master Agent task queue for the PR-only execution flow.
           </p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-sm text-white/50">Phase 3</div>
-          <div className="mt-1 text-lg font-medium">
-            Master Agent Task Runner
-          </div>
+          <div className="text-sm text-white/50">Stage 1</div>
+          <div className="mt-1 text-lg font-medium">Task Queue Foundation</div>
           <p className="mt-2 text-sm text-white/60">
-            Tasks can now be routed into Changes for proposal, quality review,
-            apply, PR creation, and auto-merge.
+            Tasks should now move toward the agent-runner PR flow instead of the
+            old Changes proposal/apply flow.
           </p>
         </div>
 
@@ -62,14 +47,17 @@ Replace:
           <div className="flex flex-col gap-3 sm:flex-row">
             <button
               onClick={() => {
-                const tasks = [
-                  'Improve button accessibility',
-                  'Refine color contrast',
-                  'Optimize layout spacing',
-                  'Simplify navigation flow',
-                  'Enhance task card readability'
+                const plannerTasks = [
+                  'Improve Run Agent button microcopy',
+                  'Refine task card spacing',
+                  'Improve execution dashboard empty state',
+                  'Clean ActivityFeed event labels',
+                  'Improve pending PR status copy',
                 ];
-                const title = tasks[Math.floor(Math.random() * tasks.length)];
+
+                const title =
+                  plannerTasks[Math.floor(Math.random() * plannerTasks.length)];
+
                 createTask({ title, priority: 'medium' });
               }}
               className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
@@ -80,33 +68,13 @@ Replace:
             <button
               onClick={() =>
                 createTask({
-  title: 'Improve task card spacing',
-  priority: 'medium',
-})
+                  title: 'Improve task card readability',
+                  priority: 'medium',
+                })
               }
               className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
             >
-              Add sample task card task
-            </button>
-
-            <button
-              onClick={() => {
-                const titles = [
-                  'Improve task card readability',
-                  'Enhance button accessibility',
-                  'Refine color contrast',
-                  'Optimize layout spacing',
-                  'Simplify navigation flow'
-                ];
-                const title = titles[Math.floor(Math.random() * titles.length)];
-                createTask({
-                  title,
-                  priority: 'medium',
-                });
-              }}
-              className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-            >
-              Generate planner task
+              Add sample task
             </button>
           </div>
         </div>
@@ -131,33 +99,49 @@ Replace:
                         {task.title}
                       </div>
 
-                      {task.title && (
-                        <p className="text-sm text-white/60">
-                          {task.title}
-                        </p>
-                      )}
+                      <div className="text-xs text-white/40">
+                        Priority: {task.priority}
+                      </div>
 
                       <div className="text-xs text-white/40">
-                        Status: {task.status}
+                        Status: {getStatusLabel(task.status)}
                       </div>
 
                       <div className="text-xs text-white/40">
                         Assigned to: {getAgentName(task.assignedAgentId)}
                       </div>
+
+                      {task.pullRequestUrl && (
+                        <a
+                          href={task.pullRequestUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-block text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
+                        >
+                          Open pull request
+                        </a>
+                      )}
+
+                      {task.lastError && (
+                        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-2 text-xs text-red-200">
+                          {task.lastError}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-2 sm:min-w-40">
-
                       {task.status === 'todo' && (
                         <button
                           onClick={() => executeTask({ taskId: task.id })}
                           className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
                         >
-                          Start
+                          Mark running
                         </button>
                       )}
 
-                      {task.status === 'in_progress' && (
+                      {(task.status === 'in_progress' ||
+                        task.status === 'running' ||
+                        task.status === 'pending-pr') && (
                         <button
                           onClick={() => completeTask({ taskId: task.id })}
                           className="rounded-xl bg-green-400 px-4 py-2 text-sm font-medium text-black hover:bg-green-300"
