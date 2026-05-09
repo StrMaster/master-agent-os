@@ -427,6 +427,32 @@ export async function POST() {
 });
 
 if (stopCheck.stop) {
+  const recoveryCodes = [
+    "too-many-failed-runs",
+    "too-many-validation-failures",
+    "too-many-merge-failures",
+    "deploy-failure-threshold",
+  ];
+
+  if (stopCheck.code && recoveryCodes.includes(stopCheck.code)) {
+    await updateStateWith(
+      (currentState) => ({
+        ...currentState,
+        recoveryActive: true,
+        autoRunEnabled: false,
+        autoMergeEnabled: false,
+      }),
+      "Enable recovery mode after stop condition"
+    ).catch(() => {});
+
+    await logActivity({
+      type: "recovery-mode-enabled",
+      runId,
+      reason: stopCheck.reason ?? "Recovery mode enabled by stop condition",
+      stopCode: stopCheck.code,
+    }).catch(() => {});
+  }
+
   await logActivity({
     type: stopCheck.code ?? "runner-stopped",
     runId,
@@ -437,6 +463,9 @@ if (stopCheck.stop) {
     ok: false,
     mode: stopCheck.code ?? "runner-stopped",
     message: stopCheck.reason ?? "Runner stopped by safety condition",
+    recoveryActive: stopCheck.code
+      ? recoveryCodes.includes(stopCheck.code)
+      : false,
   });
 }
 
