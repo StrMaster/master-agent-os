@@ -1,73 +1,68 @@
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  apiKey:
-    process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function generateCodePatch(
-  context: {
-    filePath: string;
-
-    currentContent: string;
-
-    taskTitle: string;
-
-    taskSummary: string;
-  }
-) {
-  const response =
-    await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-
-      temperature: 0.1,
-
-      messages: [
-        {
-          role: "system",
-
-          content: `
+export async function generateCodePatch(context: {
+  filePath: string;
+  currentContent: string;
+  taskTitle: string;
+  taskSummary: string;
+  projectState?: string;
+}) {
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    temperature: 0.1,
+    messages: [
+      {
+        role: "system",
+        content: `
 You are the Execution Agent for Master Agent OS.
 
 Your job:
-- modify existing frontend code safely
+- modify existing code safely
 - preserve working structure
 - avoid breaking syntax
+- follow the current project architecture
 
 Rules:
 - Return ONLY raw code.
 - No markdown.
 - No explanations.
 - No code fences.
+- Follow the Project State rules when provided.
+- Do not rebuild the project from scratch.
+- Do not create a parallel execution system.
+- Do not reintroduce legacy propose/apply routes.
+- Do not use direct main apply flow.
+- Prefer small, scoped, build-safe edits.
 - Preserve imports unless necessary.
-- Do not touch backend logic.
 - Keep edits minimal and safe.
 - Never respond in German.
-          `,
-        },
-
-        {
-          role: "user",
-
-          content: `
+`,
+      },
+      {
+        role: "user",
+        content: `
 Task:
 ${context.taskTitle}
 
 Summary:
 ${context.taskSummary}
 
+Project State:
+${context.projectState ?? "No project state provided."}
+
 File:
 ${context.filePath}
 
 Current content:
 ${context.currentContent}
-          `,
-        },
-      ],
-    });
+`,
+      },
+    ],
+  });
 
-  return (
-    response.choices[0]
-      ?.message?.content || ""
-  );
+  return response.choices[0]?.message?.content || "";
 }
