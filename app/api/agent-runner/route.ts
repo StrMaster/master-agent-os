@@ -51,6 +51,9 @@ type GitHubFile = {
   content: string;
 };
 
+let isRunnerActive = false;
+let lastRunAt = 0;
+
 async function readGithubJson(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -286,6 +289,46 @@ export async function GET() {
 }
 
 export async function POST() {
+
+  if (isRunnerActive) {
+    return NextResponse.json({
+      ok: false,
+      mode: "runner-busy",
+      error: "Agent runner already active",
+    });
+  }
+
+  const now = Date.now();
+
+  if (now - lastRunAt < 15000) {
+    return NextResponse.json({
+      ok: false,
+      mode: "cooldown",
+      error: "Runner cooldown active",
+    });
+  }
+
+  isRunnerActive = true;
+  lastRunAt = now;
+
+  try {
+
+    // visas runner code
+
+  } catch (error) {
+
+    // error handling
+
+  } finally {
+
+    isRunnerActive = false;
+
+  }
+}
+
+isRunnerActive = true;
+lastRunAt = now;
+
   const runId = crypto.randomUUID();
 
   try {
