@@ -60,12 +60,12 @@ export default function ControlCenterControls() {
   }, []);
 
   if (!state) {
-    return (
-      <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
-        Loading control state...
-      </div>
-    );
-  }
+  return (
+    <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 text-sm text-white/60">
+      {error ? `Control state error: ${error}` : 'Loading control state...'}
+    </div>
+  );
+}
 
   return (
     <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
