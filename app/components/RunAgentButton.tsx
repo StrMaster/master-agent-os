@@ -22,7 +22,14 @@ type AgentResult = {
 export default function RunAgentButton() {
   const [loading, setLoading] = useState(false);
   const [loopLoading, setLoopLoading] = useState(false);
-  const [result, setResult] = useState<AgentResult | null>(null);
+  const [result, setResult] =
+  useState<{
+    ok?: boolean;
+    mode?: string;
+    message?: string;
+    pullRequestUrl?: string;
+    [key: string]: any;
+  } | null>(null);
 
   async function runAgent() {
     setLoading(true);
@@ -33,9 +40,42 @@ export default function RunAgentButton() {
         method: "POST",
       });
 
-      const data = await res.json();
+      const data = await response.json();
 
-      setResult(data);
+if (data.mode === "cooldown") {
+  setResult({
+    ok: false,
+    mode: "cooldown",
+    message: `Runner cooldown active. Retry in ${Math.ceil(
+      (data.retryAfterMs ?? 0) / 1000
+    )}s`,
+  });
+
+  return;
+}
+
+if (data.mode === "runner-busy") {
+  setResult({
+    ok: false,
+    mode: "runner-busy",
+    message: "Agent runner already active",
+  });
+
+  return;
+}
+
+if (data.mode === "existing-pr") {
+  setResult({
+    ok: true,
+    mode: "existing-pr",
+    message: "Task already has an open pull request",
+    pullRequestUrl: data.pullRequestUrl,
+  });
+
+  return;
+}
+
+setResult(data);
     } catch (error) {
       setResult({
         ok: false,
@@ -158,11 +198,28 @@ export default function RunAgentButton() {
           }}
         >
           <div style={{ fontWeight: 800, marginBottom: 8 }}>
-            {result.ok ? "Agent run completed" : "Agent run failed"}
+            result.mode === "cooldown"
+  ? "Runner cooldown"
+  : result.mode === "runner-busy"
+    ? "Runner busy"
+    : result.mode === "existing-pr"
+      ? "Existing pull request"
+      : result.ok
+        ? "Agent run completed"
+        : "Agent run failed"
           </div>
 
           {result.mode && <div>Mode: {result.mode}</div>}
-          {result.message && <div>Message: {result.message}</div>}
+          {result.message && (
+  <div
+    style={{
+      marginTop: 4,
+      opacity: 0.9,
+    }}
+  >
+    Message: {result.message}
+  </div>
+)}
           {result.error && <div>Error: {result.error}</div>}
           {result.taskId && <div>Task: {result.taskId}</div>}
           {result.branchName && <div>Branch: {result.branchName}</div>}
