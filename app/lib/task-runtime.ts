@@ -50,8 +50,6 @@ export function updateTaskStatus(
 
   task.status = status;
 
-  if (status === "done") {
-  task.completedAt = Date.now();
 }
 
   if (status === "running") {
