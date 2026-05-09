@@ -29,13 +29,6 @@ Rules:
   const interval = setInterval(() => {
     const nextTask = tasks.find((t) => t.status === 'todo');
 
-    if (nextTask) {
-      window.location.href = `/changes?prompt=${encodeURIComponent(
-        getChangesPrompt(nextTask)
-      )}`;
-    }
-  }, 15000);
-
   return () => clearInterval(interval);
 }, [tasks]);
 Find:
@@ -97,21 +90,6 @@ Replace:
             </button>
 
             <button
-  onClick={() => {
-    const nextTask = tasks.find((t) => t.status === 'todo');
-
-    if (nextTask) {
-      window.location.href = `/changes?prompt=${encodeURIComponent(
-        getChangesPrompt(nextTask)
-      )}`;
-    }
-  }}
-  className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
->
-  Run next task
-</button>
-
-            <button
               onClick={() => {
                 const titles = [
                   'Improve task card readability',
@@ -166,15 +144,6 @@ Replace:
                       <div className="text-xs text-white/40">
                         Assigned to: {getAgentName(task.assignedAgentId)}
                       </div>
-
-                      <Link
-                        href={`/changes?prompt=${encodeURIComponent(
-                          getChangesPrompt(task)
-                        )}`}
-                        className="inline-block text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
-                      >
-                        Send to Changes
-                      </Link>
                     </div>
 
                     <div className="flex flex-col gap-2 sm:min-w-40">
