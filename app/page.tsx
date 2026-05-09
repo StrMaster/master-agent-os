@@ -63,6 +63,42 @@ export default function HomePage() {
       </div>
       
       <RunAgentButton />
+      <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
+  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div>
+      <div className="text-sm font-medium uppercase tracking-wide text-blue-300">
+        Control Center
+      </div>
+
+      <h2 className="mt-2 text-xl font-semibold text-white">
+        Autonomous Engineering Core
+      </h2>
+
+      <p className="mt-2 max-w-2xl text-sm text-white/60">
+        Master Agent OS is currently running in protected PR-only execution
+        mode with runtime stabilization and manual merge safety enabled.
+      </p>
+    </div>
+
+    <div className="grid gap-2 sm:grid-cols-2">
+      <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+        PR-only mode enabled
+      </div>
+
+      <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2 text-sm text-blue-200">
+        Runner cooldown active
+      </div>
+
+      <div className="rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
+        Duplicate PR protection enabled
+      </div>
+
+      <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 px-3 py-2 text-sm text-purple-200">
+        Manual merge confirmation required
+      </div>
+    </div>
+  </div>
+</div>
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
           <div className="flex items-center justify-between">
