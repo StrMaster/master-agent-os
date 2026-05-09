@@ -148,7 +148,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       wave: 1,
       parentTaskId: task.id,
       plannerNotes:
-        "Wave 1 should prepare the smallest safe change and avoid broad rewrites.",
+        "Wave 1: inspect current architecture, keep scope minimal, avoid rewrites.",
     },
     {
       id: `wave-${task.id}-2-${Date.now()}`,
@@ -167,7 +167,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       wave: 2,
       parentTaskId: task.id,
       plannerNotes:
-        "Wave 2 should implement the core change after Wave 1 succeeds.",
+        "Wave 2: implement the core change only after Wave 1 is safe.",
     },
     {
       id: `wave-${task.id}-3-${Date.now()}`,
@@ -186,7 +186,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       wave: 3,
       parentTaskId: task.id,
       plannerNotes:
-        "Wave 3 should be a low-risk polish or verification step.",
+        "Wave 3: polish, verify UI/runtime state, and keep changes low-risk.",
     },
   ];
 }
