@@ -11,6 +11,7 @@ import RuntimeOverview from "./components/RuntimeOverview";
 import ControlCenterControls from "./components/ControlCenterControls";
 import DeployStatusCard from "./components/DeployStatusCard";
 import RecoveryControlCard from "./components/RecoveryControlCard";
+import AutoRunTrigger from "./components/AutoRunTrigger";
 
 
 
@@ -73,6 +74,7 @@ export default function HomePage() {
       <DeployStatusCard />
       <RecoveryControlCard />
       <ControlCenterControls />
+      <AutoRunTrigger />
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
