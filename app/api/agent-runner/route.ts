@@ -48,6 +48,11 @@ type AgentTask = {
   id: string;
   title: string;
   summary?: string;
+  intent?: string;
+riskLevel?: "low" | "medium" | "high";
+executionMode?: "single-file" | "multi-step";
+wave?: number;
+plannerNotes?: string;
   targetFile?: string;
   status: AgentTaskStatus;
   priority?: Priority;
@@ -648,13 +653,18 @@ if (stopCheck.stop) {
     await writeTasksFile(tasks, sha, `Mark task ${task.id} as running`);
 
     await logActivity({
-      type: "execution-started",
-      runId,
-      taskId: task.id,
-      summary: task.title,
-      targetFile: task.targetFile,
-      priority: task.priority,
-    });
+  type: "execution-started",
+  runId,
+  taskId: task.id,
+  summary: task.title,
+  targetFile: task.targetFile,
+  priority: task.priority,
+  intent: task.intent,
+  riskLevel: task.riskLevel,
+  executionMode: task.executionMode,
+  wave: task.wave,
+  plannerNotes: task.plannerNotes,
+});
 
     const currentContent = await readTargetFile(task.targetFile);
 
@@ -782,8 +792,12 @@ ${task.title}
 Summary:
 ${task.summary ?? task.title}
 
-Target file:
-${task.targetFile}
+Target file: ${task.targetFile}
+Intent: ${task.intent ?? "unknown"}
+Risk level: ${task.riskLevel ?? "unknown"}
+Execution mode: ${task.executionMode ?? "single-file"}
+Wave: ${task.wave ?? 1}
+Planner notes: ${task.plannerNotes ?? "No planner notes"}
 
 Generated automatically by Master Agent OS.
 `
