@@ -52,6 +52,7 @@ type AgentTask = {
 riskLevel?: "low" | "medium" | "high";
 executionMode?: "single-file" | "multi-step";
 wave?: number;
+parentTaskId?: string;
 plannerNotes?: string;
   targetFile?: string;
   status: AgentTaskStatus;
@@ -354,6 +355,27 @@ function dependenciesCompleted(task: AgentTask, tasks: AgentTask[]) {
     return true;
   }
 
+function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
+  if (!task.parentTaskId || !task.wave || task.wave <= 1) {
+    return true;
+  }
+
+  const previousWave = tasks.find(
+    (candidate) =>
+      candidate.parentTaskId === task.parentTaskId &&
+      candidate.wave === task.wave! - 1
+  );
+
+  if (!previousWave) {
+    return false;
+  }
+
+  return (
+    previousWave.status === "done" ||
+    previousWave.status === "pending-pr"
+  );
+}
+
   return task.dependsOn.every((dependencyId) =>
     tasks.some(
       (candidate) =>
@@ -367,6 +389,7 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
     .map((task, index) => ({ task, index }))
     .filter(({ task }) => task.status === "todo")
     .filter(({ task }) => dependenciesCompleted(task, tasks))
+    .filter(({ task }) => previousWaveCompleted(task, tasks))
     .sort((a, b) => {
       const aFailures = activity.filter(
         (event: any) => event.type === "failed" && event.taskId === a.task.id
@@ -663,6 +686,7 @@ if (stopCheck.stop) {
   riskLevel: task.riskLevel,
   executionMode: task.executionMode,
   wave: task.wave,
+  parentTaskId: task.parentTaskId,
   plannerNotes: task.plannerNotes,
 });
 
@@ -818,10 +842,12 @@ Summary:
 ${task.summary ?? task.title}
 
 Target file: ${task.targetFile}
+
 Intent: ${task.intent ?? "unknown"}
 Risk level: ${task.riskLevel ?? "unknown"}
 Execution mode: ${task.executionMode ?? "single-file"}
 Wave: ${task.wave ?? 1}
+Parent task: ${task.parentTaskId ?? "none"}
 Planner notes: ${task.plannerNotes ?? "No planner notes"}
 
 Generated automatically by Master Agent OS.
