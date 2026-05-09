@@ -32,6 +32,9 @@ type AgentTask = {
   createdAt: string;
   source: "manual";
   summary?: string;
+intent?: string;
+riskLevel?: "low" | "medium" | "high";
+executionMode?: "single-file" | "multi-step";
 };
 
 type GitHubFile = {
@@ -343,6 +346,57 @@ if (
 }
 }
 
+    if (prompt) {
+  const normalizedPrompt = prompt.toLowerCase();
+
+  if (
+    normalizedPrompt.includes("refactor") ||
+    normalizedPrompt.includes("runtime") ||
+    normalizedPrompt.includes("agent-runner") ||
+    normalizedPrompt.includes("api") ||
+    normalizedPrompt.includes("recovery") ||
+    normalizedPrompt.includes("deploy")
+  ) {
+    riskLevel = "medium";
+  }
+
+  if (
+    normalizedPrompt.includes("auto-merge") ||
+    normalizedPrompt.includes("overnight") ||
+    normalizedPrompt.includes("database") ||
+    normalizedPrompt.includes("auth") ||
+    normalizedPrompt.includes("multi-file")
+  ) {
+    riskLevel = "high";
+    executionMode = "multi-step";
+  }
+
+  if (
+    normalizedPrompt.includes("button") ||
+    normalizedPrompt.includes("copy") ||
+    normalizedPrompt.includes("microcopy") ||
+    normalizedPrompt.includes("spacing")
+  ) {
+    intent = "ui-polish";
+  }
+
+  if (
+    normalizedPrompt.includes("fix") ||
+    normalizedPrompt.includes("bug") ||
+    normalizedPrompt.includes("error")
+  ) {
+    intent = "bugfix";
+  }
+
+  if (
+    normalizedPrompt.includes("recovery") ||
+    normalizedPrompt.includes("failed") ||
+    normalizedPrompt.includes("failure")
+  ) {
+    intent = "recovery";
+  }
+}
+
     if (!title) {
       return NextResponse.json(
         {
@@ -415,6 +469,9 @@ if (
   priority,
   source: "manual",
   createdAt: new Date().toISOString(),
+  intent,
+riskLevel,
+executionMode,
 };
 
 generatedTasks.push(baseTask);
@@ -434,6 +491,9 @@ if (
     priority,
     source: "manual",
     createdAt: new Date().toISOString(),
+    intent: "ui-polish",
+riskLevel: "low",
+executionMode: "single-file",
   });
 }
 
