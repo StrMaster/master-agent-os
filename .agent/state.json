@@ -10,4 +10,8 @@
 "recentMergeFailures": 0,
 "recentDeployFailures": 0,
 "recoveryActive": false
+
+"lastDeploymentId": null,
+"lastDeploymentState": null,
+"lastDeployFailureId": null
 }
