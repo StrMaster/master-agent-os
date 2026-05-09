@@ -7,6 +7,10 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 
+const AUTO_RUN_COOLDOWN_MS = 30 * 60 * 1000;
+
+let lastAutoRunAt: number | null = null;
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.VERCEL_URL
@@ -112,6 +116,22 @@ if (!availableTask) {
     message: "No queued or todo tasks available",
   });
 }
+
+const now = Date.now();
+
+if (
+  lastAutoRunAt &&
+  now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
+) {
+  return NextResponse.json({
+    ok: false,
+    mode: "auto-run-cooldown",
+    message: "Auto-run cooldown active",
+    retryAfterMs: AUTO_RUN_COOLDOWN_MS - (now - lastAutoRunAt),
+  });
+}
+
+lastAutoRunAt = now;
 
     const runnerRes = await fetch(`${BASE_URL}/api/agent-runner`, {
       method: "POST",
