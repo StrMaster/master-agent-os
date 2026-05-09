@@ -70,6 +70,11 @@ type AgentState = {
   autoRunEnabled?: boolean;
   autoMergeEnabled?: boolean;
   emergencyStop?: boolean;
+  recentFailedRuns?: number;
+  recentValidationFailures?: number;
+  recentMergeFailures?: number;
+  recentDeployFailures?: number;
+  recoveryActive?: boolean;
 };
 
 type GitHubFile = {
@@ -205,6 +210,44 @@ async function writeStateFile(
   message: string
 ) {
   await writeGithubJson(STATE_PATH, state, sha, message);
+}
+
+async function updateStateWith(
+  mutator: (state: AgentState) => AgentState,
+  message: string
+) {
+  const { state, sha } = await readStateFile();
+  await writeStateFile(mutator(state), sha, message);
+}
+
+async function incrementStateCounter(
+  key:
+    | "recentFailedRuns"
+    | "recentValidationFailures"
+    | "recentMergeFailures"
+    | "recentDeployFailures",
+  message: string
+) {
+  await updateStateWith(
+    (state) => ({
+      ...state,
+      [key]: (state[key] ?? 0) + 1,
+    }),
+    message
+  );
+}
+
+async function resetRuntimeFailureCounters(message: string) {
+  await updateStateWith(
+    (state) => ({
+      ...state,
+      recentFailedRuns: 0,
+      recentValidationFailures: 0,
+      recentMergeFailures: 0,
+      recentDeployFailures: 0,
+    }),
+    message
+  );
 }
 
 async function releaseRunnerLock() {
@@ -376,6 +419,11 @@ export async function POST() {
     const stopCheck = evaluateStopConditions({
   emergencyStop: state.emergencyStop,
   paused: state.paused,
+  recentFailedRuns: state.recentFailedRuns,
+  recentValidationFailures: state.recentValidationFailures,
+  recentMergeFailures: state.recentMergeFailures,
+  recentDeployFailures: state.recentDeployFailures,
+  recoveryActive: state.recoveryActive,
 });
 
 if (stopCheck.stop) {
@@ -592,6 +640,11 @@ if (stopCheck.stop) {
         reason: validation.issues.join(", "),
       });
 
+      await incrementStateCounter(
+  "recentValidationFailures",
+  "Track patch validation failure"
+);
+
       return NextResponse.json(
         {
           ok: false,
@@ -710,6 +763,10 @@ Generated automatically by Master Agent OS.
           reason: "PR validation failed",
           details: error instanceof Error ? error.message : "Unknown error",
         });
+          await incrementStateCounter(
+  "recentValidationFailures",
+  "Track pull request validation failure"
+);
       }
     }
 
@@ -748,6 +805,10 @@ if (state.autoMergeEnabled && typeof pr.number === "number") {
         reason: "Auto-merge failed",
         details: error instanceof Error ? error.message : "Unknown error",
       });
+      await incrementStateCounter(
+  "recentMergeFailures",
+  "Track pull request merge failure"
+);
     }
   } else {
     await logActivity({
@@ -804,6 +865,10 @@ if (state.autoMergeEnabled && typeof pr.number === "number") {
       reason: "Pull request created and task is waiting for review",
     });
 
+    await resetRuntimeFailureCounters(
+  "Reset runtime failure counters after successful PR flow"
+).catch(() => {});
+
     return NextResponse.json({
   ok: true,
   mode: mergeResult ? "pull-request-merged" : "pull-request-created",
@@ -821,6 +886,11 @@ if (state.autoMergeEnabled && typeof pr.number === "number") {
       reason: error instanceof Error ? error.message : "Unknown error",
       failureType: "runner-failed",
     }).catch(() => {});
+
+    await incrementStateCounter(
+  "recentFailedRuns",
+  "Track failed agent runner execution"
+).catch(() => {});
 
     return NextResponse.json(
       {
