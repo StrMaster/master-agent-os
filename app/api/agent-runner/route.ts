@@ -315,14 +315,24 @@ export async function POST() {
 
     // visas runner code
 
-  } catch (error) {
+  }catch (error) {
+    await logActivity({
+      type: "failed",
+      runId,
+      reason: error instanceof Error ? error.message : "Unknown error",
+      failureType: "runner-failed",
+    }).catch(() => {});
 
-    // error handling
-
+    return NextResponse.json(
+      {
+        ok: false,
+        mode: "runner-failed",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   } finally {
-
     isRunnerActive = false;
-
   }
 }
 
