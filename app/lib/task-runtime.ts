@@ -3,7 +3,8 @@ export type RuntimeTaskStatus =
   | "running"
   | "pending-pr"
   | "completed"
-  | "failed";
+  | "failed"
+  | "done";
 
 type RuntimeTask = {
   id: string;
@@ -49,6 +50,10 @@ export function updateTaskStatus(
   }
 
   task.status = status;
+
+  if (status === "done") {
+  task.completedAt = Date.now();
+}
 
   if (status === "running") {
     task.startedAt = Date.now();
