@@ -12,6 +12,8 @@ type RecoveryTaskInput = {
   reason?: string;
   stopCode?: string;
   targetFile?: string;
+  suggestedAction?: string;
+  targetArea?: string;
 };
 
 type GitHubFile = {
@@ -122,6 +124,14 @@ export async function POST(req: Request) {
     const stopCode = body.stopCode?.trim() || "recovery-required";
     const targetFile = body.targetFile?.trim() || "app/api/agent-runner/route.ts";
 
+    const suggestedAction =
+  body.suggestedAction?.trim() ||
+  "Review the failure reason, inspect the target area, and apply the smallest safe fix.";
+
+const targetArea =
+  body.targetArea?.trim() ||
+  "runtime/recovery";
+
     const { json, sha } = await readGithubJson(TASKS_PATH, []);
 
     if (!sha) {
@@ -150,13 +160,21 @@ export async function POST(req: Request) {
     const task = {
       id: `recovery-task-${Date.now()}`,
       title: `Recovery: ${reason}`,
-      summary: `Investigate and fix recovery condition: ${reason}`,
+      summary: `Investigate and fix recovery condition: ${reason}. Suggested action: ${suggestedAction}`,
       targetFile,
       status: "todo",
       priority: "high",
       source: "recovery",
       stopCode,
-      createdAt: new Date().toISOString(),
+suggestedAction,
+targetArea,
+intent: "recovery",
+riskLevel: "medium",
+executionMode: "single-file",
+wave: 1,
+plannerNotes:
+  "Recovery task should inspect the failure reason, keep scope narrow, and avoid broad rewrites.",
+createdAt: new Date().toISOString(),
     };
 
     const updatedTasks = [task, ...tasks];
@@ -169,12 +187,14 @@ export async function POST(req: Request) {
     );
 
     await logActivity({
-      type: "recovery-task-created",
-      taskId: task.id,
-      targetFile,
-      reason,
-      stopCode,
-    });
+  type: "recovery-task-created",
+  taskId: task.id,
+  targetFile,
+  reason,
+  stopCode,
+  suggestedAction,
+  targetArea,
+});
 
     return NextResponse.json({
       ok: true,
