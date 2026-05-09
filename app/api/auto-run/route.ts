@@ -2,11 +2,48 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000";
+
+async function readTasks() {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to read ${TASKS_PATH}`);
+  }
+
+  const file = await res.json();
+
+  const content = Buffer.from(
+    file.content,
+    "base64"
+  ).toString("utf-8");
+
+  return JSON.parse(content);
+}
 
 export async function POST() {
   try {
@@ -56,6 +93,25 @@ export async function POST() {
         message: "Auto-run is disabled",
       });
     }
+
+    const tasks = await readTasks();
+
+const availableTask = Array.isArray(tasks)
+  ? tasks.find(
+      (task) =>
+        task &&
+        (task.status === "todo" ||
+          task.status === "queued")
+    )
+  : null;
+
+if (!availableTask) {
+  return NextResponse.json({
+    ok: true,
+    mode: "no-work",
+    message: "No queued or todo tasks available",
+  });
+}
 
     const runnerRes = await fetch(`${BASE_URL}/api/agent-runner`, {
       method: "POST",
