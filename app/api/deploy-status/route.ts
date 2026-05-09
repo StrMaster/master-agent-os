@@ -157,48 +157,6 @@ export async function GET() {
 
     const deployFailed = deployment.state === "ERROR";
 
-    const { json: stateJson, sha: stateSha } = await readGithubJson(
-      STATE_PATH,
-      {},
-    );
-
-    if (stateSha) {
-      const state = stateJson as AgentState;
-      const nextState: AgentState = {
-        ...state,
-        lastDeploymentId: deployment.uid,
-        lastDeploymentState: deployment.state,
-      };
-
-      if (deployFailed && state.lastDeployFailureId !== deployment.uid) {
-        nextState.recentDeployFailures = (state.recentDeployFailures ?? 0) + 1;
-        nextState.lastDeployFailureId = deployment.uid;
-
-        await logActivity({
-          type: "deploy-failed",
-          deploymentId: deployment.uid,
-          deploymentUrl: deployment.url,
-          reason: "Latest Vercel deployment failed",
-        });
-      }
-
-      if (!deployFailed && state.lastDeploymentState === "ERROR") {
-        await logActivity({
-          type: "deploy-recovered",
-          deploymentId: deployment.uid,
-          deploymentUrl: deployment.url,
-          reason: "Latest Vercel deployment is no longer failing",
-        });
-      }
-
-      await writeGithubJson(
-        STATE_PATH,
-        nextState,
-        stateSha,
-        "Update deploy intelligence state",
-      );
-    }
-
     return NextResponse.json({
       ok: true,
       deployment: deploymentStatus,
