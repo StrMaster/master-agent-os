@@ -26,6 +26,7 @@ const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
 const RUNNER_COOLDOWN_MS = 15_000;
 const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
+const MIN_EXECUTION_SPACING_MS = 15 * 1000;
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -34,6 +35,8 @@ const SAFE_TARGET_FILES = [
   "app/agents/page.tsx",
   "app/execution/page.tsx",
 ];
+
+let lastExecutionAt = 0;
 
 type Priority = "low" | "medium" | "high";
 
@@ -494,6 +497,21 @@ export async function GET() {
 }
 
 export async function POST() {
+
+const now = Date.now();
+
+if (now - lastExecutionAt < MIN_EXECUTION_SPACING_MS) {
+  return NextResponse.json({
+    ok: false,
+    mode: "execution-spacing-active",
+    message: "Execution pacing protection active",
+    retryAfterMs:
+      MIN_EXECUTION_SPACING_MS - (now - lastExecutionAt),
+  });
+}
+
+lastExecutionAt = now;
+
   const runId = crypto.randomUUID();
   let lockAcquired = false;
 
