@@ -13,6 +13,8 @@ type RecoveryState = {
 export default function RecoveryControlCard() {
   const [state, setState] = useState<RecoveryState | null>(null);
   const [loading, setLoading] = useState(false);
+  const [taskMessage, setTaskMessage] = useState<string | null>(null);
+
 
   async function loadState() {
     const res = await fetch('/api/control-state', {
@@ -49,6 +51,42 @@ export default function RecoveryControlCard() {
       setLoading(false);
     }
   }
+
+async function createRecoveryTask() {
+  try {
+    setLoading(true);
+    setTaskMessage(null);
+
+    const res = await fetch('/api/recovery-task', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        reason: 'Recovery mode is active',
+        stopCode: 'recovery-active',
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error ?? 'Failed to create recovery task');
+    }
+
+    setTaskMessage(
+      data.mode === 'recovery-task-exists'
+        ? 'Recovery task already exists.'
+        : 'Recovery task created.'
+    );
+  } catch (error) {
+    setTaskMessage(
+      error instanceof Error ? error.message : 'Failed to create recovery task'
+    );
+  } finally {
+    setLoading(false);
+  }
+}
 
   useEffect(() => {
     loadState();
@@ -124,8 +162,21 @@ export default function RecoveryControlCard() {
         >
           Clear recovery mode
         </button>
-      )}
+        <button
+  type="button"
+  disabled={loading}
+  onClick={createRecoveryTask}
+  className="mt-3 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200 transition hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+>
+  Create recovery task
+</button>
     </div>
+)}
+{taskMessage && (
+  <div className="mt-3 text-sm text-white/60">
+    {taskMessage}
+  </div>
+)}
   );
 }
 
