@@ -1,5 +1,9 @@
 {
+  
+  "paused": false,
+  "runnerLocked": false,
   "autoRunEnabled": false,
-"autoMergeEnabled": false,
-"emergencyStop": false
+  "autoMergeEnabled": false,
+  "emergencyStop": false
+
 }
