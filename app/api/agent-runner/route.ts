@@ -666,6 +666,31 @@ if (stopCheck.stop) {
   plannerNotes: task.plannerNotes,
 });
 
+    if (task.executionMode === "multi-step" && task.riskLevel === "high") {
+  await logActivity({
+    type: "planner-required",
+    runId,
+    taskId: task.id,
+    summary: task.title,
+    targetFile: task.targetFile,
+    riskLevel: task.riskLevel,
+    executionMode: task.executionMode,
+    wave: task.wave,
+    reason:
+      "High-risk multi-step task blocked from direct execution. Planner waves required.",
+  });
+
+  updateTaskStatus(task.id, "failed");
+
+  return NextResponse.json({
+    ok: false,
+    mode: "planner-required",
+    taskId: task.id,
+    message:
+      "High-risk multi-step task requires planner waves before execution.",
+  });
+}
+
     const currentContent = await readTargetFile(task.targetFile);
 
     const projectState = await readProjectState();
