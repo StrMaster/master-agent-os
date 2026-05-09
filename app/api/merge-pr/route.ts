@@ -15,10 +15,35 @@ export async function POST(
     const body =
       await req.json();
 
+  const prNumber = Number(body.prNumber);
+const confirmMerge = body.confirmMerge === true;
+
+if (!Number.isInteger(prNumber) || prNumber <= 0) {
+  return NextResponse.json(
+    {
+      ok: false,
+      mode: "merge-blocked",
+      error: "Valid prNumber is required",
+    },
+    { status: 400 }
+  );
+}
+
+if (!confirmMerge) {
+  return NextResponse.json(
+    {
+      ok: false,
+      mode: "merge-confirmation-required",
+      error: "Manual merge confirmation is required",
+    },
+    { status: 400 }
+  );
+}
+
     const validation =
       await validatePullRequest(
-        body.prNumber
-      );
+  prNumber
+);
 
     if (
       !validation.mergeable ||
@@ -43,8 +68,8 @@ export async function POST(
 
     const mergeResult =
       await mergePullRequest(
-        body.prNumber
-      );
+  prNumber
+);
 
     return NextResponse.json({
       ok: true,
