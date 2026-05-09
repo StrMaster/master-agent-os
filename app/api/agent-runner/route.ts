@@ -22,6 +22,7 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
 const STATE_PATH = ".agent/state.json";
+const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
 const RUNNER_COOLDOWN_MS = 15_000;
 const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
@@ -151,6 +152,32 @@ async function writeGithubJson(
     const text = await res.text();
     throw new Error(`Failed to write ${path}: ${res.status} ${text}`);
   }
+}
+
+async function readProjectState() {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    return "";
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${PROJECT_STATE_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    return "";
+  }
+
+  const file = await res.json();
+  return Buffer.from(file.content, "base64").toString("utf-8");
 }
 
 async function readTasksFile() {
@@ -631,11 +658,14 @@ if (stopCheck.stop) {
 
     const currentContent = await readTargetFile(task.targetFile);
 
+    const projectState = await readProjectState();
+
     const patchedContent = await generateCodePatch({
       filePath: task.targetFile,
       currentContent,
       taskTitle: task.title,
       taskSummary: task.summary ?? task.title,
+      projectState,
     });
 
     const validation = validatePatch(patchedContent);
