@@ -64,6 +64,9 @@ type AgentState = {
   runnerLocked?: boolean;
   runnerLockStartedAt?: number;
   lastRunAt?: number;
+  autoRunEnabled?: boolean;
+  autoMergeEnabled?: boolean;
+  emergencyStop?: boolean;
 };
 
 type GitHubFile = {
@@ -366,6 +369,20 @@ export async function POST() {
   try {
     const { state, sha: stateSha } = await readStateFile();
     const now = Date.now();
+
+    if (state.emergencyStop) {
+  await logActivity({
+    type: "emergency-stop-active",
+    runId,
+    reason: "Emergency stop is active",
+  }).catch(() => {});
+
+  return NextResponse.json({
+    ok: false,
+    mode: "emergency-stop",
+    message: "Emergency stop is active",
+  });
+}
 
     if (state.paused) {
       return NextResponse.json({
@@ -695,6 +712,17 @@ Generated automatically by Master Agent OS.
         });
       }
     }
+
+    if (state.autoMergeEnabled) {
+  await logActivity({
+    type: "auto-merge-blocked",
+    runId,
+    taskId: task.id,
+    branch: branchName,
+    pullRequestUrl: pr.html_url,
+    reason: "Auto-merge is enabled in control state, but merge execution is not connected yet",
+  });
+}
 
     const latest = await readTasksFile();
     const latestTask = latest.tasks.find(
