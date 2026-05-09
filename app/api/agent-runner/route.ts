@@ -26,6 +26,8 @@ const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
 const RUNNER_COOLDOWN_MS = 15_000;
 const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
+const MAX_TASK_RETRIES = 3;
+const RETRY_COOLDOWN_MS = 5 * 60 * 1000;
 const MIN_EXECUTION_SPACING_MS = 15 * 1000;
 
 const SAFE_TARGET_FILES = [
@@ -57,6 +59,8 @@ executionMode?: "single-file" | "multi-step";
 wave?: number;
 parentTaskId?: string;
 plannerNotes?: string;
+retryCount?: number;
+lastRetryAt?: string;
   targetFile?: string;
   status: AgentTaskStatus;
   priority?: Priority;
@@ -417,12 +421,29 @@ function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
   };
 }
 
+function retryAllowed(task: AgentTask) {
+  const retryCount = task.retryCount ?? 0;
+
+  if (retryCount >= MAX_TASK_RETRIES) {
+    return false;
+  }
+
+  if (!task.lastRetryAt) {
+    return true;
+  }
+
+  const lastRetry = new Date(task.lastRetryAt).getTime();
+
+  return Date.now() - lastRetry >= RETRY_COOLDOWN_MS;
+}
+
 function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
     .filter(({ task }) => task.status === "todo")
     .filter(({ task }) => dependenciesCompleted(task, tasks))
     .filter(({ task }) => previousWaveCompleted(task, tasks))
+    .filter(({ task }) => retryAllowed(task))
     .sort((a, b) => {
       const aFailures = activity.filter(
         (event: any) => event.type === "failed" && event.taskId === a.task.id
@@ -751,6 +772,9 @@ if (stopCheck.stop) {
     reason:
       "High-risk multi-step task blocked from direct execution. Planner waves required.",
   });
+
+  task.retryCount = (task.retryCount ?? 0) + 1;
+task.lastRetryAt = new Date().toISOString();
 
   updateTaskStatus(task.id, "failed");
 
