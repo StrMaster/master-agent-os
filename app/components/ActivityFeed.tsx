@@ -15,6 +15,8 @@ type ActivityEvent = {
   branch?: string;
   merged?: boolean;
   pullRequestUrl?: string;
+  lockAgeMs?: number;
+  retryAfterMs?: number;
   provider?: string;
   status?: string;
   message?: string;
@@ -110,6 +112,30 @@ case "cooldown":
   return {
     border: "#38bdf8",
     background: "#071923",
+  };
+
+case "runner-busy":
+  return {
+    border: "#f59e0b",
+    background: "#1f1605",
+  };
+
+case "runner-stale-lock-recovered":
+  return {
+    border: "#8b5cf6",
+    background: "#160b22",
+  };
+
+case "duplicate-pr-blocked":
+  return {
+    border: "#eab308",
+    background: "#221a04",
+  };
+
+case "pending-pr":
+  return {
+    border: "#3b82f6",
+    background: "#0b1220",
   };
 
 case "deploy-pending":
@@ -347,6 +373,11 @@ const groupedEntries = Object.entries(groupedRuns);
   "blocked",
   "failed",
   "auto-paused",
+  "cooldown",
+  "runner-busy",
+  "runner-stale-lock-recovered",
+  "duplicate-pr-blocked",
+  "pending-pr",
   "manual-task-created",
   "recovery-task-created",
   "deploy-recovery-created",
@@ -358,7 +389,7 @@ const groupedEntries = Object.entries(groupedRuns);
   "pull-request-validated",
   "pull-request-validation-failed",
   "pull-request-merged",
-  "pull-request-merge-failed"
+  "pull-request-merge-failed",
 ].map((item) => (
     <button
       key={item}
@@ -494,6 +525,17 @@ background: getEventColors(event.type).background,
             )}
             {event.provider && <div>Provider: {event.provider}</div>}
 {event.status && <div>Status: {event.status}</div>}
+           {typeof event.lockAgeMs === "number" && (
+  <div style={{ color: "#94a3b8" }}>
+    Lock age: {Math.round(event.lockAgeMs / 1000)}s
+  </div>
+)}
+
+{typeof event.retryAfterMs === "number" && (
+  <div style={{ color: "#94a3b8" }}>
+    Retry after: {Math.ceil(event.retryAfterMs / 1000)}s
+  </div>
+)}
             {event.pullRequestUrl && (
               <a
                 href={event.pullRequestUrl}
