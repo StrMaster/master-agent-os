@@ -4,6 +4,7 @@ import { updateGithubFile } from "@/app/lib/github-file-updater";
 import {
   createGithubBranch,
   createPullRequest,
+  findOpenPullRequest,
   validatePullRequest,
 } from "@/app/lib/github-pr";
 import { validatePatch } from "@/app/lib/patch-validator";
@@ -49,9 +50,10 @@ type AgentTask = {
   createdAt?: string;
   updatedAt?: string;
   error?: string;
-  result?: {
+    result?: {
     branchName?: string;
     pullRequestUrl?: string;
+    pullRequestNumber?: number;
     merged?: boolean;
   };
 };
@@ -443,6 +445,35 @@ export async function POST() {
     const task = selected.task;
     const taskIndex = selected.index;
 
+        if (task.result?.pullRequestUrl) {
+      task.status = "pending-pr";
+      task.updatedAt = new Date().toISOString();
+      tasks[taskIndex] = task;
+
+      await writeTasksFile(
+        tasks,
+        sha,
+        `Keep task ${task.id} pending existing PR`
+      );
+
+      await logActivity({
+        type: "duplicate-pr-blocked",
+        runId,
+        taskId: task.id,
+        pullRequestUrl: task.result.pullRequestUrl,
+        reason: "Task already has a pull request",
+      });
+
+      updateTaskStatus(task.id, "pending-pr");
+
+      return NextResponse.json({
+        ok: true,
+        mode: "existing-pr",
+        taskId: task.id,
+        pullRequestUrl: task.result.pullRequestUrl,
+      });
+    }
+
     if (!task.targetFile || !SAFE_TARGET_FILES.includes(task.targetFile)) {
       await logActivity({
         type: "blocked",
@@ -530,7 +561,52 @@ export async function POST() {
       );
     }
 
-    const branchName = `agent-task-${task.id}-${Date.now()}`;
+        const branchName = task.result?.branchName ?? `agent-task-${task.id}`;
+
+        const existingPr = await findOpenPullRequest(branchName);
+
+    if (existingPr?.html_url) {
+      const latest = await readTasksFile();
+      const latestTask = latest.tasks.find(
+        (candidate) => candidate.id === task.id
+      );
+
+      if (latestTask) {
+        latestTask.status = "pending-pr";
+        latestTask.updatedAt = new Date().toISOString();
+        latestTask.result = {
+          branchName,
+          pullRequestUrl: existingPr.html_url,
+          pullRequestNumber: existingPr.number,
+          merged: false,
+        };
+      }
+
+      updateTaskStatus(task.id, "pending-pr");
+
+      await writeTasksFile(
+        latest.tasks,
+        latest.sha,
+        `Mark task ${task.id} as pending existing PR`
+      );
+
+      await logActivity({
+        type: "duplicate-pr-blocked",
+        runId,
+        taskId: task.id,
+        branch: branchName,
+        pullRequestUrl: existingPr.html_url,
+        reason: "Open pull request already exists for this task branch",
+      });
+
+      return NextResponse.json({
+        ok: true,
+        mode: "existing-pr",
+        taskId: task.id,
+        branchName,
+        pullRequestUrl: existingPr.html_url,
+      });
+    }
 
     await createGithubBranch(branchName);
 
@@ -607,6 +683,7 @@ Generated automatically by Master Agent OS.
       latestTask.result = {
         branchName,
         pullRequestUrl: pr.html_url,
+        pullRequestNumber: pr.number,
         merged: false,
       };
     }
