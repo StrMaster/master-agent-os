@@ -72,6 +72,44 @@ const todoTasks = tasks.filter((task) => task.status === 'todo');
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+  <h2 className="text-lg font-semibold">Pending PR</h2>
+
+  <div className="mt-4 space-y-3">
+    {pendingPrTasks.length === 0 ? (
+      <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
+        No tasks are waiting for PR review.
+      </div>
+    ) : (
+      pendingPrTasks.map((task) => (
+        <div
+          key={task.id}
+          className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4"
+        >
+          <div className="font-medium text-blue-100">{task.title}</div>
+          <div className="mt-1 text-xs text-blue-100/70">
+            Assigned to: {getAgentName(task.assignedAgentId)}
+          </div>
+          <div className="mt-1 text-xs text-blue-100/70">
+            Status: pending-pr
+          </div>
+
+          {task.pullRequestUrl && (
+            <a
+              href={task.pullRequestUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 inline-block text-sm text-blue-300 underline underline-offset-4 hover:text-blue-200"
+            >
+              Open pull request
+            </a>
+          )}
+        </div>
+      ))
+    )}
+  </div>
+</section>
+
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <h2 className="text-lg font-semibold">Todo</h2>
 
           <div className="mt-4 space-y-3">
@@ -110,6 +148,39 @@ const todoTasks = tasks.filter((task) => task.status === 'todo');
             )}
           </div>
         </section>
+
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+  <h2 className="text-lg font-semibold">Failed</h2>
+
+  <div className="mt-4 space-y-3">
+    {failedTasks.length === 0 ? (
+      <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
+        No failed tasks.
+      </div>
+    ) : (
+      failedTasks.map((task) => (
+        <div
+          key={task.id}
+          className="rounded-xl border border-red-500/30 bg-red-500/10 p-4"
+        >
+          <div className="font-medium text-red-100">{task.title}</div>
+          <div className="mt-1 text-xs text-red-100/70">
+            Assigned to: {getAgentName(task.assignedAgentId)}
+          </div>
+          <div className="mt-1 text-xs text-red-100/70">
+            Status: failed
+          </div>
+
+          {task.lastError && (
+            <div className="mt-3 rounded-lg border border-red-400/20 bg-red-400/10 p-2 text-xs text-red-100">
+              {task.lastError}
+            </div>
+          )}
+        </div>
+      ))
+    )}
+  </div>
+</section>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <h2 className="text-lg font-semibold">Completed</h2>
