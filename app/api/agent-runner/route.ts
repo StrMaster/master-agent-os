@@ -611,7 +611,7 @@ Generated automatically by Master Agent OS.
       };
     }
 
-    updateTaskStatus(task.id, "completed");
+    updateTaskStatus(task.id, "pending-pr");
 
     await writeTasksFile(
       latest.tasks,
@@ -620,12 +620,12 @@ Generated automatically by Master Agent OS.
     );
 
     await logActivity({
-      type: "execution-completed",
+      type: "pending-pr",
       runId,
       taskId: task.id,
       branch: branchName,
       pullRequestUrl: pr.html_url,
-      reason: "Execution completed and PR created",
+      reason: "Pull request created and task is waiting for review",
     });
 
     return NextResponse.json({
