@@ -384,6 +384,36 @@ function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
   );
 }
 
+function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
+  const currentLength = currentContent.trim().length;
+  const patchedLength = patchedContent.trim().length;
+
+  if (patchedLength < 20) {
+    return {
+      valid: false,
+      reason: "Generated patch is too short",
+    };
+  }
+
+  if (currentLength > 200 && patchedLength < currentLength * 0.35) {
+    return {
+      valid: false,
+      reason: "Generated patch appears to delete too much existing code",
+    };
+  }
+
+  if (currentLength > 200 && patchedLength > currentLength * 2.5) {
+    return {
+      valid: false,
+      reason: "Generated patch is much larger than the original file",
+    };
+  }
+
+  return {
+    valid: true,
+  };
+}
+
 function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
@@ -764,6 +794,51 @@ try {
       taskSummary: task.summary ?? task.title,
       projectState,
     });
+
+    const review = reviewGeneratedPatch(currentContent, patchedContent);
+
+if (!review.valid) {
+  const latest = await readTasksFile();
+  const latestTask = latest.tasks.find(
+    (candidate) => candidate.id === task.id
+  );
+
+  if (latestTask) {
+    latestTask.status = "failed";
+    latestTask.updatedAt = new Date().toISOString();
+    latestTask.error = `Review failed: ${review.reason}`;
+  }
+
+  updateTaskStatus(task.id, "failed");
+
+  await writeTasksFile(
+    latest.tasks,
+    latest.sha,
+    `Mark task ${task.id} as failed after review`
+  );
+
+  await logActivity({
+    type: "review-blocked",
+    runId,
+    taskId: task.id,
+    reason: review.reason ?? "Generated patch blocked by review",
+    failureType: "review-blocked",
+  });
+
+  await incrementStateCounter(
+    "recentValidationFailures",
+    "Track review intelligence failure"
+  );
+
+  return NextResponse.json(
+    {
+      ok: false,
+      mode: "review-blocked",
+      review,
+    },
+    { status: 400 }
+  );
+}
 
     const validation = validatePatch(patchedContent);
 
