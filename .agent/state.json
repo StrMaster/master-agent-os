@@ -4,14 +4,12 @@
   "autoRunEnabled": false,
   "autoMergeEnabled": false,
   "emergencyStop": false,
-
   "recentFailedRuns": 0,
   "recentValidationFailures": 0,
-"recentMergeFailures": 0,
-"recentDeployFailures": 0,
-"recoveryActive": false,
-
-"lastDeploymentId": null,
-"lastDeploymentState": null,
-"lastDeployFailureId": null
+  "recentMergeFailures": 0,
+  "recentDeployFailures": 0,
+  "recoveryActive": false,
+  "lastDeploymentId": "dpl_3oG9Qv31tGaedYDhbU3dzvQi4JTE",
+  "lastDeploymentState": "READY",
+  "lastDeployFailureId": null
 }
