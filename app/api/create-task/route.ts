@@ -35,6 +35,8 @@ type AgentTask = {
 intent?: string;
 riskLevel?: "low" | "medium" | "high";
 executionMode?: "single-file" | "multi-step";
+wave?: number;
+plannerNotes?: string;
 };
 
 type GitHubFile = {
@@ -207,10 +209,11 @@ let title = normalizeTitle(body.title);
 let targetFile = String(body.targetFile ?? "").trim();
 let priority = normalizePriority(body.priority);
 let summary = title || prompt;
-let reasoningHint = "";
 let intent = "code-improvement";
 let riskLevel: "low" | "medium" | "high" = "low";
 let executionMode: "single-file" | "multi-step" = "single-file";
+let wave = 1;
+let plannerNotes = "Single safe execution task.";
 
 
 if (prompt && process.env.OPENAI_API_KEY) {
@@ -362,6 +365,7 @@ if (
     normalizedPrompt.includes("deploy")
   ) {
     riskLevel = "medium";
+    plannerNotes = "Medium-risk system task. Keep scope narrow and validate build.";
   }
 
   if (
@@ -373,6 +377,9 @@ if (
   ) {
     riskLevel = "high";
     executionMode = "multi-step";
+    wave = 1;
+    plannerNotes =
+      "High-risk multi-step task. Planner should split this into safe execution waves.";
   }
 
   if (
@@ -476,6 +483,8 @@ if (
   intent,
 riskLevel,
 executionMode,
+wave,
+plannerNotes,
 };
 
 generatedTasks.push(baseTask);
@@ -498,6 +507,8 @@ if (
     intent: "ui-polish",
 riskLevel: "low",
 executionMode: "single-file",
+wave: 1,
+plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
   });
 }
 
