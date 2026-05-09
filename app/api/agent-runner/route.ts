@@ -706,6 +706,44 @@ if (stopCheck.stop) {
 
   updateTaskStatus(task.id, "failed");
 
+try {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
+
+  const plannerRes = await fetch(`${baseUrl}/api/planner-waves`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      taskId: task.id,
+    }),
+  });
+
+  const plannerData = await plannerRes.json();
+
+  await logActivity({
+    type: plannerRes.ok ? "planner-waves-auto-triggered" : "planner-waves-auto-failed",
+    runId,
+    taskId: task.id,
+    reason: plannerRes.ok
+      ? "Planner waves were automatically triggered"
+      : "Planner waves auto-trigger failed",
+    details: JSON.stringify(plannerData),
+  });
+} catch (error) {
+  await logActivity({
+    type: "planner-waves-auto-failed",
+    runId,
+    taskId: task.id,
+    reason: "Planner waves auto-trigger failed",
+    details: error instanceof Error ? error.message : "Unknown error",
+  });
+}
+
   return NextResponse.json({
     ok: false,
     mode: "planner-required",
