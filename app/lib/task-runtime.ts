@@ -50,8 +50,6 @@ export function updateTaskStatus(
 
   task.status = status;
 
-}
-
   if (status === "running") {
     task.startedAt = Date.now();
   }
@@ -71,4 +69,4 @@ export function updateTaskStatus(
       Date.now();
   }
 }
-}
+
