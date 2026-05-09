@@ -40,7 +40,7 @@ export default function RunAgentButton() {
         method: "POST",
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
 if (data.mode === "cooldown") {
   setResult({
