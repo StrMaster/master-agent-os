@@ -12,10 +12,10 @@ const AUTO_RUN_COOLDOWN_MS = 30 * 60 * 1000;
 let lastAutoRunAt: number | null = null;
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ||
-  process.env.VERCEL_URL
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
+    : "http://localhost:3000");
 
 async function readTasks() {
   const token = process.env.GITHUB_TOKEN;
@@ -132,6 +132,41 @@ if (
 }
 
 lastAutoRunAt = now;
+
+const deployRes = await fetch(`${BASE_URL}/api/deploy-status`, {
+  cache: "no-store",
+});
+
+const deployData = await deployRes.json();
+
+if (!deployRes.ok || deployData.ok === false) {
+  return NextResponse.json({
+    ok: false,
+    mode: "deploy-status-unavailable",
+    message: "Deploy status unavailable. Auto-run blocked for safety.",
+    error: deployData.error,
+  });
+}
+
+const deployState = deployData.deployment?.state;
+
+if (deployState === "BUILDING" || deployState === "QUEUED") {
+  return NextResponse.json({
+    ok: false,
+    mode: "deploy-in-progress",
+    message: "Deploy is still in progress. Auto-run blocked.",
+    deployment: deployData.deployment,
+  });
+}
+
+if (deployData.deployFailed || deployState === "ERROR") {
+  return NextResponse.json({
+    ok: false,
+    mode: "deploy-failed",
+    message: "Latest deploy failed. Auto-run blocked.",
+    deployment: deployData.deployment,
+  });
+}
 
     const runnerRes = await fetch(`${BASE_URL}/api/agent-runner`, {
       method: "POST",
