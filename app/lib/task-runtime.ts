@@ -1,6 +1,7 @@
 export type RuntimeTaskStatus =
   | "queued"
   | "running"
+  | "pending-pr"
   | "completed"
   | "failed";
 
@@ -12,6 +13,8 @@ type RuntimeTask = {
   status: RuntimeTaskStatus;
 
   startedAt?: number;
+
+  pendingPrAt?: number;
 
   completedAt?: number;
 
@@ -49,6 +52,11 @@ export function updateTaskStatus(
 
   if (status === "running") {
     task.startedAt = Date.now();
+  }
+
+    if (status === "pending-pr") {
+    task.pendingPrAt =
+      Date.now();
   }
 
   if (status === "completed") {
