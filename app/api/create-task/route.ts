@@ -208,6 +208,10 @@ let targetFile = String(body.targetFile ?? "").trim();
 let priority = normalizePriority(body.priority);
 let summary = title || prompt;
 let reasoningHint = "";
+let intent = "code-improvement";
+let riskLevel: "low" | "medium" | "high" = "low";
+let executionMode: "single-file" | "multi-step" = "single-file";
+
 
 if (prompt && process.env.OPENAI_API_KEY) {
   try {
