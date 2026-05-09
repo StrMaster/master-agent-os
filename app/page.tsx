@@ -8,7 +8,7 @@ import ActivityFeed from "./components/ActivityFeed";
 import CreateTaskForm from "./components/CreateTaskForm";
 import MasterAgentChat from "./components/MasterAgentChat";
 import RuntimeOverview from "./components/RuntimeOverview";
-
+import ControlCenterControls from "./components/ControlCenterControls";
 
 
 export default function HomePage() {
@@ -67,6 +67,7 @@ export default function HomePage() {
       
       <RunAgentButton />
       <RuntimeOverview />
+      <ControlCenterControls />
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
     <div>
