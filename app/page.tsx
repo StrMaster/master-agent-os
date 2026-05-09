@@ -10,6 +10,7 @@ import MasterAgentChat from "./components/MasterAgentChat";
 import RuntimeOverview from "./components/RuntimeOverview";
 import ControlCenterControls from "./components/ControlCenterControls";
 import DeployStatusCard from "./components/DeployStatusCard";
+import RecoveryControlCard from "./components/RecoveryControlCard";
 
 
 
@@ -70,6 +71,7 @@ export default function HomePage() {
       <RunAgentButton />
       <RuntimeOverview />
       <DeployStatusCard />
+      <RecoveryControlCard />
       <ControlCenterControls />
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5">
   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
