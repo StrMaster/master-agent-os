@@ -7,6 +7,8 @@ type PendingTask = {
   title?: string;
   status?: string;
   branchName?: string;
+  executionMode?: string;
+  riskLevel?: string;
   result?: {
     pullRequestUrl?: string;
     merged?: boolean;
@@ -16,6 +18,7 @@ type PendingTask = {
 export default function PendingPRQueue() {
   const [tasks, setTasks] = useState<PendingTask[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [plannerMessage, setPlannerMessage] = useState<string | null>(null);
 
   async function loadPendingPRs() {
     try {
@@ -41,6 +44,40 @@ export default function PendingPRQueue() {
       );
     }
   }
+
+async function createPlannerWaves(taskId?: string) {
+  if (!taskId) return;
+
+  try {
+    setPlannerMessage(null);
+
+    const res = await fetch('/api/planner-waves', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ taskId }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error ?? 'Failed to create planner waves');
+    }
+
+    setPlannerMessage(
+      data.mode === 'planner-waves-exist'
+        ? 'Planner waves already exist.'
+        : 'Planner waves created.'
+    );
+
+    await loadPendingPRs();
+  } catch (err) {
+    setPlannerMessage(
+      err instanceof Error ? err.message : 'Failed to create planner waves'
+    );
+  }
+}
 
   useEffect(() => {
     loadPendingPRs();
@@ -74,6 +111,12 @@ export default function PendingPRQueue() {
           {error}
         </div>
       )}
+
+      {plannerMessage && (
+  <div className="mt-4 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 text-sm text-blue-200">
+    {plannerMessage}
+  </div>
+)}
 
       {!error && tasks.length === 0 && (
         <div className="mt-4 rounded-xl border border-white/10 bg-neutral-950/50 p-4 text-sm text-white/50">
@@ -125,6 +168,17 @@ export default function PendingPRQueue() {
                     Open PR
                   </a>
                 )}
+                  {(task.status === 'planner-required' ||
+  task.executionMode === 'multi-step' ||
+  task.riskLevel === 'high') && (
+  <button
+    type="button"
+    onClick={() => createPlannerWaves(task.id)}
+    className="rounded-lg border border-purple-500/30 bg-purple-500/10 px-2 py-1 text-xs text-purple-200 hover:bg-purple-500/20"
+  >
+    Create waves
+  </button>
+)}
               </div>
             </div>
           </div>
