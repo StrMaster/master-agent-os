@@ -3,5 +3,5 @@
   "runnerLocked": false,
   "autoRunEnabled": false,
   "autoMergeEnabled": false,
-  "emergencyStop": true
+  "emergencyStop": false
 }
