@@ -1,221 +1,189 @@
-'use client';
-
-import { useMasterStore } from '@/lib/master-store';
-import PendingPRQueue from "../components/PendingPRQueue";
 import ActivityFeed from "../components/ActivityFeed";
+import PendingPRQueue from "../components/PendingPRQueue";
 
+export const dynamic = "force-dynamic";
 
-export default function ExecutionPage() {
-  const { tasks, agents, executeTask, completeTask } = useMasterStore();
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
 
-  const runningTasks = tasks.filter(
-  (task) => task.status === 'in_progress' || task.status === 'running',
-);
+type AgentTask = {
+  id: string;
+  title?: string;
+  summary?: string;
+  status?: string;
+  priority?: "low" | "medium" | "high";
+  targetFile?: string;
+  branchName?: string;
+  parentTaskId?: string;
+  wave?: number;
+  plannerNotes?: string;
+  result?: {
+    branchName?: string;
+    pullRequestUrl?: string;
+    pullRequestNumber?: number;
+    merged?: boolean;
+  };
+  error?: string;
+};
 
-const pendingPrTasks = tasks.filter((task) => task.status === 'pending-pr');
-const failedTasks = tasks.filter((task) => task.status === 'failed');
-const completedTasks = tasks.filter((task) => task.status === 'done');
-const todoTasks = tasks.filter((task) => task.status === 'todo');
+async function readTasks(): Promise<AgentTask[]> {
+  const token = process.env.GITHUB_TOKEN;
 
-  function getAgentName(agentId?: string) {
-    if (!agentId) return 'Unassigned';
-
-    const agent = agents.find((item) => item.id === agentId);
-    return agent?.name ?? 'Unknown agent';
+  if (!token) {
+    return [];
   }
 
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    return [];
+  }
+
+  const file = await res.json();
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+  const parsed = JSON.parse(content);
+
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+export default async function ExecutionPage() {
+  const tasks = await readTasks();
+
+  const runningTasks = tasks.filter((task) => task.status === "running");
+
+  const todoTasks = tasks.filter(
+    (task) =>
+      task.status === "todo" ||
+      task.status === "queued" ||
+      task.status === "planner-required" ||
+      task.status === "planner-split"
+  );
+
+  const pendingPrTasks = tasks.filter(
+    (task) => task.status === "pending-pr" || task.result?.pullRequestUrl
+  );
+
+  const failedTasks = tasks.filter((task) => task.status === "failed");
+
+  const completedTasks = tasks.filter(
+    (task) =>
+      task.status === "done" ||
+      task.status === "completed" ||
+      task.result?.merged === true
+  );
+
   return (
-    <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold sm:text-3xl">Execution</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Manage and monitor task execution.
-          </p>
-        </div>
-
-        <PendingPRQueue />
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h2 className="text-lg font-semibold">Running</h2>
-
-          <div className="mt-4 space-y-3">
-            {runningTasks.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No tasks are currently running. Start a task to see its progress here.
-              </div>
-            ) : (
-              runningTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="rounded-xl border border-green-500/30 bg-green-500/10 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="font-medium text-green-100">
-                        {task.title}
-                      </div>
-                      <div className="mt-1 text-xs text-green-100/70">
-                        Assigned to: {getAgentName(task.assignedAgentId)}
-                      </div>
-                      <div className="mt-1 text-xs text-green-100/70">
-                        Status: {task.status}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => completeTask({ taskId: task.id })}
-                      className="rounded-xl bg-green-400 px-4 py-2 text-sm font-medium text-black hover:bg-green-300"
-                    >
-                      Mark done
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-  <h2 className="text-lg font-semibold">Pending PR</h2>
-
-  <div className="mt-4 space-y-3">
-    {pendingPrTasks.length === 0 ? (
-      <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-        No tasks are waiting for PR review.
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
+      <div>
+        <h1 className="text-3xl font-bold">Execution</h1>
+        <p className="mt-2 text-sm text-white/60">
+          Manage and monitor task execution.
+        </p>
       </div>
-    ) : (
-      pendingPrTasks.map((task) => (
-        <div
-          key={task.id}
-          className="rounded-xl border border-blue-500/30 bg-blue-500/10 p-4"
+
+      <PendingPRQueue />
+
+      <TaskSection title="Running" tasks={runningTasks} empty="No tasks are currently running." />
+
+      <TaskSection title="Todo" tasks={todoTasks} empty="No pending tasks at the moment." />
+
+      <TaskSection title="Failed" tasks={failedTasks} empty="No failed tasks." />
+
+      <TaskSection
+        title="Completed"
+        tasks={completedTasks}
+        empty="No tasks have been completed yet."
+      />
+
+      <ActivityFeed />
+    </div>
+  );
+}
+
+function TaskSection({
+  title,
+  tasks,
+  empty,
+}: {
+  title: string;
+  tasks: AgentTask[];
+  empty: string;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <h2 className="text-xl font-semibold">{title}</h2>
+
+      <div className="mt-4 space-y-3">
+        {tasks.length === 0 ? (
+          <div className="rounded-xl border border-white/10 bg-neutral-950/50 p-4 text-sm text-white/50">
+            {empty}
+          </div>
+        ) : (
+          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TaskCard({ task }: { task: AgentTask }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
+      <div className="text-sm font-semibold text-white">
+        {task.title ?? "Untitled task"}
+      </div>
+
+      {task.summary && (
+        <div className="mt-2 text-sm text-white/60">{task.summary}</div>
+      )}
+
+      <div className="mt-3 space-y-1 text-xs text-white/45">
+        <div>Status: {task.status ?? "unknown"}</div>
+
+        {task.priority && <div>Priority: {task.priority}</div>}
+
+        {task.targetFile && <div>Target: {task.targetFile}</div>}
+
+        {task.result?.branchName && <div>Branch: {task.result.branchName}</div>}
+
+        {task.result?.pullRequestNumber && (
+          <div>PR: #{task.result.pullRequestNumber}</div>
+        )}
+
+        {typeof task.wave === "number" && <div>Wave: {task.wave}</div>}
+
+        {task.parentTaskId && <div>Parent task: {task.parentTaskId}</div>}
+
+        {task.error && <div className="text-red-300">Error: {task.error}</div>}
+      </div>
+
+      {task.plannerNotes && (
+        <div className="mt-3 rounded-lg border border-purple-500/20 bg-purple-500/10 p-2 text-xs text-purple-100/80">
+          {task.plannerNotes}
+        </div>
+      )}
+
+      {task.result?.pullRequestUrl && (
+        <a
+          href={task.result.pullRequestUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-block text-sm text-blue-300 underline underline-offset-4 hover:text-blue-200"
         >
-          <div className="font-medium text-blue-100">{task.title}</div>
-          <div className="mt-1 text-xs text-blue-100/70">
-            Assigned to: {getAgentName(task.assignedAgentId)}
-          </div>
-          <div className="mt-1 text-xs text-blue-100/70">
-            Status: pending-pr
-          </div>
-
-          {task.pullRequestUrl && (
-            <a
-              href={task.pullRequestUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-block text-sm text-blue-300 underline underline-offset-4 hover:text-blue-200"
-            >
-              Open pull request
-            </a>
-          )}
-        </div>
-      ))
-    )}
-  </div>
-</section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h2 className="text-lg font-semibold">Todo</h2>
-
-          <div className="mt-4 space-y-3">
-            {todoTasks.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No pending tasks at the moment. Please add new tasks to get started.
-              </div>
-            ) : (
-              todoTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="rounded-xl border border-white/10 bg-neutral-900 p-4"
-                >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="font-medium text-white/90">
-                        {task.title}
-                      </div>
-                      <div className="mt-1 text-xs text-white/50">
-                        Assigned to: {getAgentName(task.assignedAgentId)}
-                      </div>
-                      <div className="mt-1 text-xs text-white/50">
-                        Status: todo
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => executeTask({ taskId: task.id })}
-                      className="rounded-xl border border-white/30 px-4 py-2 text-sm text-white hover:bg-white/20"
-                    >
-                      Run task
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-  <h2 className="text-lg font-semibold">Failed</h2>
-
-  <div className="mt-4 space-y-3">
-    {failedTasks.length === 0 ? (
-      <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-        No failed tasks.
-      </div>
-    ) : (
-      failedTasks.map((task) => (
-        <div
-          key={task.id}
-          className="rounded-xl border border-red-500/30 bg-red-500/10 p-4"
-        >
-          <div className="font-medium text-red-100">{task.title}</div>
-          <div className="mt-1 text-xs text-red-100/70">
-            Assigned to: {getAgentName(task.assignedAgentId)}
-          </div>
-          <div className="mt-1 text-xs text-red-100/70">
-            Status: failed
-          </div>
-
-          {task.lastError && (
-            <div className="mt-3 rounded-lg border border-red-400/20 bg-red-400/10 p-2 text-xs text-red-100">
-              {task.lastError}
-            </div>
-          )}
-        </div>
-      ))
-    )}
-  </div>
-</section>
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h2 className="text-lg font-semibold">Completed</h2>
-
-          <div className="mt-4 space-y-3">
-            {completedTasks.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No tasks have been completed yet. Completed tasks will appear here once finished.
-              </div>
-            ) : (
-              completedTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="rounded-xl border border-white/10 bg-neutral-900 p-4"
-                >
-                  <div className="font-medium text-white/80">{task.title}</div>
-                  <div className="mt-1 text-xs text-white/50">
-                    Assigned to: {getAgentName(task.assignedAgentId)}
-                  </div>
-                  <div className="mt-1 text-xs text-white/50">
-                    Status: done
-                  </div>
-                </div>
-                  
-              ))
-            )}
-          </div>
-        </section>
-          <ActivityFeed />
-      </div>
+          Open pull request
+        </a>
+      )}
     </div>
   );
 }
