@@ -45,5 +45,20 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task."
+  },
+  {
+    "id": "manual-task-1778436555304",
+    "title": "Refine spacing consistency on Tasks orchestration page",
+    "summary": "Make minimal and safe adjustments to spacing on the Tasks orchestration page to improve consistency and visual balance without altering page structure or components.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T18:09:15.304Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
