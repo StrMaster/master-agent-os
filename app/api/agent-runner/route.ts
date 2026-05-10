@@ -854,7 +854,7 @@ const reviewerResult = reviewUiIntentPatch({
 
 if (!reviewerResult.passed) {
   await addActivityEvent({
-  type: "reviewer-agent-blocked",
+  type: "patch-validation-failed",
   taskId: task.id,
   message:
     reviewerResult.reason ??
