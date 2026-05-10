@@ -15,5 +15,20 @@
       "pullRequestNumber": 178,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778437464222",
+    "title": "Adjust spacing between chat messages on the main page",
+    "summary": "Improve vertical spacing between chat messages in the master chat interface on the main page to enhance readability and visual separation without changing layout or components.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-10T18:24:24.222Z",
+    "intent": "code-improvement",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
