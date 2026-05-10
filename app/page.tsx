@@ -233,7 +233,7 @@ export default async function HomePage() {
             <StatusBadge label="High Focus" />
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-6">
             {focusItems.map((item, index) => (
               <div
                 key={item.id}
@@ -259,7 +259,7 @@ export default async function HomePage() {
             System Timeline
           </h3>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-6">
             {recentActivity.map((item) => (
               <div key={item} className="flex gap-2">
                 <div className="mt-2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
