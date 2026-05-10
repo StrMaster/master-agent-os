@@ -1,5 +1,15 @@
 [
   {
+    "id": "26d1013b-1330-4f39-b823-3df32f4d1a6a",
+    "timestamp": "2026-05-10T00:06:10.245Z",
+    "type": "pending-pr",
+    "runId": "4fb5548c-cc1e-4ab0-b9c4-40aaa9cc0c23",
+    "taskId": "manual-task-1778230059660",
+    "branch": "agent-task-manual-task-1778230059660",
+    "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/178",
+    "reason": "Pull request created and task is waiting for review"
+  },
+  {
     "id": "d229537b-8699-4d80-b72a-03c4ddda478c",
     "timestamp": "2026-05-10T00:06:08.855Z",
     "type": "pull-request-validated",
