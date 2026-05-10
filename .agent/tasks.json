@@ -27,16 +27,6 @@
     "createdAt": "2026-05-08T11:20:28.174Z"
   },
   {
-    "id": "manual-task-1778277730092",
-    "title": "Slightly improve Run Agent button label",
-    "summary": "Improve run agent button execution experience",
-    "targetFile": "app/agents/page.tsx",
-    "status": "todo",
-    "priority": "medium",
-    "source": "manual",
-    "createdAt": "2026-05-08T22:02:10.093Z"
-  },
-  {
     "id": "manual-task-1778371483105",
     "title": "Improve Pending PR Queue card spacing and polish",
     "summary": "Adjust spacing and visual polish of the Pending PR Queue cards to enhance readability and UI consistency without affecting other components.",
