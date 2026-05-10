@@ -17,16 +17,6 @@
     }
   },
   {
-    "id": "manual-task-1778235513454",
-    "title": "Patobulinti pagrindinio puslapio mobilų išdėstymą ir tarpus",
-    "summary": "Pagerinti pagrindinio puslapio išdėstymą ir tarpus mobiliuosiuose įrenginiuose, kad naudotojo patirtis mažesniuose ekranuose būtų sklandi ir patogi.",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-08T10:18:33.454Z"
-  },
-  {
     "id": "manual-task-1778237298900",
     "title": "Consolidate and implement mobile layout improvements in app/page.tsx",
     "summary": "Consolidate and implement mobile layout improvements in app/page.tsx",
