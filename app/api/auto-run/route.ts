@@ -72,6 +72,8 @@ async function readTasks() {
 
 export async function POST(req: NextRequest) {
   try {
+    const body = await req.json().catch(() => ({}));
+    const forceRunOnce = body?.forceRunOnce === true;
     const { data: stateData } = await internalJsonFetch(
   req,
   "/api/control-state"
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (!state.autoRunEnabled) {
+    if (!state.autoRunEnabled && !forceRunOnce) {
       return NextResponse.json({
         ok: false,
         mode: "auto-run-disabled",
@@ -139,9 +141,11 @@ export async function POST(req: NextRequest) {
     const now = Date.now();
 
     if (
-      lastAutoRunAt &&
-      now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
-    ) {
+      if (
+  !forceRunOnce &&
+  lastAutoRunAt &&
+  now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
+) {
       return NextResponse.json({
         ok: false,
         mode: "auto-run-cooldown",
