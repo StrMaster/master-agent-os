@@ -119,22 +119,6 @@ setResult(data);
         >
           {loading ? "Running..." : "Run Agent"}
         </button>
-
-        <button
-          onClick={runAgentLoop}
-          disabled={loading || loopLoading}
-          style={{
-            padding: "12px 18px",
-            borderRadius: 12,
-            border: "1px solid #334155",
-            background: "#1e293b",
-            color: "white",
-            fontWeight: 700,
-            cursor: loading || loopLoading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loopLoading ? "Running loop..." : "Run Agent Loop"}
-        </button>
       </div>
 
       {(loading || loopLoading) && (
