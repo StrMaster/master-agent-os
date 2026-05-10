@@ -58,7 +58,7 @@ async function readTasks() {
 
 export async function POST(req: Request) { {
   try {
-    const stateRes = await fetch(new URL("/api/control-state", req.url) {
+    const stateRes = await fetch(new URL("/api/control-state", req.url), {
       cache: "no-store",
     });
 
@@ -140,7 +140,7 @@ if (
 
 lastAutoRunAt = now;
 
-const deployRes = await fetch(new URL("/api/deploy-status", req.url) {
+const deployRes = await fetch(new URL("/api/deploy-status", req.url), {
   cache: "no-store",
 });
 
@@ -175,7 +175,7 @@ if (deployData.deployFailed || deployState === "ERROR") {
   });
 }
 
-    const runnerRes = await fetch(new URL("/api/agent-runner", req.url) {
+    const runnerRes = await fetch(new URL("/api/agent-runner", req.url), {
       method: "POST",
       cache: "no-store",
     });
