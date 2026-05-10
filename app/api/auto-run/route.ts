@@ -70,6 +70,34 @@ async function readTasks() {
   return JSON.parse(content);
 }
 
+async function mergePullRequest(prNumber: number) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}/merge`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  const data = await res.json().catch(() => ({}));
+
+  return {
+    ok: res.ok,
+    status: res.status,
+    data,
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -121,6 +149,30 @@ export async function POST(req: NextRequest) {
     }
 
     const tasks = await readTasks();
+
+const pendingPrTask = Array.isArray(tasks)
+  ? tasks.find(
+      (task) =>
+        task &&
+        task.status === "pending-pr" &&
+        task.result?.pullRequestNumber &&
+        task.result?.merged !== true &&
+        !task.error
+    )
+  : null;
+
+if (state.autoMergeEnabled && pendingPrTask) {
+  const mergeResult = await mergePullRequest(
+    pendingPrTask.result.pullRequestNumber
+  );
+
+  return NextResponse.json({
+    ok: mergeResult.ok,
+    mode: mergeResult.ok ? "auto-merge" : "auto-merge-failed",
+    task: pendingPrTask,
+    merge: mergeResult,
+  });
+}
 
     const availableTask = Array.isArray(tasks)
       ? tasks.find(
