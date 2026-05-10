@@ -27,6 +27,54 @@ type DashboardTask = {
   };
 };
 
+async function syncDashboardMergedPrTasks(tasks: DashboardTask[]) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    return tasks;
+  }
+
+  return Promise.all(
+    tasks.map(async (task) => {
+      const prNumber = task.result?.pullRequestNumber;
+
+      if (!prNumber || task.result?.merged === true) {
+        return task;
+      }
+
+      const res = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        return task;
+      }
+
+      const pr = await res.json();
+
+      if (pr.merged === true) {
+        return {
+          ...task,
+          status: "done",
+          result: {
+            ...task.result,
+            merged: true,
+          },
+        };
+      }
+
+      return task;
+    })
+  );
+}
+
 async function readDashboardTasks(): Promise<DashboardTask[]> {
   const token = process.env.GITHUB_TOKEN;
 
@@ -58,7 +106,7 @@ async function readDashboardTasks(): Promise<DashboardTask[]> {
 
 
 export default async function HomePage() {
-  const tasks = await readDashboardTasks();
+  const tasks = await syncDashboardMergedPrTasks(await readDashboardTasks());
 
   const openTasks = tasks.filter(
     (task) =>
