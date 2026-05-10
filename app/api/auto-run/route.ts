@@ -15,6 +15,32 @@ function internalUrl(req: NextRequest, path: string) {
   return new URL(path, req.url);
 }
 
+async function internalJsonFetch(req: NextRequest, path: string, init?: RequestInit) {
+  const res = await fetch(internalUrl(req, path), {
+    ...init,
+    headers: {
+      cookie: req.headers.get("cookie") ?? "",
+      ...(init?.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+
+    throw new Error(
+      `${path} returned non-JSON response: ${res.status} ${text.slice(0, 80)}`
+    );
+  }
+
+  return {
+    res,
+    data: await res.json(),
+  };
+}
+
 async function readTasks() {
   const token = process.env.GITHUB_TOKEN;
 
@@ -46,11 +72,10 @@ async function readTasks() {
 
 export async function POST(req: NextRequest) {
   try {
-    const stateRes = await fetch(internalUrl(req, "/api/control-state"), {
-      cache: "no-store",
-    });
-
-    const stateData = await stateRes.json();
+    const { data: stateData } = await internalJsonFetch(
+  req,
+  "/api/control-state"
+);
     const state = stateData.state;
 
     if (!stateData.ok || !state) {
@@ -127,11 +152,10 @@ export async function POST(req: NextRequest) {
 
     lastAutoRunAt = now;
 
-    const deployRes = await fetch(internalUrl(req, "/api/deploy-status"), {
-      cache: "no-store",
-    });
-
-    const deployData = await deployRes.json();
+    const { res: deployRes, data: deployData } = await internalJsonFetch(
+  req,
+  "/api/deploy-status"
+);
 
     if (!deployRes.ok || deployData.ok === false) {
       return NextResponse.json({
@@ -162,13 +186,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const runnerRes = await fetch(internalUrl(req, "/api/agent-runner"), {
-      method: "POST",
-      cache: "no-store",
-    });
-
-    const runnerData = await runnerRes.json();
-
+    const { res: runnerRes, data: runnerData } = await internalJsonFetch(
+  req,
+  "/api/agent-runner",
+  {
+    method: "POST",
+  }
+);
     return NextResponse.json({
       ok: runnerRes.ok && runnerData.ok !== false,
       mode: "auto-run",
