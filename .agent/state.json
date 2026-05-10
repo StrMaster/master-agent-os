@@ -2,7 +2,7 @@
   "paused": false,
   "runnerLocked": false,
   "autoRunEnabled": true,
-  "autoMergeEnabled": true,
+  "autoMergeEnabled": false,
   "emergencyStop": false,
   "recentFailedRuns": 0,
   "recentValidationFailures": 0,
