@@ -1,172 +1,282 @@
-'use client';
+export const dynamic = "force-dynamic";
 
-import { useMasterStore } from '@/lib/master-store';
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
 
-export default function TasksPage() {
-  const { tasks, agents, createTask, executeTask, completeTask } =
-    useMasterStore();
+type AgentTask = {
+  id: string;
+  title?: string;
+  summary?: string;
+  status?: string;
+  priority?: "low" | "medium" | "high";
+  source?: string;
+  targetFile?: string;
+  intent?: string;
+  riskLevel?: "low" | "medium" | "high";
+  executionMode?: "single-file" | "multi-step";
+  wave?: number;
+  parentTaskId?: string;
+  plannerNotes?: string;
+  retryCount?: number;
+  lastRetryAt?: string;
+  error?: string;
+  createdAt?: string;
+  result?: {
+    branchName?: string;
+    pullRequestUrl?: string;
+    pullRequestNumber?: number;
+    merged?: boolean;
+  };
+};
 
-  function getAgentName(agentId?: string) {
-    if (!agentId) return 'Unassigned';
+async function readTasks(): Promise<AgentTask[]> {
+  const token = process.env.GITHUB_TOKEN;
 
-    const agent = agents.find((item) => item.id === agentId);
-    return agent?.name ?? 'Unknown agent';
+  if (!token) {
+    return [];
   }
 
-  function getStatusLabel(status: string) {
-    if (status === 'todo') return 'Todo';
-    if (status === 'in_progress') return 'In progress';
-    if (status === 'running') return 'Running';
-    if (status === 'pending-pr') return 'Pending PR';
-    if (status === 'failed') return 'Failed';
-    if (status === 'done') return 'Done';
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
 
-    return status;
+  if (!res.ok) {
+    return [];
+  }
+
+  const file = await res.json();
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+  const parsed = JSON.parse(content);
+
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+export default async function TasksPage() {
+  const tasks = await readTasks();
+
+  const plannerRequired = tasks.filter(
+    (task) =>
+      task.status === "planner-required" ||
+      (task.executionMode === "multi-step" && task.riskLevel === "high")
+  );
+
+  const plannerSplit = tasks.filter((task) => task.status === "planner-split");
+
+  const waveTasks = tasks.filter(
+    (task) => typeof task.wave === "number" || task.parentTaskId
+  );
+
+  const todoTasks = tasks.filter(
+    (task) => task.status === "todo" || task.status === "queued"
+  );
+
+  const failedTasks = tasks.filter((task) => task.status === "failed");
+
+  const completedTasks = tasks.filter(
+    (task) =>
+      task.status === "done" ||
+      task.status === "completed" ||
+      task.result?.merged === true
+  );
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
+      <div>
+        <h1 className="text-3xl font-bold">Tasks</h1>
+        <p className="mt-2 text-sm text-white/60">
+          Planner queue and orchestration board for Master Agent OS.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Total" value={tasks.length} />
+        <StatCard label="Todo" value={todoTasks.length} />
+        <StatCard label="Waves" value={waveTasks.length} />
+        <StatCard label="Failed" value={failedTasks.length} />
+      </div>
+
+      <TaskSection
+        title="Planner Required"
+        description="High-risk or multi-step tasks that need planner waves before execution."
+        tasks={plannerRequired}
+        empty="No tasks currently require planner waves."
+      />
+
+      <TaskSection
+        title="Planner Split"
+        description="Parent tasks that were split into smaller execution waves."
+        tasks={plannerSplit}
+        empty="No parent tasks have been split yet."
+      />
+
+      <TaskSection
+        title="Wave Tasks"
+        description="Ordered wave tasks created by the planner."
+        tasks={waveTasks}
+        empty="No wave tasks yet."
+      />
+
+      <TaskSection
+        title="Todo"
+        description="Tasks waiting for the runner."
+        tasks={todoTasks}
+        empty="No todo tasks."
+      />
+
+      <TaskSection
+        title="Failed"
+        description="Tasks that failed and may need recovery."
+        tasks={failedTasks}
+        empty="No failed tasks."
+      />
+
+      <TaskSection
+        title="Completed"
+        description="Tasks that are done, completed, or merged."
+        tasks={completedTasks}
+        empty="No completed tasks."
+      />
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="text-xs uppercase tracking-wide text-white/40">
+        {label}
+      </div>
+      <div className="mt-2 text-2xl font-semibold text-white">{value}</div>
+    </div>
+  );
+}
+
+function TaskSection({
+  title,
+  description,
+  tasks,
+  empty,
+}: {
+  title: string;
+  description: string;
+  tasks: AgentTask[];
+  empty: string;
+}) {
+  return (
+    <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div>
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <p className="mt-1 text-sm text-white/50">{description}</p>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        {tasks.length === 0 ? (
+          <div className="rounded-xl border border-white/10 bg-neutral-950/50 p-4 text-sm text-white/50">
+            {empty}
+          </div>
+        ) : (
+          tasks.map((task) => <TaskCard key={task.id} task={task} />)
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TaskCard({ task }: { task: AgentTask }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="text-sm font-semibold text-white">
+            {task.title ?? "Untitled task"}
+          </div>
+
+          {task.summary && (
+            <p className="mt-2 text-sm text-white/60">{task.summary}</p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Badge>{task.status ?? "unknown"}</Badge>
+
+          {task.priority && <Badge>{task.priority}</Badge>}
+
+          {task.riskLevel && <Badge>{task.riskLevel} risk</Badge>}
+
+          {task.executionMode && <Badge>{task.executionMode}</Badge>}
+
+          {typeof task.wave === "number" && <Badge>Wave {task.wave}</Badge>}
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 text-xs text-white/45 sm:grid-cols-2">
+        <Meta label="Task ID" value={task.id} />
+        <Meta label="Source" value={task.source} />
+        <Meta label="Intent" value={task.intent} />
+        <Meta label="Target" value={task.targetFile} />
+        <Meta label="Parent" value={task.parentTaskId} />
+        <Meta
+          label="Retries"
+          value={
+            typeof task.retryCount === "number"
+              ? String(task.retryCount)
+              : undefined
+          }
+        />
+      </div>
+
+      {task.plannerNotes && (
+        <div className="mt-4 rounded-lg border border-purple-500/20 bg-purple-500/10 p-3 text-xs text-purple-100/80">
+          {task.plannerNotes}
+        </div>
+      )}
+
+      {task.error && (
+        <div className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200">
+          {task.error}
+        </div>
+      )}
+
+      {task.result?.pullRequestUrl && (
+        <a
+          href={task.result.pullRequestUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-block text-sm text-blue-300 underline underline-offset-4 hover:text-blue-200"
+        >
+          Open pull request
+        </a>
+      )}
+    </div>
+  );
+}
+
+function Badge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/60">
+      {children}
+    </span>
+  );
+}
+
+function Meta({ label, value }: { label: string; value?: string }) {
+  if (!value) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-4 text-white sm:p-6">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold sm:text-3xl">Tasks</h1>
-          <p className="mt-2 text-sm text-white/60">
-            Master Agent task queue for the PR-only execution flow.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-sm text-white/50">Stage 1</div>
-          <div className="mt-1 text-lg font-medium">Task Queue Foundation</div>
-          <p className="mt-2 text-sm text-white/60">
-            Tasks should now move toward the agent-runner PR flow instead of the
-            old Changes proposal/apply flow.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              onClick={() => {
-                const plannerTasks = [
-                  'Improve Run Agent button microcopy',
-                  'Refine task card spacing',
-                  'Improve execution dashboard empty state',
-                  'Clean ActivityFeed event labels',
-                  'Improve pending PR status copy',
-                ];
-
-                const title =
-                  plannerTasks[Math.floor(Math.random() * plannerTasks.length)];
-
-                createTask({ title, priority: 'medium' });
-              }}
-              className="rounded-xl bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/90"
-            >
-              Generate planner task
-            </button>
-
-            <button
-              onClick={() =>
-                createTask({
-                  title: 'Improve task card readability',
-                  priority: 'medium',
-                })
-              }
-              className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-            >
-              Add sample task
-            </button>
-          </div>
-        </div>
-
-        <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-          <h2 className="text-lg font-semibold">Task Queue</h2>
-
-          <div className="mt-4 space-y-3">
-            {tasks.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-neutral-900 p-4 text-sm text-white/50">
-                No tasks yet.
-              </div>
-            ) : (
-              tasks.map((task) => (
-                <div
-                  key={task.id}
-                  className="rounded-xl border border-white/10 bg-neutral-900 p-4"
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-2">
-                      <div className="font-medium text-white/90">
-                        {task.title}
-                      </div>
-
-                      <div className="text-xs text-white/40">
-                        Priority: {task.priority}
-                      </div>
-
-                      <div className="text-xs text-white/40">
-                        Status: {getStatusLabel(task.status)}
-                      </div>
-
-                      <div className="text-xs text-white/40">
-                        Assigned to: {getAgentName(task.assignedAgentId)}
-                      </div>
-
-                     {task.branchName && (
-  <div className="text-xs text-white/40">
-    Branch: {task.branchName}
-  </div>
-)}
-
-{task.pullRequestNumber && (
-  <div className="text-xs text-white/40">
-    PR: #{task.pullRequestNumber}
-  </div>
-)}
-
-{task.pullRequestUrl && (
-  <a
-    href={task.pullRequestUrl}
-    target="_blank"
-    rel="noreferrer"
-    className="inline-block text-sm text-blue-400 underline underline-offset-4 hover:text-blue-300"
-  >
-    Open pull request
-  </a>
-)}
-
-                      {task.lastError && (
-                        <div className="rounded-lg border border-red-400/20 bg-red-400/10 p-2 text-xs text-red-200">
-                          {task.lastError}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col gap-2 sm:min-w-40">
-                      {task.status === 'todo' && (
-                        <button
-                          onClick={() => executeTask({ taskId: task.id })}
-                          className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white hover:bg-white/10"
-                        >
-                          Mark running
-                        </button>
-                      )}
-
-                      {(task.status === 'in_progress' || task.status === 'running') && (
-                        <button
-                          onClick={() => completeTask({ taskId: task.id })}
-                          className="rounded-xl bg-green-400 px-4 py-2 text-sm font-medium text-black hover:bg-green-300"
-                        >
-                          Mark done
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
+    <div>
+      <span className="text-white/30">{label}: </span>
+      <span>{value}</span>
     </div>
   );
 }
