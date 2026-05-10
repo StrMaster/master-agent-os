@@ -64,8 +64,56 @@ async function readTasks(): Promise<AgentTask[]> {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+async function syncMergedPrTasks(tasks: AgentTask[]) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    return tasks;
+  }
+
+  return Promise.all(
+    tasks.map(async (task) => {
+      const prNumber = task.result?.pullRequestNumber;
+
+      if (!prNumber || task.result?.merged === true) {
+        return task;
+      }
+
+      const res = await fetch(
+        `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        return task;
+      }
+
+      const pr = await res.json();
+
+      if (pr.merged === true) {
+        return {
+          ...task,
+          status: "done",
+          result: {
+            ...task.result,
+            merged: true,
+          },
+        };
+      }
+
+      return task;
+    })
+  );
+}
+
 export default async function TasksPage() {
-  const tasks = await readTasks();
+  const tasks = await syncMergedPrTasks(await readTasks());
 
   const plannerRequired = tasks.filter(
     (task) =>
@@ -76,8 +124,12 @@ export default async function TasksPage() {
   const plannerSplit = tasks.filter((task) => task.status === "planner-split");
 
   const waveTasks = tasks.filter(
-    (task) => typeof task.wave === "number" || task.parentTaskId
-  );
+  (task) =>
+    (typeof task.wave === "number" || task.parentTaskId) &&
+    task.status !== "done" &&
+    task.status !== "completed" &&
+    task.result?.merged !== true
+);
 
   const todoTasks = tasks.filter(
     (task) => task.status === "todo" || task.status === "queued"
@@ -85,12 +137,14 @@ export default async function TasksPage() {
 
   const failedTasks = tasks.filter((task) => task.status === "failed");
 
-  const completedTasks = tasks.filter(
+  const completedTasks = tasks
+  .filter(
     (task) =>
       task.status === "done" ||
       task.status === "completed" ||
       task.result?.merged === true
-  );
+  )
+  .slice(0, 2);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
