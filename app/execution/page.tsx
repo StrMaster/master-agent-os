@@ -1,5 +1,7 @@
 import ActivityFeed from "../components/ActivityFeed";
 import PendingPRQueue from "../components/PendingPRQueue";
+import DeleteTaskButton from "../components/DeleteTaskButton";
+
 
 export const dynamic = "force-dynamic";
 
@@ -184,6 +186,7 @@ function TaskCard({ task }: { task: AgentTask }) {
           Open pull request
         </a>
       )}
+        <DeleteTaskButton taskId={task.id} status={task.status} />
     </div>
   );
 }
