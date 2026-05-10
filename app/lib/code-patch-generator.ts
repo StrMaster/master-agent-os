@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import { getAgentPrompt } from "@/agents/prompts";
+
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +13,10 @@ export async function generateCodePatch(context: {
   taskSummary: string;
   projectState?: string;
 }) {
+  const delegatedSystemPrompt =
+  typeof task?.agentSystemPrompt === "string"
+    ? task.agentSystemPrompt
+    : "You are the Senior Execution Agent for Master Agent OS.";
   const response = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
     temperature: 0.1,
@@ -18,7 +24,7 @@ export async function generateCodePatch(context: {
       {
         role: "system",
         content: `
-You are the Execution Agent for Master Agent OS.
+${delegatedSystemPrompt}
 
 Your job:
 - modify existing code safely
