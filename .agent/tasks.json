@@ -43,7 +43,7 @@
     "title": "Pagerink tarpus tarp master chat žinučių",
     "summary": "Padidinti tarpus tarp master chat žinučių, kad pagerėtų skaitomumas ir vizualinė atskirtis, išlaikant esamą išdėstymą ir komponentus nepakitus.",
     "targetFile": "app/page.tsx",
-    "status": "running",
+    "status": "pending-pr",
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-10T19:30:38.513Z",
@@ -52,6 +52,12 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task.",
-    "updatedAt": "2026-05-10T20:02:16.340Z"
+    "updatedAt": "2026-05-10T20:02:51.370Z",
+    "result": {
+      "branchName": "agent-task-manual-task-1778441438513",
+      "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/180",
+      "pullRequestNumber": 180,
+      "merged": false
+    }
   }
 ]
