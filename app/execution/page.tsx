@@ -208,13 +208,13 @@ const todoTasks = tasks.filter((task) => task.status === 'todo');
                   <div className="mt-1 text-xs text-white/50">
                     Status: done
                   </div>
-                    <ActivityFeed />
                 </div>
                   
               ))
             )}
           </div>
         </section>
+          <ActivityFeed />
       </div>
     </div>
   );
