@@ -398,9 +398,6 @@ for (const task of data.generatedTasks) {
     try {
       addMessage("system", "Creating task and starting agent...");
 
-let activeAgent =
-  "Execution Agent";
-
   const routeDecision = routePromptToAgent(currentMessage);
   const activeAgent = routeDecision.agent.name;
 
