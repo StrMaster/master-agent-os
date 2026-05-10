@@ -841,7 +841,7 @@ try {
 
     const review = reviewGeneratedPatch(currentContent, patchedContent);
     const reviewerResult = reviewUiIntentPatch({
-  prompt: `${task.title ?? ""}\n${task.summary ?? ""}`,
+  prompt: task.title ?? "",
   patchedContent,
 });
 if (!review.valid) {
