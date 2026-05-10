@@ -742,13 +742,41 @@ if (
         (data.task?.id ? [data.task.id] : []);
 
       if (taskIds.length > 0) {
-        addMessage(
-          "system",
-          `Monitoring execution for ${taskIds.length} task(s)...`
-        );
+  addMessage(
+    "system",
+    `Monitoring execution for ${taskIds.length} task(s)...`
+  );
 
-        pollExecution(taskIds);
-      }
+  pollExecution(taskIds);
+
+  try {
+    const autoRunRes = await fetch("/api/auto-run", {
+      method: "POST",
+    });
+
+    const autoRunData = await autoRunRes.json();
+
+    addMessage(
+      "system",
+      autoRunData.mode === "auto-run"
+        ? "Protected auto-cycle started. Watch Activity Feed for PR progress."
+        : `Auto-cycle did not start: ${
+            autoRunData.message ??
+            autoRunData.error ??
+            autoRunData.mode
+          }`,
+      autoRunData.ok ? "success" : "warning"
+    );
+  } catch (error) {
+    addMessage(
+      "system",
+      error instanceof Error
+        ? error.message
+        : "Failed to start protected auto-cycle",
+      "error"
+    );
+  }
+}
     } catch (error) {
       addMessage("agent", "Unexpected error occurred.");
     } finally {
