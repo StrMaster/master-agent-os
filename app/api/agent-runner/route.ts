@@ -11,6 +11,8 @@ import {
 import { validatePatch } from "@/app/lib/patch-validator";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
+import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
+
 
 
 export const runtime = "nodejs";
@@ -838,12 +840,30 @@ try {
     });
 
     const review = reviewGeneratedPatch(currentContent, patchedContent);
-
+    const reviewerResult = reviewUiIntentPatch({
+  prompt: task.prompt,
+  patchedContent,
+});
 if (!review.valid) {
   const latest = await readTasksFile();
   const latestTask = latest.tasks.find(
     (candidate) => candidate.id === task.id
   );
+
+if (!reviewerResult.passed) {
+  addExecutionEvent(task.id, {
+    type: "reviewer-agent-blocked",
+    message:
+      reviewerResult.reason ??
+      "Reviewer Agent blocked unsafe UI implementation.",
+  });
+
+  return NextResponse.json({
+    ok: false,
+    mode: "reviewer-agent-blocked",
+    reason: reviewerResult.reason,
+  });
+}
 
   if (latestTask) {
     latestTask.status = "failed";
