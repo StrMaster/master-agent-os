@@ -17,16 +17,6 @@
     }
   },
   {
-    "id": "manual-task-1778239225779",
-    "title": "Improve activity feed layout in app/components/ActivityFeed.tsx",
-    "summary": "Improve activity feed layout in app/components/ActivityFeed.tsx",
-    "targetFile": "app/components/ActivityFeed.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-08T11:20:25.779Z"
-  },
-  {
     "id": "manual-task-1778239228174",
     "title": "Improve agent runner error handling UI feedback in app/components/RunAgentButton.tsx",
     "summary": "Improve agent runner error handling UI feedback in app/components/RunAgentButton.tsx",
