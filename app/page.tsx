@@ -1,28 +1,91 @@
-import { activeGoal, agents, executionRuns, tasks } from "./lib/data";
+import { activeGoal, agents } from "./lib/data";
 import StatCard from "./components/StatCard";
 import SectionHeader from "./components/SectionHeader";
 import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
-import CreateTaskForm from "./components/CreateTaskForm";
 import RuntimeOverview from "./components/RuntimeOverview";
 import DeployStatusCard from "./components/DeployStatusCard";
 import AutoRunTrigger from "./components/AutoRunTrigger";
 
+export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
+
+type DashboardTask = {
+  id: string;
+  title?: string;
+  summary?: string;
+  status?: string;
+  error?: string;
+  result?: {
+    pullRequestUrl?: string;
+    merged?: boolean;
+  };
+};
+
+async function readDashboardTasks(): Promise<DashboardTask[]> {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    return [];
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    return [];
+  }
+
+  const file = await res.json();
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+  const parsed = JSON.parse(content);
+
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+
+export default async function HomePage() {
+  const tasks = await readDashboardTasks();
+
+  const openTasks = tasks.filter(
+    (task) =>
+      task.status !== "done" &&
+      task.status !== "completed" &&
+      task.result?.merged !== true
+  );
+
+  const pendingRuns = tasks.filter(
+    (task) =>
+      !task.error &&
+      task.result?.merged !== true &&
+      (task.status === "pending-pr" || task.status === "running")
+  );
+
   const stats = [
     { label: "Active Goal", value: "1", subtext: activeGoal.title },
     { label: "Active Agents", value: String(agents.length), subtext: "System registry loaded" },
     {
-      label: "Open Tasks",
-      value: String(tasks.filter((task) => task.status !== "done").length),
-      subtext: "Live workload",
-    },
-    {
-      label: "Pending Runs",
-      value: String(executionRuns.filter((run) => run.status !== "completed").length),
-      subtext: "Execution queue",
-    },
+  label: "Open Tasks",
+  value: String(openTasks.length),
+  subtext: "Live workload",
+},
+{
+  label: "Pending Runs",
+  value: String(pendingRuns.length),
+  subtext: "Execution queue",
+},
   ];
 
   const focusItems = tasks
@@ -156,21 +219,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      <details className="mt-8">
-        <summary
-          style={{
-            cursor: "pointer",
-            color: "#888",
-            fontWeight: 700,
-            marginBottom: 12,
-          }}
-        >
-          Advanced: Manual Task Form
-        </summary>
-
-        <CreateTaskForm />
-      </details>
     </section>
   );
 }
