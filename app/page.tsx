@@ -177,10 +177,16 @@ export default async function HomePage() {
       </div>
       
       <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-6">
-        <RuntimeOverview />
-        <DeployStatusCard />
+        <div className="my-2 w-full md:w-auto">
+          <RuntimeOverview />
+        </div>
+        <div className="my-2 w-full md:w-auto">
+          <DeployStatusCard />
+        </div>
       </div>
-      <AutoRunTrigger />
+      <div className="my-4">
+        <AutoRunTrigger />
+      </div>
 
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
