@@ -15,5 +15,20 @@
       "pullRequestNumber": 178,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778434142400",
+    "title": "Slightly improve spacing on the Tasks page",
+    "summary": "Adjust the vertical and horizontal spacing on the Tasks page to enhance readability and layout balance with minimal and safe changes.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T17:29:02.400Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
