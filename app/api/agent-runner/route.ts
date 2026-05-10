@@ -853,10 +853,11 @@ const reviewerResult = reviewUiIntentPatch({
 });
 
 if (!reviewerResult.passed) {
-  await addActivityEvent({
-  type: "patch-validation-failed",
+  await logActivity({
+  type: "reviewer-agent-blocked",
+  runId,
   taskId: task.id,
-  message:
+  reason:
     reviewerResult.reason ??
     "Reviewer Agent blocked unsafe UI implementation.",
 });
