@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import RunAgentButton from "./RunAgentButton";
+
+
 
 type ChatMessage = {
   role: "user" | "agent" | "system";
@@ -936,5 +939,6 @@ color:
         {loading ? "Thinking..." : "Send to Master Agent"}
       </button>
     </div>
+      <RunAgentButton />
   );
 }
