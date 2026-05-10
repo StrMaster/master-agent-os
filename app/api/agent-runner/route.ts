@@ -840,15 +840,17 @@ try {
     });
 
     const review = reviewGeneratedPatch(currentContent, patchedContent);
-    const reviewerResult = reviewUiIntentPatch({
-  prompt: task.title ?? "",
-  patchedContent,
-});
+    
 if (!review.valid) {
   const latest = await readTasksFile();
   const latestTask = latest.tasks.find(
     (candidate) => candidate.id === task.id
   );
+
+const reviewerResult = reviewUiIntentPatch({
+  prompt: `${task.title}\n${task.summary ?? ""}`,
+  patchedContent,
+});
 
 if (!reviewerResult.passed) {
   addExecutionEvent(task.id, {
