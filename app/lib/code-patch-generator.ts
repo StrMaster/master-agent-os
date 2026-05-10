@@ -28,8 +28,7 @@ export async function generateCodePatch(context: {
     messages: [
       {
         role: "system",
-        content: `
-content: ` ${delegatedSystemPrompt}
+        content: ` ${delegatedSystemPrompt}
 
 Active agent: ${context.agentName ?? "Senior Execution Agent"}
 Agent role: ${context.agentRole ?? "senior-execution"}
