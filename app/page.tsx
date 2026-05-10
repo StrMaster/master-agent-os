@@ -6,7 +6,6 @@ import ActionButton from "./components/ActionButton";
 import RunAgentButton from "./components/RunAgentButton";
 import ActivityFeed from "./components/ActivityFeed";
 import CreateTaskForm from "./components/CreateTaskForm";
-import MasterAgentChat from "./components/MasterAgentChat";
 import RuntimeOverview from "./components/RuntimeOverview";
 import ControlCenterControls from "./components/ControlCenterControls";
 import DeployStatusCard from "./components/DeployStatusCard";
@@ -165,10 +164,6 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="mt-8">
-        <MasterAgentChat />
       </div>
 
       <details className="mt-8">
