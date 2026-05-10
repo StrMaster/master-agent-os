@@ -259,7 +259,7 @@ export default async function HomePage() {
             System Timeline
           </h3>
 
-          <div className="mt-5 space-y-6">
+          <div className="mt-5 space-y-8">
             {recentActivity.map((item) => (
               <div key={item} className="flex gap-2">
                 <div className="mt-2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
