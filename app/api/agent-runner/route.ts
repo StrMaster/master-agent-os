@@ -24,7 +24,7 @@ const ACTIVITY_PATH = ".agent/activity.json";
 const STATE_PATH = ".agent/state.json";
 const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
-const RUNNER_COOLDOWN_MS = 15_000;
+const RUNNER_COOLDOWN_MS = 3_000;
 const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
 const MAX_TASK_RETRIES = 3;
 const RETRY_COOLDOWN_MS = 5 * 60 * 1000;
