@@ -63,7 +63,7 @@ export default function HomePage() {
         ))}
       </div>
       
-      <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-4">
+      <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-6">
         <RuntimeOverview />
         <DeployStatusCard />
       </div>
@@ -124,7 +124,7 @@ export default function HomePage() {
             {focusItems.map((item, index) => (
               <div
                 key={item.id}
-                className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3 sm:p-4"
+                className="flex items-start gap-6 rounded-2xl border border-zinc-800 bg-zinc-950/60 p-3 sm:p-4"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500/15 text-sm font-semibold text-cyan-300">
                   {index + 1}
