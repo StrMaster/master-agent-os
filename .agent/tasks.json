@@ -1,13 +1,5 @@
 [
   {
-    "id": "task-1778100900305",
-    "title": "Improve status label clarity",
-    "targetFile": "app/agents/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-06T20:55:00.305Z"
-  },
-  {
     "id": "manual-task-1778230059660",
     "title": "Enhance mobile layout of dashboard page",
     "summary": "Improve dashboard mobile layout and spacing for smaller screens",
