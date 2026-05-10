@@ -89,40 +89,6 @@ setResult(data);
     }
   }
 
-  async function runAgentLoop() {
-    setLoopLoading(true);
-    setResult(null);
-
-    try {
-      let lastResult: AgentResult | null = null;
-
-      for (let i = 0; i < 5; i++) {
-        const res = await fetch("/api/agent-runner", {
-          method: "POST",
-        });
-
-        const data = await res.json();
-        lastResult = data;
-
-        if (!data.ok || data.mode === "idle" || data.mode === "paused") {
-          break;
-        }
-      }
-
-      setResult(lastResult);
-    } catch (error) {
-      setResult({
-        ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Unknown error",
-      });
-    } finally {
-      setLoopLoading(false);
-    }
-  }
-
   return (
     <div
       style={{
