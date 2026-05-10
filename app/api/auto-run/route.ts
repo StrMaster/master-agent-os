@@ -17,6 +17,19 @@ const BASE_URL =
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000");
 
+async function readJsonResponse(res: Response) {
+  const text = await res.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      ok: false,
+      error: text.slice(0, 300),
+    };
+  }
+}
+
 async function readTasks() {
   const token = process.env.GITHUB_TOKEN;
 
@@ -55,7 +68,7 @@ export async function POST() {
       cache: "no-store",
     });
 
-    const stateData = await stateRes.json();
+    const stateData = await readJsonResponse(stateRes);
     const state = stateData.state;
 
     if (!stateData.ok || !state) {
@@ -137,7 +150,7 @@ const deployRes = await fetch(`${BASE_URL}/api/deploy-status`, {
   cache: "no-store",
 });
 
-const deployData = await deployRes.json();
+const deployData = await readJsonResponse(deployRes);
 
 if (!deployRes.ok || deployData.ok === false) {
   return NextResponse.json({
@@ -173,7 +186,7 @@ if (deployData.deployFailed || deployState === "ERROR") {
       cache: "no-store",
     });
 
-    const runnerData = await runnerRes.json();
+    const runnerData = await readJsonResponse(runnerRes);
 
     return NextResponse.json({
       ok: runnerRes.ok && runnerData.ok !== false,
