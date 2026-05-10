@@ -341,6 +341,9 @@ if (
         `🛠️ Suggested execution tasks:\n\n${formattedTasks}`,
         "success"
       );
+
+const delegatedTask = delegateTaskToAgent(currentMessage);
+
 for (const task of data.generatedTasks) {
   try {
     await fetch(
