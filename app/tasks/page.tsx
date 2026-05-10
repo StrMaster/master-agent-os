@@ -1,3 +1,7 @@
+import ControlCenterControls from "../components/ControlCenterControls";
+import RecoveryControlCard from "../components/RecoveryControlCard";
+
+
 export const dynamic = "force-dynamic";
 
 const OWNER = "StrMaster";
@@ -96,6 +100,11 @@ export default async function TasksPage() {
           Planner queue and orchestration board for Master Agent OS.
         </p>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+  <ControlCenterControls />
+  <RecoveryControlCard />
+</div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Total" value={tasks.length} />
