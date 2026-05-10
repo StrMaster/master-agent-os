@@ -89,5 +89,20 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task."
+  },
+  {
+    "id": "manual-task-1778447449172",
+    "title": "Improve spacing in master chat tab",
+    "summary": "Enhance the spacing between chat messages in the master chat tab to improve readability and visual separation, ensuring the layout and components remain unchanged.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-10T21:10:49.172Z",
+    "intent": "code-improvement",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
