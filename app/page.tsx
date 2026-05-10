@@ -11,7 +11,7 @@ import ControlCenterControls from "./components/ControlCenterControls";
 import DeployStatusCard from "./components/DeployStatusCard";
 import RecoveryControlCard from "./components/RecoveryControlCard";
 import AutoRunTrigger from "./components/AutoRunTrigger";
-import PendingPRQueue from "./components/PendingPRQueue";
+
 
 export default function HomePage() {
   const stats = [
@@ -73,8 +73,6 @@ export default function HomePage() {
         <DeployStatusCard />
         <RecoveryControlCard />
       </div>
-
-      <PendingPRQueue />
       <ControlCenterControls />
       <AutoRunTrigger />
 
