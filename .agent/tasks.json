@@ -17,21 +17,6 @@
     }
   },
   {
-    "id": "manual-task-1778435524260",
-    "title": "Enhance visual hierarchy on Tasks orchestration page with minimal spacing and readability tweaks",
-    "summary": "Slightly increase spacing between sections, improve card readability by subtle background or border adjustments, and optimize badge spacing on the Tasks orchestration page. Keep changes minimal, safe, and do not alter page architecture or rewrite components.",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-10T17:52:04.260Z",
-    "intent": "ui-polish",
-    "riskLevel": "low",
-    "executionMode": "single-file",
-    "wave": 1,
-    "plannerNotes": "Single safe execution task."
-  },
-  {
     "id": "manual-task-1778436555304",
     "title": "Refine spacing consistency on Tasks orchestration page",
     "summary": "Make minimal and safe adjustments to spacing on the Tasks orchestration page to improve consistency and visual balance without altering page structure or components.",
