@@ -25,20 +25,5 @@
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-08T11:20:28.174Z"
-  },
-  {
-    "id": "manual-task-1778418531187",
-    "title": "Improve mobile spacing and visual polish of Pending PR Queue cards",
-    "summary": "Adjust the spacing and visual polish of the Pending PR Queue cards on the main page to enhance readability and UI consistency on mobile devices. Keep changes minimal and isolated to avoid affecting other components.",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-10T13:08:51.187Z",
-    "intent": "ui-polish",
-    "riskLevel": "low",
-    "executionMode": "single-file",
-    "wave": 1,
-    "plannerNotes": "Single safe execution task."
   }
 ]
