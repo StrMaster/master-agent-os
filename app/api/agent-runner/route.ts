@@ -853,12 +853,13 @@ const reviewerResult = reviewUiIntentPatch({
 });
 
 if (!reviewerResult.passed) {
-  addExecutionEvent(task.id, {
-    type: "reviewer-agent-blocked",
-    message:
-      reviewerResult.reason ??
-      "Reviewer Agent blocked unsafe UI implementation.",
-  });
+  await addActivityEvent({
+  type: "reviewer-agent-blocked",
+  taskId: task.id,
+  message:
+    reviewerResult.reason ??
+    "Reviewer Agent blocked unsafe UI implementation.",
+});
 
   return NextResponse.json({
     ok: false,
