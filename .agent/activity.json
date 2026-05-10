@@ -1,5 +1,16 @@
 [
   {
+    "id": "d901bba3-c022-4b69-892f-262792aea353",
+    "timestamp": "2026-05-10T21:34:20.575Z",
+    "type": "auto-merge-blocked",
+    "runId": "20097104-eb73-491c-bd33-4134d1a7f59c",
+    "taskId": "manual-task-1778448830376",
+    "branch": "agent-task-manual-task-1778448830376",
+    "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/185",
+    "reason": "Auto-merge blocked by safety checks",
+    "details": "{\"autoMergeEnabled\":true,\"hasValidation\":true,\"mergeable\":null,\"draft\":false,\"merged\":false,\"state\":\"open\",\"safeTargetFile\":true}"
+  },
+  {
     "id": "7ccec868-8919-42f0-b36e-9af71ae2a792",
     "timestamp": "2026-05-10T21:34:19.893Z",
     "type": "pull-request-validated",
