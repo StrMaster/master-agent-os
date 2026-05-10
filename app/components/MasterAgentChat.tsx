@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import RunAgentButton from "./RunAgentButton";
+import { routePromptToAgent } from "@/agents/core/agent-router";
 
 
 
@@ -401,37 +402,37 @@ let activeAgent =
   "Execution Agent";
 
 if (
-  currentMessage
-    .toLowerCase()
-    .includes("deploy")
-) {
-  activeAgent =
-    "Deploy Agent";
-}
-
-if (
-  currentMessage
-    .toLowerCase()
-    .includes("review")
-) {
-  activeAgent =
-    "Reviewer Agent";
-}
-
-if (
-  currentMessage
-    .toLowerCase()
-    .includes("plan")
-) {
-  activeAgent =
-    "Planner Agent";
-}
+  const routeDecision = routePromptToAgent(currentMessage);
+const activeAgent = routeDecision.agent.name;
 
 addMessage(
   "system",
-  `🤖 Active agent: ${activeAgent}`,
+  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
   "info"
 );
+}
+
+if (
+  const routeDecision = routePromptToAgent(currentMessage);
+const activeAgent = routeDecision.agent.name;
+
+addMessage(
+  "system",
+  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
+  "info"
+);
+}
+
+if (
+  const routeDecision = routePromptToAgent(currentMessage);
+const activeAgent = routeDecision.agent.name;
+
+addMessage(
+  "system",
+  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
+  "info"
+);
+}
 
 if (
   normalizedMessage.includes("review") ||
