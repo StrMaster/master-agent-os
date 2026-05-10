@@ -1,7 +1,7 @@
 {
   "paused": false,
   "runnerLocked": false,
-  "autoRunEnabled": true,
+  "autoRunEnabled": false,
   "autoMergeEnabled": true,
   "emergencyStop": false,
   "recentFailedRuns": 0,
