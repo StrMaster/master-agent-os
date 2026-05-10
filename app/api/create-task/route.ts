@@ -37,6 +37,10 @@ riskLevel?: "low" | "medium" | "high";
 executionMode?: "single-file" | "multi-step";
 wave?: number;
 plannerNotes?: string;
+agentRole?: string;
+agentName?: string;
+agentSystemPrompt?: string;
+routingReason?: string;
 };
 
 type GitHubFile = {
@@ -202,6 +206,18 @@ async function updateConversationMemory(entry: {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+const agentMetadata = {
+  agentRole:
+    typeof body.agentRole === "string" ? body.agentRole : undefined,
+  agentName:
+    typeof body.agentName === "string" ? body.agentName : undefined,
+  agentSystemPrompt:
+    typeof body.agentSystemPrompt === "string"
+      ? body.agentSystemPrompt
+      : undefined,
+  routingReason:
+    typeof body.routingReason === "string" ? body.routingReason : undefined,
+};
 
     const prompt = String(body.prompt ?? "").trim();
 
@@ -481,11 +497,7 @@ if (
   priority,
   source: "manual",
   createdAt: new Date().toISOString(),
-  intent,
-riskLevel,
-executionMode,
-wave,
-plannerNotes,
+  ...agentMetadata,
 };
 
 generatedTasks.push(baseTask);
@@ -505,6 +517,7 @@ if (
     priority,
     source: "manual",
     createdAt: new Date().toISOString(),
+    ...agentMetadata,
     intent: "ui-polish",
 riskLevel: "low",
 executionMode: "single-file",
