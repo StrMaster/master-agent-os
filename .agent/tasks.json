@@ -1,13 +1,5 @@
 [
   {
-    "id": "task-blocked-001",
-    "title": "Improve agent runner error handling",
-    "targetFile": "app/api/agent-runner/route.ts",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-05T00:00:00.000Z"
-  },
-  {
     "id": "task-1778084143040",
     "title": "Improve helper text clarity",
     "targetFile": "app/agents/page.tsx",
