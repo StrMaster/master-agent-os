@@ -1,13 +1,5 @@
 [
   {
-    "id": "task-1778084226543",
-    "title": "Improve section title wording",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-06T16:17:06.543Z"
-  },
-  {
     "id": "task-1778096876717",
     "title": "Improve card readability",
     "targetFile": "app/components/RunAgentButton.tsx",
