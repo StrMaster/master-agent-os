@@ -59,5 +59,20 @@
       "pullRequestNumber": 180,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778444271644",
+    "title": "Add spacing between 'Run Agent' and 'Send to Master Agent' buttons",
+    "summary": "Insert a horizontal margin or padding between the 'Run Agent' button and the 'Send to Master Agent' button to visually separate them and improve UI clarity.",
+    "targetFile": "app/agents/page.tsx",
+    "status": "todo",
+    "priority": "low",
+    "source": "manual",
+    "createdAt": "2026-05-10T20:17:51.644Z",
+    "intent": "code-improvement",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
