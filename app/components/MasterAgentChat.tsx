@@ -3,6 +3,7 @@
 import { useState } from "react";
 import RunAgentButton from "./RunAgentButton";
 import { routePromptToAgent } from "@/agents/core/agent-router";
+import { delegateTaskToAgent } from "@/agents/core/agent-delegation";
 
 
 
@@ -398,12 +399,11 @@ for (const task of data.generatedTasks) {
     try {
       addMessage("system", "Creating task and starting agent...");
 
-  const routeDecision = routePromptToAgent(currentMessage);
-  const activeAgent = routeDecision.agent.name;
-
+  const delegatedTask = delegateTaskToAgent(currentMessage);
+const activeAgent = delegatedTask.agentName;
 addMessage(
   "system",
-  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
+  `Active agent: ${activeAgent} — ${delegatedTask.routingReason}`,
   "info"
 );
 
