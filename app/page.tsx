@@ -17,6 +17,7 @@ const TASKS_PATH = ".agent/tasks.json";
 type DashboardTask = {
   id: string;
   title?: string;
+  description?: string;
   summary?: string;
   status?: string;
   error?: string;
