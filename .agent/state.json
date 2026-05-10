@@ -1,6 +1,6 @@
 {
   "paused": false,
-  "runnerLocked": false,
+  "runnerLocked": true,
   "autoRunEnabled": true,
   "autoMergeEnabled": true,
   "emergencyStop": false,
@@ -12,5 +12,6 @@
   "lastDeploymentId": "dpl_HvYgGRSgVX2cCSA5phoUXC7mcgr3",
   "lastDeploymentState": "BUILDING",
   "lastDeployFailureId": null,
-  "lastRunAt": 1778447961786
+  "lastRunAt": 1778448242157,
+  "runnerLockStartedAt": 1778448242157
 }
