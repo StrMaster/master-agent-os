@@ -1,5 +1,14 @@
 [
   {
+    "id": "466cce65-4784-4eb7-a3ea-e8f3f59ecc68",
+    "timestamp": "2026-05-10T21:13:37.355Z",
+    "type": "pull-request-validation-failed",
+    "runId": "8753c5ba-88cf-413a-9fd9-3e02fbc4009d",
+    "taskId": "manual-task-1778447449172",
+    "reason": "PR validation failed",
+    "details": "Failed to write .agent/activity.json: 409 {\"message\":\".agent/activity.json does not match a20cd080cc3090d859d0cfc61b0aadff18c9ae51\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#create-or-update-file-contents\",\"status\":\"409\"}"
+  },
+  {
     "id": "b5351393-882b-4570-9014-a86abcd878b5",
     "timestamp": "2026-05-10T21:13:35.890Z",
     "type": "pull-request-created",
