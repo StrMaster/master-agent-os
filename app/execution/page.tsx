@@ -1,6 +1,9 @@
 'use client';
 
 import { useMasterStore } from '@/lib/master-store';
+import PendingPRQueue from "../components/PendingPRQueue";
+
+
 
 export default function ExecutionPage() {
   const { tasks, agents, executeTask, completeTask } = useMasterStore();
@@ -30,6 +33,8 @@ const todoTasks = tasks.filter((task) => task.status === 'todo');
             Manage and monitor task execution.
           </p>
         </div>
+
+        <PendingPRQueue />
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
           <h2 className="text-lg font-semibold">Running</h2>
