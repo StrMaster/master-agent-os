@@ -92,16 +92,34 @@ export default function ControlCenterControls() {
           label="Auto-run"
           active={state.autoRunEnabled}
           disabled={loading || state.emergencyStop}
-          onClick={() => updateState({ autoRunEnabled: !state.autoRunEnabled })}
+          onClick={async () => {
+  const nextAutoRun = !state.autoRunEnabled;
+
+  await updateState({ autoRunEnabled: nextAutoRun });
+
+  if (nextAutoRun) {
+    await fetch("/api/auto-run", {
+      method: "POST",
+    });
+  }
+}}
         />
 
         <ControlToggle
           label="Auto-merge"
           active={state.autoMergeEnabled}
           disabled={loading || state.emergencyStop}
-          onClick={() =>
-            updateState({ autoMergeEnabled: !state.autoMergeEnabled })
-          }
+          onClick={async () => {
+  const nextAutoMerge = !state.autoMergeEnabled;
+
+  await updateState({ autoMergeEnabled: nextAutoMerge });
+
+  if (nextAutoMerge) {
+    await fetch("/api/auto-run", {
+      method: "POST",
+    });
+  }
+}}
         />
 
         <ControlToggle
