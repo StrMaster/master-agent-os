@@ -401,38 +401,15 @@ for (const task of data.generatedTasks) {
 let activeAgent =
   "Execution Agent";
 
-if (
   const routeDecision = routePromptToAgent(currentMessage);
-const activeAgent = routeDecision.agent.name;
+  const activeAgent = routeDecision.agent.name;
 
 addMessage(
   "system",
   `Active agent: ${activeAgent} — ${routeDecision.reason}`,
   "info"
 );
-}
 
-if (
-  const routeDecision = routePromptToAgent(currentMessage);
-const activeAgent = routeDecision.agent.name;
-
-addMessage(
-  "system",
-  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
-  "info"
-);
-}
-
-if (
-  const routeDecision = routePromptToAgent(currentMessage);
-const activeAgent = routeDecision.agent.name;
-
-addMessage(
-  "system",
-  `Active agent: ${activeAgent} — ${routeDecision.reason}`,
-  "info"
-);
-}
 
 if (
   normalizedMessage.includes("review") ||
