@@ -80,7 +80,7 @@
     "title": "Add horizontal spacing between 'Run Agent' and 'Send to Master Agent' buttons",
     "summary": "Improve run agent button execution experience",
     "targetFile": "app/agents/page.tsx",
-    "status": "running",
+    "status": "pending-pr",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-10T20:39:12.295Z",
@@ -89,7 +89,13 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task.",
-    "updatedAt": "2026-05-10T21:10:53.249Z"
+    "updatedAt": "2026-05-10T21:11:03.682Z",
+    "result": {
+      "branchName": "agent-task-manual-task-1778445552295",
+      "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/181",
+      "pullRequestNumber": 181,
+      "merged": false
+    }
   },
   {
     "id": "manual-task-1778447449172",
