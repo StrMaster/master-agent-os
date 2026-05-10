@@ -37,5 +37,20 @@
       "pullRequestNumber": 179,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778441438513",
+    "title": "Pagerink tarpus tarp master chat žinučių",
+    "summary": "Padidinti tarpus tarp master chat žinučių, kad pagerėtų skaitomumas ir vizualinė atskirtis, išlaikant esamą išdėstymą ir komponentus nepakitus.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-10T19:30:38.513Z",
+    "intent": "code-improvement",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
