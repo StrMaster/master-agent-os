@@ -11,12 +11,6 @@ const AUTO_RUN_COOLDOWN_MS = 30 * 60 * 1000;
 
 let lastAutoRunAt: number | null = null;
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
-
 async function readJsonResponse(res: Response) {
   const text = await res.text();
 
@@ -62,9 +56,9 @@ async function readTasks() {
   return JSON.parse(content);
 }
 
-export async function POST() {
+export async function POST(req: Request) { {
   try {
-    const stateRes = await fetch(`${BASE_URL}/api/control-state`, {
+    const stateRes = await fetch(new URL("/api/control-state", req.url) {
       cache: "no-store",
     });
 
@@ -146,7 +140,7 @@ if (
 
 lastAutoRunAt = now;
 
-const deployRes = await fetch(`${BASE_URL}/api/deploy-status`, {
+const deployRes = await fetch(new URL("/api/deploy-status", req.url) {
   cache: "no-store",
 });
 
@@ -181,7 +175,7 @@ if (deployData.deployFailed || deployState === "ERROR") {
   });
 }
 
-    const runnerRes = await fetch(`${BASE_URL}/api/agent-runner`, {
+    const runnerRes = await fetch(new URL("/api/agent-runner", req.url) {
       method: "POST",
       cache: "no-store",
     });
