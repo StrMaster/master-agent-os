@@ -80,7 +80,7 @@
     "title": "Add horizontal spacing between 'Run Agent' and 'Send to Master Agent' buttons",
     "summary": "Improve run agent button execution experience",
     "targetFile": "app/agents/page.tsx",
-    "status": "todo",
+    "status": "running",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-10T20:39:12.295Z",
@@ -88,7 +88,8 @@
     "riskLevel": "low",
     "executionMode": "single-file",
     "wave": 1,
-    "plannerNotes": "Single safe execution task."
+    "plannerNotes": "Single safe execution task.",
+    "updatedAt": "2026-05-10T21:10:53.249Z"
   },
   {
     "id": "manual-task-1778447449172",
