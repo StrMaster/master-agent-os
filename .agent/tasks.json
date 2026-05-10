@@ -125,5 +125,20 @@
       "pullRequestNumber": 183,
       "merged": true
     }
+  },
+  {
+    "id": "manual-task-1778448421274",
+    "title": "Add horizontal gap between 'Run Agent' and 'Send to Master Agent' buttons on mobile",
+    "summary": "Improve run agent button execution experience",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T21:27:01.274Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
