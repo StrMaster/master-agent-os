@@ -7,7 +7,7 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 
-const AUTO_RUN_COOLDOWN_MS = 30 * 60 * 1000;
+const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
 
 let lastAutoRunAt: number | null = null;
 
