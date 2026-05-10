@@ -1,5 +1,14 @@
 [
   {
+    "id": "7ccec868-8919-42f0-b36e-9af71ae2a792",
+    "timestamp": "2026-05-10T21:34:19.893Z",
+    "type": "pull-request-validated",
+    "runId": "20097104-eb73-491c-bd33-4134d1a7f59c",
+    "taskId": "manual-task-1778448830376",
+    "reason": "PR not mergeable yet",
+    "details": "{\"mergeable\":null,\"state\":\"open\",\"merged\":false,\"draft\":false}"
+  },
+  {
     "id": "9271263a-c233-4df5-bcc5-fd12f3ee6fc1",
     "timestamp": "2026-05-10T21:34:18.983Z",
     "type": "pull-request-created",
