@@ -3,7 +3,6 @@ import StatCard from "./components/StatCard";
 import SectionHeader from "./components/SectionHeader";
 import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
-import RunAgentButton from "./components/RunAgentButton";
 import CreateTaskForm from "./components/CreateTaskForm";
 import RuntimeOverview from "./components/RuntimeOverview";
 import ControlCenterControls from "./components/ControlCenterControls";
@@ -67,7 +66,6 @@ export default function HomePage() {
       </div>
       
       <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-4">
-        <RunAgentButton />
         <RuntimeOverview />
         <DeployStatusCard />
         <RecoveryControlCard />
