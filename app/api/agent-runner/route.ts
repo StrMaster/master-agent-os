@@ -75,6 +75,10 @@ lastRetryAt?: string;
     pullRequestUrl?: string;
     pullRequestNumber?: number;
     merged?: boolean;
+  agentRole?: string;
+agentName?: string;
+agentSystemPrompt?: string;
+routingReason?: string;
   };
 };
 
@@ -837,6 +841,10 @@ try {
       taskTitle: task.title,
       taskSummary: task.summary ?? task.title,
       projectState,
+      agentSystemPrompt: task.agentSystemPrompt,
+agentName: task.agentName,
+agentRole: task.agentRole,
+routingReason: task.routingReason,
     });
 
     const review = reviewGeneratedPatch(currentContent, patchedContent);
