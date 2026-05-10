@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -11,17 +11,8 @@ const AUTO_RUN_COOLDOWN_MS = 30 * 60 * 1000;
 
 let lastAutoRunAt: number | null = null;
 
-async function readJsonResponse(res: Response) {
-  const text = await res.text();
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {
-      ok: false,
-      error: text.slice(0, 300),
-    };
-  }
+function internalUrl(req: NextRequest, path: string) {
+  return new URL(path, req.url);
 }
 
 async function readTasks() {
@@ -39,7 +30,7 @@ async function readTasks() {
         Accept: "application/vnd.github+json",
       },
       cache: "no-store",
-    }
+    },
   );
 
   if (!res.ok) {
@@ -48,21 +39,18 @@ async function readTasks() {
 
   const file = await res.json();
 
-  const content = Buffer.from(
-    file.content,
-    "base64"
-  ).toString("utf-8");
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
 
   return JSON.parse(content);
 }
 
-export async function POST(req: Request) { {
+export async function POST(req: NextRequest) {
   try {
-    const stateRes = await fetch(new URL("/api/control-state", req.url), {
+    const stateRes = await fetch(internalUrl(req, "/api/control-state"), {
       cache: "no-store",
     });
 
-    const stateData = await readJsonResponse(stateRes);
+    const stateData = await stateRes.json();
     const state = stateData.state;
 
     if (!stateData.ok || !state) {
@@ -107,84 +95,84 @@ export async function POST(req: Request) { {
 
     const tasks = await readTasks();
 
-const availableTask = Array.isArray(tasks)
-  ? tasks.find(
-      (task) =>
-        task &&
-        (task.status === "todo" ||
-          task.status === "queued")
-    )
-  : null;
+    const availableTask = Array.isArray(tasks)
+      ? tasks.find(
+          (task) =>
+            task &&
+            (task.status === "todo" || task.status === "queued"),
+        )
+      : null;
 
-if (!availableTask) {
-  return NextResponse.json({
-    ok: true,
-    mode: "no-work",
-    message: "No queued or todo tasks available",
-  });
-}
+    if (!availableTask) {
+      return NextResponse.json({
+        ok: true,
+        mode: "no-work",
+        message: "No queued or todo tasks available",
+      });
+    }
 
-const now = Date.now();
+    const now = Date.now();
 
-if (
-  lastAutoRunAt &&
-  now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
-) {
-  return NextResponse.json({
-    ok: false,
-    mode: "auto-run-cooldown",
-    message: "Auto-run cooldown active",
-    retryAfterMs: AUTO_RUN_COOLDOWN_MS - (now - lastAutoRunAt),
-  });
-}
+    if (
+      lastAutoRunAt &&
+      now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
+    ) {
+      return NextResponse.json({
+        ok: false,
+        mode: "auto-run-cooldown",
+        message: "Auto-run cooldown active",
+        retryAfterMs: AUTO_RUN_COOLDOWN_MS - (now - lastAutoRunAt),
+      });
+    }
 
-lastAutoRunAt = now;
+    lastAutoRunAt = now;
 
-const deployRes = await fetch(new URL("/api/deploy-status", req.url), {
-  cache: "no-store",
-});
+    const deployRes = await fetch(internalUrl(req, "/api/deploy-status"), {
+      cache: "no-store",
+    });
 
-const deployData = await readJsonResponse(deployRes);
+    const deployData = await deployRes.json();
 
-if (!deployRes.ok || deployData.ok === false) {
-  return NextResponse.json({
-    ok: false,
-    mode: "deploy-status-unavailable",
-    message: "Deploy status unavailable. Auto-run blocked for safety.",
-    error: deployData.error,
-  });
-}
+    if (!deployRes.ok || deployData.ok === false) {
+      return NextResponse.json({
+        ok: false,
+        mode: "deploy-status-unavailable",
+        message: "Deploy status unavailable. Auto-run blocked for safety.",
+        error: deployData.error,
+      });
+    }
 
-const deployState = deployData.deployment?.state;
+    const deployState = deployData.deployment?.state;
 
-if (deployState === "BUILDING" || deployState === "QUEUED") {
-  return NextResponse.json({
-    ok: false,
-    mode: "deploy-in-progress",
-    message: "Deploy is still in progress. Auto-run blocked.",
-    deployment: deployData.deployment,
-  });
-}
+    if (deployState === "BUILDING" || deployState === "QUEUED") {
+      return NextResponse.json({
+        ok: false,
+        mode: "deploy-in-progress",
+        message: "Deploy is still in progress. Auto-run blocked.",
+        deployment: deployData.deployment,
+      });
+    }
 
-if (deployData.deployFailed || deployState === "ERROR") {
-  return NextResponse.json({
-    ok: false,
-    mode: "deploy-failed",
-    message: "Latest deploy failed. Auto-run blocked.",
-    deployment: deployData.deployment,
-  });
-}
+    if (deployData.deployFailed || deployState === "ERROR") {
+      return NextResponse.json({
+        ok: false,
+        mode: "deploy-failed",
+        message: "Latest deploy failed. Auto-run blocked.",
+        deployment: deployData.deployment,
+      });
+    }
 
-    const runnerRes = await fetch(new URL("/api/agent-runner", req.url), {
+    const runnerRes = await fetch(internalUrl(req, "/api/agent-runner"), {
       method: "POST",
       cache: "no-store",
     });
 
-    const runnerData = await readJsonResponse(runnerRes);
+    const runnerData = await runnerRes.json();
 
     return NextResponse.json({
       ok: runnerRes.ok && runnerData.ok !== false,
       mode: "auto-run",
+      task: availableTask,
       runner: runnerData,
     });
   } catch (error) {
@@ -197,5 +185,4 @@ if (deployData.deployFailed || deployState === "ERROR") {
       { status: 500 },
     );
   }
-}
 }
