@@ -178,5 +178,20 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task."
+  },
+  {
+    "id": "manual-task-1778417205263",
+    "title": "Patobulinti Pending PR Queue kortelių tarpus ir vizualinį poliravimą",
+    "summary": "Pritaikyti tarpus ir vizualinį poliravimą Pending PR Queue kortelėms pagrindiniame puslapyje, kad būtų pagerinta skaitomumas ir UI vientisumas, nekeičiant kitų komponentų.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T12:46:45.263Z",
+    "intent": "code-improvement",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
