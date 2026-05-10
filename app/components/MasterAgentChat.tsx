@@ -754,8 +754,10 @@ if (
 
   try {
     const autoRunRes = await fetch("/api/auto-run", {
-      method: "POST",
-    });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ forceRunOnce: true }),
+});
 
     const autoRunData = await autoRunRes.json();
 
