@@ -14,8 +14,8 @@ export async function generateCodePatch(context: {
   projectState?: string;
 }) {
   const delegatedSystemPrompt =
-  typeof task?.agentSystemPrompt === "string"
-    ? task.agentSystemPrompt
+  typeof context?.agentSystemPrompt === "string"
+    ? context.agentSystemPrompt
     : "You are the Senior Execution Agent for Master Agent OS.";
   const response = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
