@@ -15,5 +15,20 @@
       "pullRequestNumber": 178,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778440022842",
+    "title": "Adjust horizontal spacing in master chat messages on main page",
+    "summary": "Increase horizontal padding or margin between chat messages in the master chat interface on the main page to improve readability and visual separation, complementing recent vertical spacing improvements.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T19:07:02.842Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
