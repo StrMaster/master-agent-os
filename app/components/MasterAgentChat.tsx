@@ -938,7 +938,8 @@ color:
       >
         {loading ? "Thinking..." : "Send to Master Agent"}
       </button>
+        <RunAgentButton />
     </div>
-      <RunAgentButton />
+      
   );
 }
