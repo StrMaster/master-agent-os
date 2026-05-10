@@ -26,6 +26,14 @@ export default function AgentsPage() {
                 <div className="mt-2 text-sm text-white/60">
                   Role: {agent.role} · Status: {agent.status}
                 </div>
+                <div className="mt-4 flex space-x-4">
+                  <button className="rounded bg-blue-600 px-4 py-2 hover:bg-blue-700">
+                    Run Agent
+                  </button>
+                  <button className="rounded bg-green-600 px-4 py-2 hover:bg-green-700">
+                    Send to Master Agent
+                  </button>
+                </div>
               </div>
             ))
           )}
