@@ -161,13 +161,10 @@ const pendingPrTask = Array.isArray(tasks)
     )
   : null;
 
-let autoMergeResult = null;
-
 if (state.autoMergeEnabled && pendingPrTask) {
-  autoMergeResult = await mergePullRequest(
+  const mergeResult = await mergePullRequest(
     pendingPrTask.result.pullRequestNumber
   );
-}
 
   return NextResponse.json({
     ok: mergeResult.ok,
