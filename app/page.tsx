@@ -277,9 +277,9 @@ export default async function HomePage() {
       </div>
 
       <div className="mt-8 flex flex-col sm:flex-row sm:items-center sm:gap-4">
-        <ActionButton label="Run Agent" />
-        <div className="sm:hidden h-4" />
         <ActionButton label="Send to Master Agent" variant="primary" />
+        <div className="sm:hidden h-4" />
+        <ActionButton label="Run Agent" />
       </div>
     </section>
   );
