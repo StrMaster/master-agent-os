@@ -1,0 +1,104 @@
+import { getSmartAgent, type SmartAgent, type SmartAgentRole } from "./agent-registry";
+
+export type AgentRouteDecision = {
+  role: SmartAgentRole;
+  agent: SmartAgent;
+  confidence: "low" | "medium" | "high";
+  reason: string;
+};
+
+export function routePromptToAgent(prompt: string): AgentRouteDecision {
+  const text = prompt.toLowerCase();
+
+  const isUi =
+    text.includes("ui") ||
+    text.includes("layout") ||
+    text.includes("mobile") ||
+    text.includes("button") ||
+    text.includes("spacing") ||
+    text.includes("tarp") ||
+    text.includes("mygtuk") ||
+    text.includes("design") ||
+    text.includes("ux");
+
+  if (isUi) {
+    return {
+      role: "senior-ui",
+      agent: getSmartAgent("senior-ui"),
+      confidence: "high",
+      reason: "Prompt is about UI/layout/mobile/design behavior.",
+    };
+  }
+
+  const isDeploy =
+    text.includes("deploy") ||
+    text.includes("vercel") ||
+    text.includes("build error") ||
+    text.includes("build failed") ||
+    text.includes("production");
+
+  if (isDeploy) {
+    return {
+      role: "senior-deploy",
+      agent: getSmartAgent("senior-deploy"),
+      confidence: "high",
+      reason: "Prompt is about build/deploy/release stability.",
+    };
+  }
+
+  const isRecovery =
+    text.includes("recover") ||
+    text.includes("recovery") ||
+    text.includes("broken") ||
+    text.includes("neveikia") ||
+    text.includes("sugedo") ||
+    text.includes("failed");
+
+  if (isRecovery) {
+    return {
+      role: "senior-recovery",
+      agent: getSmartAgent("senior-recovery"),
+      confidence: "high",
+      reason: "Prompt is about recovery or broken behavior.",
+    };
+  }
+
+  const isReview =
+    text.includes("review") ||
+    text.includes("check") ||
+    text.includes("perziurek") ||
+    text.includes("peržiūrėk") ||
+    text.includes("patikrink");
+
+  if (isReview) {
+    return {
+      role: "senior-reviewer",
+      agent: getSmartAgent("senior-reviewer"),
+      confidence: "medium",
+      reason: "Prompt asks for review/checking.",
+    };
+  }
+
+  const isPlanning =
+    text.includes("plan") ||
+    text.includes("roadmap") ||
+    text.includes("stage") ||
+    text.includes("step") ||
+    text.includes("suplanuok");
+
+  if (isPlanning) {
+    return {
+      role: "senior-planner",
+      agent: getSmartAgent("senior-planner"),
+      confidence: "medium",
+      reason: "Prompt asks for planning.",
+    };
+  }
+
+  return {
+    role: "senior-execution",
+    agent: getSmartAgent("senior-execution"),
+    confidence: "medium",
+    reason: "Default executable engineering task.",
+  };
+}
