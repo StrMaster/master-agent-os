@@ -250,10 +250,9 @@ if (
 );
     return NextResponse.json({
   ok: runnerRes.ok && runnerData.ok !== false,
-  mode: autoMergeResult ? "auto-merge-and-run" : "auto-run",
+  mode: "auto-run",
   task: availableTask,
   runner: runnerData,
-  autoMerge: autoMergeResult,
 });
   } catch (error) {
     return NextResponse.json(
