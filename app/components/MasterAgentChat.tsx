@@ -356,6 +356,9 @@ for (const task of data.generatedTasks) {
         body: JSON.stringify({
           title: task.title,
           summary: task.summary,
+          agentRole: delegatedTask.role,
+agentName: delegatedTask.agentName,
+agentSystemPrompt: delegatedTask.systemPrompt,
           targetFile:
             task.targetFile,
           priority:
