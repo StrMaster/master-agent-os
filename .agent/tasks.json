@@ -27,16 +27,6 @@
     "createdAt": "2026-05-08T11:20:28.174Z"
   },
   {
-    "id": "manual-task-1778239233749",
-    "title": "Improve section title wording in app/execution/page.tsx",
-    "summary": "Improve section title wording in app/execution/page.tsx",
-    "targetFile": "app/execution/page.tsx",
-    "status": "todo",
-    "priority": "low",
-    "source": "manual",
-    "createdAt": "2026-05-08T11:20:33.749Z"
-  },
-  {
     "id": "manual-task-1778277730092",
     "title": "Slightly improve Run Agent button label",
     "summary": "Improve run agent button execution experience",
