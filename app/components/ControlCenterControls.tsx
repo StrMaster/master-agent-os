@@ -100,6 +100,8 @@ export default function ControlCenterControls() {
   if (nextAutoRun) {
     await fetch("/api/auto-run", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forceRunOnce: true }),
     });
   }
 }}
@@ -117,6 +119,8 @@ export default function ControlCenterControls() {
   if (nextAutoMerge) {
     await fetch("/api/auto-run", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forceRunOnce: true }),
     });
   }
 }}
