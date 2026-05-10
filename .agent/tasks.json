@@ -17,16 +17,6 @@
     }
   },
   {
-    "id": "manual-task-1778230059660-activity",
-    "title": "Improve activity feed layout",
-    "summary": "Improve activity feed layout and visual hierarchy",
-    "targetFile": "app/components/ActivityFeed.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-08T08:47:39.660Z"
-  },
-  {
     "id": "manual-task-1778234627343",
     "title": "Patobulinti pagrindinio puslapio mobilų išdėstymą",
     "summary": "Pagerinti pagrindinio puslapio išdėstymą ir tarpus mobiliuosiuose įrenginiuose, kad būtų geresnė naudotojo patirtis mažesniuose ekranuose.",
