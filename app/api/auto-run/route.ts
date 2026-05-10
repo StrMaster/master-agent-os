@@ -161,10 +161,13 @@ const pendingPrTask = Array.isArray(tasks)
     )
   : null;
 
+let autoMergeResult = null;
+
 if (state.autoMergeEnabled && pendingPrTask) {
-  const mergeResult = await mergePullRequest(
+  autoMergeResult = await mergePullRequest(
     pendingPrTask.result.pullRequestNumber
   );
+}
 
   return NextResponse.json({
     ok: mergeResult.ok,
@@ -249,11 +252,12 @@ if (
   }
 );
     return NextResponse.json({
-      ok: runnerRes.ok && runnerData.ok !== false,
-      mode: "auto-run",
-      task: availableTask,
-      runner: runnerData,
-    });
+  ok: runnerRes.ok && runnerData.ok !== false,
+  mode: autoMergeResult ? "auto-merge-and-run" : "auto-run",
+  task: availableTask,
+  runner: runnerData,
+  autoMerge: autoMergeResult,
+});
   } catch (error) {
     return NextResponse.json(
       {
