@@ -22,9 +22,10 @@ type DashboardTask = {
   status?: string;
   error?: string;
   result?: {
-    pullRequestUrl?: string;
-    merged?: boolean;
-  };
+  pullRequestUrl?: string;
+  pullRequestNumber?: number;
+  merged?: boolean;
+};
 };
 
 async function syncDashboardMergedPrTasks(tasks: DashboardTask[]) {
