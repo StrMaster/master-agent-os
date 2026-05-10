@@ -139,9 +139,8 @@ export async function POST(req: NextRequest) {
     }
 
     const now = Date.now();
-
-    if (
-      if (
+      
+if (
   !forceRunOnce &&
   lastAutoRunAt &&
   now - lastAutoRunAt < AUTO_RUN_COOLDOWN_MS
