@@ -147,5 +147,20 @@
       "pullRequestNumber": 184,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778448830376",
+    "title": "Add vertical spacing between 'Send to Master Agent' and 'Run Agent' buttons on mobile",
+    "summary": "Improve run agent button execution experience",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T21:33:50.376Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
