@@ -30,5 +30,20 @@
     "executionMode": "single-file",
     "wave": 1,
     "plannerNotes": "Single safe execution task."
+  },
+  {
+    "id": "manual-task-1778439397291",
+    "title": "Adjust vertical spacing between chat messages in master chat",
+    "summary": "Increase the vertical spacing between individual chat messages in the master chat interface on the main page to improve readability and visual separation without altering layout or components.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T18:56:37.291Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
