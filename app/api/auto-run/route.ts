@@ -161,7 +161,7 @@ const pendingPrTask = Array.isArray(tasks)
     )
   : null;
 
-if (state.autoMergeEnabled && pendingPrTask && !forceRunOnce) {
+if (false && state.autoMergeEnabled && pendingPrTask) {
   const mergeResult = await mergePullRequest(
     pendingPrTask.result.pullRequestNumber
   );
