@@ -5,9 +5,7 @@ import StatusBadge from "./components/StatusBadge";
 import ActionButton from "./components/ActionButton";
 import CreateTaskForm from "./components/CreateTaskForm";
 import RuntimeOverview from "./components/RuntimeOverview";
-import ControlCenterControls from "./components/ControlCenterControls";
 import DeployStatusCard from "./components/DeployStatusCard";
-import RecoveryControlCard from "./components/RecoveryControlCard";
 import AutoRunTrigger from "./components/AutoRunTrigger";
 
 
@@ -68,9 +66,7 @@ export default function HomePage() {
       <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-4">
         <RuntimeOverview />
         <DeployStatusCard />
-        <RecoveryControlCard />
       </div>
-      <ControlCenterControls />
       <AutoRunTrigger />
 
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-5">
