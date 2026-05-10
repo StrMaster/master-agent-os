@@ -73,8 +73,11 @@ export default async function ExecutionPage() {
   );
 
   const pendingPrTasks = tasks.filter(
-    (task) => task.status === "pending-pr" || task.result?.pullRequestUrl
-  );
+  (task) =>
+    task.status === "pending-pr" &&
+    task.result?.merged !== true &&
+    !task.error
+);
 
   const failedTasks = tasks.filter((task) => task.status === "failed");
 
@@ -100,13 +103,6 @@ export default async function ExecutionPage() {
 
       <TaskSection title="Todo" tasks={todoTasks} empty="No pending tasks at the moment." />
 
-      <TaskSection title="Failed" tasks={failedTasks} empty="No failed tasks." />
-
-      <TaskSection
-        title="Completed"
-        tasks={completedTasks}
-        empty="No tasks have been completed yet."
-      />
 
       <ActivityFeed />
     </div>
