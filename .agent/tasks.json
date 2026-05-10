@@ -156,5 +156,20 @@
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-08T22:02:10.093Z"
+  },
+  {
+    "id": "manual-task-1778371483105",
+    "title": "Improve Pending PR Queue card spacing and polish",
+    "summary": "Adjust spacing and visual polish of the Pending PR Queue cards to enhance readability and UI consistency without affecting other components.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-10T00:04:43.105Z",
+    "intent": "ui-polish",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 1,
+    "plannerNotes": "Single safe execution task."
   }
 ]
