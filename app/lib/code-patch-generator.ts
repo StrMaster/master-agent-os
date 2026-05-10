@@ -12,6 +12,7 @@ export async function generateCodePatch(context: {
   taskTitle: string;
   taskSummary: string;
   projectState?: string;
+  agentSystemPrompt?: string;
 }) {
   const delegatedSystemPrompt =
   typeof context?.agentSystemPrompt === "string"
