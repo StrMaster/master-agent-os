@@ -2,7 +2,7 @@
 
 import { useMasterStore } from '@/lib/master-store';
 import PendingPRQueue from "../components/PendingPRQueue";
-
+import ActivityFeed from "../components/ActivityFeed";
 
 
 export default function ExecutionPage() {
@@ -209,6 +209,7 @@ const todoTasks = tasks.filter((task) => task.status === 'todo');
                     Status: done
                   </div>
                 </div>
+                  <ActivityFeed />
               ))
             )}
           </div>
