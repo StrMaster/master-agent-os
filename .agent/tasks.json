@@ -1,13 +1,5 @@
 [
   {
-    "id": "task-1778096876717",
-    "title": "Improve card readability",
-    "targetFile": "app/components/RunAgentButton.tsx",
-    "status": "todo",
-    "priority": "low",
-    "createdAt": "2026-05-06T19:47:56.717Z"
-  },
-  {
     "id": "task-1778100900305",
     "title": "Improve status label clarity",
     "targetFile": "app/agents/page.tsx",
