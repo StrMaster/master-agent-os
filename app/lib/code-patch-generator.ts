@@ -13,9 +13,13 @@ export async function generateCodePatch(context: {
   taskSummary: string;
   projectState?: string;
   agentSystemPrompt?: string;
+  agentName?: string;
+  agentRole?: string;
+  routingReason?: string;
 }) {
   const delegatedSystemPrompt =
-  typeof context?.agentSystemPrompt === "string"
+  typeof context.agentSystemPrompt === "string" &&
+  context.agentSystemPrompt.trim().length > 0
     ? context.agentSystemPrompt
     : "You are the Senior Execution Agent for Master Agent OS.";
   const response = await openai.chat.completions.create({
@@ -25,7 +29,11 @@ export async function generateCodePatch(context: {
       {
         role: "system",
         content: `
-${delegatedSystemPrompt}
+content: ` ${delegatedSystemPrompt}
+
+Active agent: ${context.agentName ?? "Senior Execution Agent"}
+Agent role: ${context.agentRole ?? "senior-execution"}
+Routing reason: ${context.routingReason ?? "Default execution route."}
 
 Your job:
 - modify existing code safely
