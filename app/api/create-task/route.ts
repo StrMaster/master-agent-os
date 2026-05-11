@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { addRuntimeTask } from "@/app/lib/task-runtime";
+
+const OWNER = "StrMaster";
+const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -34,6 +38,78 @@ type AgentTask = {
   agentSystemPrompt?: string;
   routingReason?: string;
 };
+
+type GitHubFile = {
+  sha: string;
+  content: string;
+};
+
+async function readTasksJson() {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Failed to read ${TASKS_PATH}: ${res.status}`);
+  }
+
+  const file = (await res.json()) as GitHubFile;
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+  const parsed = JSON.parse(content);
+
+  return {
+    tasks: Array.isArray(parsed) ? (parsed as AgentTask[]) : [],
+    sha: file.sha,
+  };
+}
+
+async function writeTasksJson(tasks: AgentTask[], sha: string, message: string) {
+  const token = process.env.GITHUB_TOKEN;
+
+  if (!token) {
+    throw new Error("Missing GITHUB_TOKEN");
+  }
+
+  const content = Buffer.from(JSON.stringify(tasks, null, 2) + "\n").toString(
+    "base64"
+  );
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        content,
+        sha,
+        branch: BRANCH,
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Failed to write ${TASKS_PATH}: ${res.status} ${text}`);
+  }
+}
 
 function normalizeTitle(value: unknown) {
   return String(value ?? "").trim();
@@ -169,8 +245,8 @@ function buildTask(body: Record<string, unknown>): AgentTask {
     previewOnly: queueOnly,
     requiresApproval: queueOnly,
     plannerNotes: queueOnly
-      ? "Preview/planner task only. Runtime state is not committed to GitHub. Wait for approval before execution."
-      : "Runtime task created. Code execution should still happen through protected PR flow.",
+      ? "Preview/planner task. Wait for approval before execution."
+      : "Manual task queued. Code execution should happen through protected PR flow.",
   };
 }
 
@@ -181,20 +257,19 @@ export async function POST(req: Request) {
     const task = buildTask(body);
     const queueOnly = shouldQueueOnly(prompt, body);
 
-    addRuntimeTask({
-      ...task,
-      status: queueOnly ? "todo" : "queued",
-      runtimeOnly: true,
-    });
+    const { tasks, sha } = await readTasksJson();
+    const nextTasks = [task, ...tasks.filter((candidate) => candidate.id !== task.id)];
+
+    await writeTasksJson(nextTasks, sha, `Create manual task ${task.id}`);
 
     const taskWord = "task";
     const message = queueOnly
       ? `Created 1 preview ${taskWord}. Auto-run was not started.`
-      : `Created 1 runtime ${taskWord}. Use protected runner controls to execute.`;
+      : `Created 1 queued ${taskWord}. Runner can execute through PR-only flow.`;
 
     const followUp = queueOnly
-      ? "This task is stored in runtime memory only, so it will not create a GitHub commit or trigger a Vercel build."
-      : "Runtime task was queued without metadata commits. Code changes should still be made through PR-only flow.";
+      ? "This task was persisted to the planner queue and can be approved before execution."
+      : "Task was persisted to the GitHub-backed queue. This may trigger a Vercel build, but runner state will be stable.";
 
     return NextResponse.json({
       ok: true,
