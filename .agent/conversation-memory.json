@@ -1,5 +1,12 @@
 [
   {
+    "id": "f3adbe89-82cf-489f-9852-e0648ae41b76",
+    "timestamp": "2026-05-11T17:03:19.287Z",
+    "prompt": "kiek llm naudiji?",
+    "summary": "Add a small UI tooltip or info icon on the main page that displays how many LLMs are currently used or supported, providing users with quick insight without backend changes.",
+    "targetFile": "app/page.tsx"
+  },
+  {
     "id": "e9633530-e7db-4714-961a-068db6a23fba",
     "timestamp": "2026-05-10T21:33:51.616Z",
     "prompt": "Add vertical spacing between the “Send to Master Agent” and “Run Agent” buttons on mobile layout. Insert a clean margin-top/gap so the buttons are visually separated and easier to tap, while keeping the current design and alignment.",
@@ -165,13 +172,6 @@
     "timestamp": "2026-05-08T10:48:20.444Z",
     "prompt": "",
     "summary": "Consolidate and implement mobile layout improvements in app/page.tsx",
-    "targetFile": "app/page.tsx"
-  },
-  {
-    "id": "afd5c958-6f36-4206-8891-0d4e6e648c58",
-    "timestamp": "2026-05-08T10:18:35.330Z",
-    "prompt": "Ką turėtume pagerinti toliau?",
-    "summary": "Pagerinti pagrindinio puslapio išdėstymą ir tarpus mobiliuosiuose įrenginiuose, kad naudotojo patirtis mažesniuose ekranuose būtų sklandi ir patogi.",
     "targetFile": "app/page.tsx"
   }
 ]
