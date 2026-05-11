@@ -92,6 +92,29 @@ function classifyMasterAgentIntent(input: string): MasterAgentIntent {
   return "conversation";
 }
 
+function shouldQueueWithoutAutoRun(input: string) {
+  const message = input.trim().toLowerCase();
+
+  return (
+    message.includes("do not auto-run") ||
+    message.includes("do not auto run") ||
+    message.includes("no auto-run") ||
+    message.includes("no auto run") ||
+    message.includes("without auto-run") ||
+    message.includes("without auto run") ||
+    message.includes("planner only") ||
+    message.includes("preview only") ||
+    message.includes("wait for approval") ||
+    message.includes("approval before execution") ||
+    message.includes("manual approval") ||
+    message.includes("nepaleisk") ||
+    message.includes("be auto-run") ||
+    message.includes("tik planner") ||
+    message.includes("tik planas") ||
+    message.includes("laukti approval")
+  );
+}
+
 function getConversationReply(input: string) {
   const message = input.trim().toLowerCase();
 
@@ -216,6 +239,7 @@ export default function MasterAgentChat() {
 
     const currentMessage = message.trim();
     const intent = classifyMasterAgentIntent(currentMessage);
+    const queueOnly = shouldQueueWithoutAutoRun(currentMessage);
 
     addMessage("user", currentMessage);
     setMessage("");
@@ -318,7 +342,12 @@ export default function MasterAgentChat() {
         "info"
       );
 
-      addMessage("system", "Creating task and starting protected agent flow...");
+      addMessage(
+        "system",
+        queueOnly
+          ? "Creating task only. Auto-run is disabled for this request."
+          : "Creating task and starting protected agent flow..."
+      );
 
       const res = await fetch("/api/create-task", {
         method: "POST",
@@ -330,6 +359,8 @@ export default function MasterAgentChat() {
           agentRole: delegatedTask.role,
           agentName: delegatedTask.agentName,
           agentSystemPrompt: delegatedTask.systemPrompt,
+          previewOnly: queueOnly,
+          requiresApproval: queueOnly,
         }),
       });
 
@@ -344,7 +375,17 @@ export default function MasterAgentChat() {
         (data.task?.id ? [data.task.id] : []);
 
       if (taskIds.length > 0) {
-        addMessage("system", `Monitoring execution for ${taskIds.length} task(s)...`);
+        addMessage(
+          "system",
+          queueOnly
+            ? `Queued ${taskIds.length} task(s) for approval. Auto-run was not started.`
+            : `Monitoring execution for ${taskIds.length} task(s)...`
+        );
+
+        if (queueOnly) {
+          return;
+        }
+
         pollExecution(taskIds);
 
         const autoRunRes = await fetch("/api/auto-run", {
