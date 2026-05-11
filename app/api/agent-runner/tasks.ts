@@ -3,6 +3,7 @@ import { recordRuntimeRecoveryMemory } from "./memory";
 import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
 import { analyzeRecoveryIntelligence } from "@/agents/core/recovery-intelligence";
+import { getRuntimeTasks } from "@/app/lib/task-runtime";
 
 const TASKS_PATH = ".agent/tasks.json";
 const MAX_RECOVERY_RETRIES = 3;
@@ -11,11 +12,40 @@ function normalizeRecoverySignature(reason: string) {
   return reason.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 160);
 }
 
+function mergeRuntimeTasks(githubTasks: AgentTask[]) {
+  const runtimeTasks = getRuntimeTasks() as AgentTask[];
+
+  const merged = [...githubTasks];
+
+  for (const runtimeTask of runtimeTasks) {
+    const existingIndex = merged.findIndex(
+      (task) => task.id === runtimeTask.id
+    );
+
+    if (existingIndex >= 0) {
+      merged[existingIndex] = {
+        ...merged[existingIndex],
+        ...runtimeTask,
+      };
+
+      continue;
+    }
+
+    merged.unshift(runtimeTask);
+  }
+
+  return merged;
+}
+
 export async function readTasksFile() {
   const { json, sha } = await readGithubJson(TASKS_PATH);
 
+  const githubTasks = Array.isArray(json)
+    ? (json as AgentTask[])
+    : [];
+
   return {
-    tasks: Array.isArray(json) ? (json as AgentTask[]) : [],
+    tasks: mergeRuntimeTasks(githubTasks),
     sha,
   };
 }
@@ -25,7 +55,11 @@ export async function writeTasksFile(
   sha: string,
   message: string
 ) {
-  await writeGithubJson(TASKS_PATH, tasks, sha, message);
+  const persistentTasks = tasks.filter(
+    (task) => task.runtimeOnly !== true
+  );
+
+  await writeGithubJson(TASKS_PATH, persistentTasks, sha, message);
 }
 
 export async function createRecoveryTask({
@@ -92,18 +126,18 @@ export async function createRecoveryTask({
         `Retry recovery task for ${recoveryOfTaskId}`
       );
 
-        await logActivity({
-          type: "recovery-retry-started",
-          runId: existingRecoveryTask.id,
-          taskId: recoveryOfTaskId,
-          agentName: "Senior Recovery Agent",
-          reason,
-          details: JSON.stringify({
-            retryCount: existingRecoveryTask.retryCount,
-            recoveryOfTaskId,
-            intelligence: intelligence?.recommendation,
-          }),
-        });
+      await logActivity({
+        type: "recovery-retry-started",
+        runId: existingRecoveryTask.id,
+        taskId: recoveryOfTaskId,
+        agentName: "Senior Recovery Agent",
+        reason,
+        details: JSON.stringify({
+          retryCount: existingRecoveryTask.retryCount,
+          recoveryOfTaskId,
+          intelligence: intelligence?.recommendation,
+        }),
+      });
 
       await recordRuntimeRecoveryMemory({
         taskId: recoveryOfTaskId,
@@ -120,7 +154,9 @@ export async function createRecoveryTask({
       runId: existingRecoveryTask.id,
       taskId: recoveryOfTaskId,
       agentName: "Senior Recovery Agent",
-      reason: intelligence?.recommendation ? `${reason} (${intelligence.recommendation})` : reason,
+      reason: intelligence?.recommendation
+        ? `${reason} (${intelligence.recommendation})`
+        : reason,
     });
 
     await recordRuntimeRecoveryMemory({
