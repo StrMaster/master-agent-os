@@ -24,6 +24,8 @@ export type AgentTask = {
   status: AgentTaskStatus;
   priority?: Priority;
   dependsOn?: string[];
+  dependsOnTaskIds?: string[];
+  blockedBy?: string[];
   createdAt?: string;
   queuedAt?: string;
   startedAt?: string;

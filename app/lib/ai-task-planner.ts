@@ -415,6 +415,7 @@ Rules:
 - Avoid backend refactors.
 - Preserve dependency order with dependsOn.
 - Use parentTaskId and wave when returning planner-generated subtasks.
+- Prefer dependsOnTaskIds and blockedBy for explicit dependency ordering.
 - Use only these target files:
 
 - app/page.tsx
@@ -451,7 +452,8 @@ Format:
 
     "priority": "low|medium|high",
 
-    "dependsOn": []
+    "dependsOnTaskIds": [],
+    "blockedBy": []
   }
 ]
           `,

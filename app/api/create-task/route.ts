@@ -38,10 +38,12 @@ intent?: string;
 riskLevel?: "low" | "medium" | "high";
 executionMode?: "single-file" | "multi-step";
 wave?: number;
-parentTaskId?: string;
-plannerNotes?: string;
-dependsOn?: string[];
-agentRole?: string;
+  parentTaskId?: string;
+  plannerNotes?: string;
+  dependsOn?: string[];
+  dependsOnTaskIds?: string[];
+  blockedBy?: string[];
+  agentRole?: string;
 agentName?: string;
 agentSystemPrompt?: string;
 routingReason?: string;
@@ -159,6 +161,21 @@ function isSafeTargetFile(targetFile: string) {
   return SAFE_TARGET_FILES.includes(targetFile);
 }
 
+function normalizeDependencyIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const dependencyIds = value.filter(
+    (dependencyId: unknown): dependencyId is string =>
+      typeof dependencyId === "string" && dependencyId.trim().length > 0,
+  );
+
+  const uniqueDependencyIds = [...new Set(dependencyIds)];
+
+  return uniqueDependencyIds.length > 0 ? uniqueDependencyIds : undefined;
+}
+
 async function logActivity(event: Record<string, unknown>) {
   const { json: activity, sha } = await readGithubJson(ACTIVITY_PATH);
 
@@ -235,12 +252,11 @@ const plannerMetadata = {
     typeof body.parentTaskId === "string" ? body.parentTaskId : undefined,
   plannerNotes:
     typeof body.plannerNotes === "string" ? body.plannerNotes : undefined,
-  dependsOn: Array.isArray(body.dependsOn)
-    ? body.dependsOn.filter(
-        (dependencyId: unknown): dependencyId is string =>
-          typeof dependencyId === "string" && dependencyId.trim().length > 0
-      )
-    : undefined,
+  dependsOn:
+    normalizeDependencyIds(body.dependsOn) ??
+    normalizeDependencyIds(body.dependsOnTaskIds),
+  dependsOnTaskIds: normalizeDependencyIds(body.dependsOnTaskIds),
+  blockedBy: normalizeDependencyIds(body.blockedBy),
 };
 
     const prompt = String(body.prompt ?? "").trim();
@@ -257,6 +273,11 @@ let wave = 1;
 let parentTaskId = plannerMetadata.parentTaskId;
 let plannerNotes = "Single safe execution task.";
 let dependsOn = plannerMetadata.dependsOn;
+let dependsOnTaskIds = plannerMetadata.dependsOnTaskIds ?? plannerMetadata.dependsOn;
+let blockedBy =
+  plannerMetadata.blockedBy ??
+  plannerMetadata.dependsOnTaskIds ??
+  plannerMetadata.dependsOn;
 
 
 if (prompt && process.env.OPENAI_API_KEY) {
@@ -530,6 +551,8 @@ if (
   parentTaskId,
   plannerNotes: plannerMetadata.plannerNotes ?? plannerNotes,
   dependsOn,
+  dependsOnTaskIds,
+  blockedBy,
 };
 
 generatedTasks.push(baseTask);
@@ -555,9 +578,11 @@ if (
 riskLevel: "low",
 executionMode: "single-file",
 wave: 1,
-plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
-dependsOn,
-parentTaskId,
+    plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
+    dependsOn,
+    dependsOnTaskIds,
+    blockedBy,
+    parentTaskId,
   });
 }
 

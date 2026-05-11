@@ -23,6 +23,8 @@ type AgentTask = {
   wave?: number;
   plannerNotes?: string;
   parentTaskId?: string;
+  dependsOnTaskIds?: string[];
+  blockedBy?: string[];
 };
 
 type GitHubFile = {
@@ -129,10 +131,13 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
   const now = new Date().toISOString();
   const baseTitle = task.title || "Untitled planner task";
   const targetFile = task.targetFile || "app/page.tsx";
+  const wave1Id = `wave-${task.id}-1-${Date.now()}`;
+  const wave2Id = `wave-${task.id}-2-${Date.now()}`;
+  const wave3Id = `wave-${task.id}-3-${Date.now()}`;
 
   return [
     {
-      id: `wave-${task.id}-1-${Date.now()}`,
+      id: wave1Id,
       title: `Wave 1: Scope and prepare — ${baseTitle}`,
       summary:
         task.summary ??
@@ -147,11 +152,13 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 1,
       parentTaskId: task.id,
+      dependsOnTaskIds: [],
+      blockedBy: [],
       plannerNotes:
         "Wave 1: inspect current architecture, keep scope minimal, avoid rewrites.",
     },
     {
-      id: `wave-${task.id}-2-${Date.now()}`,
+      id: wave2Id,
       title: `Wave 2: Implement core change — ${baseTitle}`,
       summary:
         task.summary ??
@@ -166,11 +173,13 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 2,
       parentTaskId: task.id,
+      dependsOnTaskIds: [wave1Id],
+      blockedBy: [wave1Id],
       plannerNotes:
         "Wave 2: implement the core change only after Wave 1 is safe.",
     },
     {
-      id: `wave-${task.id}-3-${Date.now()}`,
+      id: wave3Id,
       title: `Wave 3: Polish and verify — ${baseTitle}`,
       summary:
         task.summary ??
@@ -185,10 +194,26 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 3,
       parentTaskId: task.id,
+      dependsOnTaskIds: [wave2Id],
+      blockedBy: [wave2Id],
       plannerNotes:
         "Wave 3: polish, verify UI/runtime state, and keep changes low-risk.",
     },
   ];
+}
+
+function validateDependencyOrder(tasks: AgentTask[]) {
+  return tasks.every((task, index) => {
+    const dependencyIds = task.dependsOnTaskIds ?? task.blockedBy ?? [];
+
+    return dependencyIds.every((dependencyId) => {
+      const dependencyIndex = tasks.findIndex(
+        (candidate) => candidate.id === dependencyId,
+      );
+
+      return dependencyIndex >= 0 && dependencyIndex < index;
+    });
+  });
 }
 
 export async function POST(req: Request) {
@@ -242,6 +267,17 @@ export async function POST(req: Request) {
     }
 
     const waveTasks = createWaveTasks(task);
+
+    if (!validateDependencyOrder(waveTasks)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          mode: "planner-waves-invalid-dependencies",
+          error: "Planner waves have invalid dependency order",
+        },
+        { status: 400 },
+      );
+    }
 
     const updatedParentTask: AgentTask = {
       ...task,
