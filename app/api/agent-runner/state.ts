@@ -106,6 +106,89 @@ export async function updateStateWith(
   await writeStateFile(mutator(state), sha, message);
 }
 
+export type ControlStateSnapshot = {
+  paused: boolean;
+  runnerLocked: boolean;
+  runnerLockStartedAt?: number;
+  lastRunAt?: number;
+  autoRunEnabled: boolean;
+  autoMergeEnabled: boolean;
+  emergencyStop: boolean;
+  recentFailedRuns: number;
+  recentValidationFailures: number;
+  recentMergeFailures: number;
+  recentDeployFailures: number;
+  failedRuns: number;
+  lastFailureAt?: string;
+  consecutiveFailures: number;
+  runtimeBlockedUntil?: string;
+  runnerHealthStatus: RunnerHealthStatus;
+  recoveryAutoRunResumeEligible: boolean;
+  recoveryActive: boolean;
+  deployStatus?: AgentState["deployStatus"];
+  deployStartedAt?: string;
+  deployCompletedAt?: string;
+  deployError?: string;
+  lastDeployUrl?: string;
+  overnightModeActive: boolean;
+  overnightSessionStartedAt?: string;
+  overnightSessionCompletedAt?: string;
+  overnightSessionStopReason?: string;
+  overnightTasksCompleted: number;
+  overnightPrsCreated: number;
+  overnightFailures: number;
+  overnightRecoveries: number;
+  overnightMaxTasks?: number;
+  overnightMaxPrs?: number;
+  overnightMaxFailures?: number;
+  overnightMaxRecoveryAttempts?: number;
+  overnightMaxDurationMs?: number;
+};
+
+export function buildControlStateSnapshot(
+  state: AgentState
+): ControlStateSnapshot {
+  return {
+    paused: state.paused ?? false,
+    runnerLocked: state.runnerLocked ?? false,
+    runnerLockStartedAt: state.runnerLockStartedAt,
+    lastRunAt: state.lastRunAt,
+    autoRunEnabled: state.autoRunEnabled ?? false,
+    autoMergeEnabled: state.autoMergeEnabled ?? false,
+    emergencyStop: state.emergencyStop ?? false,
+    recentFailedRuns: state.recentFailedRuns ?? 0,
+    recentValidationFailures: state.recentValidationFailures ?? 0,
+    recentMergeFailures: state.recentMergeFailures ?? 0,
+    recentDeployFailures: state.recentDeployFailures ?? 0,
+    failedRuns: state.failedRuns ?? 0,
+    lastFailureAt: state.lastFailureAt,
+    consecutiveFailures: state.consecutiveFailures ?? 0,
+    runtimeBlockedUntil: state.runtimeBlockedUntil,
+    runnerHealthStatus: state.runnerHealthStatus ?? "healthy",
+    recoveryAutoRunResumeEligible:
+      state.recoveryAutoRunResumeEligible ?? false,
+    recoveryActive: state.recoveryActive ?? false,
+    deployStatus: state.deployStatus,
+    deployStartedAt: state.deployStartedAt,
+    deployCompletedAt: state.deployCompletedAt,
+    deployError: state.deployError,
+    lastDeployUrl: state.lastDeployUrl,
+    overnightModeActive: state.overnightModeActive ?? false,
+    overnightSessionStartedAt: state.overnightSessionStartedAt,
+    overnightSessionCompletedAt: state.overnightSessionCompletedAt,
+    overnightSessionStopReason: state.overnightSessionStopReason,
+    overnightTasksCompleted: state.overnightTasksCompleted ?? 0,
+    overnightPrsCreated: state.overnightPrsCreated ?? 0,
+    overnightFailures: state.overnightFailures ?? 0,
+    overnightRecoveries: state.overnightRecoveries ?? 0,
+    overnightMaxTasks: state.overnightMaxTasks,
+    overnightMaxPrs: state.overnightMaxPrs,
+    overnightMaxFailures: state.overnightMaxFailures,
+    overnightMaxRecoveryAttempts: state.overnightMaxRecoveryAttempts,
+    overnightMaxDurationMs: state.overnightMaxDurationMs,
+  };
+}
+
 export async function incrementStateCounter(
   key:
     | "recentFailedRuns"

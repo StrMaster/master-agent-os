@@ -31,7 +31,12 @@ agentRole?: string;
 type RunnerHealthState = {
   runnerHealthStatus: "healthy" | "degraded" | "blocked";
   consecutiveFailures: number;
+  failedRuns?: number;
+  lastFailureAt?: string;
   runtimeBlockedUntil?: string;
+  recoveryActive?: boolean;
+  overnightModeActive?: boolean;
+  deployStatus?: "pending" | "success" | "failed";
 };
 
 export default function ActivityFeed() {
@@ -58,8 +63,14 @@ const [filter, setFilter] = useState("all");
           controlStateData.state.runnerHealthStatus ?? "healthy",
         consecutiveFailures:
           controlStateData.state.consecutiveFailures ?? 0,
+        failedRuns: controlStateData.state.failedRuns ?? 0,
+        lastFailureAt: controlStateData.state.lastFailureAt,
         runtimeBlockedUntil:
           controlStateData.state.runtimeBlockedUntil,
+        recoveryActive: controlStateData.state.recoveryActive ?? false,
+        overnightModeActive:
+          controlStateData.state.overnightModeActive ?? false,
+        deployStatus: controlStateData.state.deployStatus,
       });
     }
 
@@ -376,6 +387,27 @@ const groupedEntries = Object.entries(groupedRuns);
           <div style={{ marginTop: 6, color: "#999", fontSize: 13 }}>
             Consecutive failures: {runnerHealth.consecutiveFailures}
           </div>
+          {typeof runnerHealth.failedRuns === "number" && (
+            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+              Failed runs: {runnerHealth.failedRuns}
+            </div>
+          )}
+          {runnerHealth.lastFailureAt && (
+            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+              Last failure: {new Date(runnerHealth.lastFailureAt).toLocaleString()}
+            </div>
+          )}
+          <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+            Recovery active: {runnerHealth.recoveryActive ? "Yes" : "No"}
+          </div>
+          <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+            Overnight mode: {runnerHealth.overnightModeActive ? "On" : "Off"}
+          </div>
+          {runnerHealth.deployStatus && (
+            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+              Deploy status: {runnerHealth.deployStatus}
+            </div>
+          )}
           {runnerHealth.runtimeBlockedUntil && (
             <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
               Blocked until:{" "}

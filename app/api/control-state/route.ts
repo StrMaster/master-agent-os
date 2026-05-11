@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildControlStateSnapshot } from "../agent-runner/state";
 
 export const runtime = "nodejs";
 
@@ -125,49 +126,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok: true,
-      state: {
-        paused: state.paused ?? false,
-        runnerLocked: state.runnerLocked ?? false,
-        runnerLockStartedAt: state.runnerLockStartedAt,
-        lastRunAt: state.lastRunAt,
-        autoRunEnabled: state.autoRunEnabled ?? false,
-        autoMergeEnabled: state.autoMergeEnabled ?? false,
-        emergencyStop: state.emergencyStop ?? false,
-        recoveryActive: state.recoveryActive ?? false,
-recentFailedRuns: state.recentFailedRuns ?? 0,
-recentValidationFailures:
-  state.recentValidationFailures ?? 0,
-recentMergeFailures:
-  state.recentMergeFailures ?? 0,
-        recentDeployFailures:
-          state.recentDeployFailures ?? 0,
-        consecutiveFailures:
-          state.consecutiveFailures ?? 0,
-        runtimeBlockedUntil:
-          state.runtimeBlockedUntil,
-        runnerHealthStatus:
-          state.runnerHealthStatus ?? "healthy",
-        recoveryAutoRunResumeEligible:
-          state.recoveryAutoRunResumeEligible ?? false,
-        deployStatus: state.deployStatus,
-        deployStartedAt: state.deployStartedAt,
-        deployCompletedAt: state.deployCompletedAt,
-        deployError: state.deployError,
-        lastDeployUrl: state.lastDeployUrl,
-        overnightModeActive: state.overnightModeActive ?? false,
-        overnightSessionStartedAt: state.overnightSessionStartedAt,
-        overnightSessionCompletedAt: state.overnightSessionCompletedAt,
-        overnightSessionStopReason: state.overnightSessionStopReason,
-        overnightTasksCompleted: state.overnightTasksCompleted ?? 0,
-        overnightPrsCreated: state.overnightPrsCreated ?? 0,
-        overnightFailures: state.overnightFailures ?? 0,
-        overnightRecoveries: state.overnightRecoveries ?? 0,
-        overnightMaxTasks: state.overnightMaxTasks,
-        overnightMaxPrs: state.overnightMaxPrs,
-        overnightMaxFailures: state.overnightMaxFailures,
-        overnightMaxRecoveryAttempts: state.overnightMaxRecoveryAttempts,
-        overnightMaxDurationMs: state.overnightMaxDurationMs,
-      },
+      state: buildControlStateSnapshot(state),
     });
   } catch (error) {
     return NextResponse.json(
