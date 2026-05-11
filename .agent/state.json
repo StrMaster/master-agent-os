@@ -1,6 +1,6 @@
 {
   "paused": false,
-  "runnerLocked": true,
+  "runnerLocked": false,
   "autoRunEnabled": false,
   "autoMergeEnabled": true,
   "emergencyStop": false,
@@ -22,6 +22,5 @@
   "overnightTasksCompleted": 0,
   "overnightPrsCreated": 0,
   "overnightFailures": 0,
-  "overnightRecoveries": 0,
-  "runnerLockStartedAt": 1778522308974
+  "overnightRecoveries": 0
 }
