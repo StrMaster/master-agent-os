@@ -13,7 +13,6 @@ import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
 import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
 import { logActivity, readActivityFile } from "./activity";
-import { readGithubJson, writeGithubJson } from "./github";
 import {
   incrementStateCounter,
   readStateFile,
@@ -22,6 +21,7 @@ import {
   updateStateWith,
   writeStateFile,
 } from "./state";
+import { createRecoveryTask, readTasksFile, writeTasksFile } from "./tasks";
 import type { AgentState, AgentTask, GitHubFile, Priority } from "./types";
 
 
@@ -33,7 +33,6 @@ const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
 
-const TASKS_PATH = ".agent/tasks.json";
 const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
 const RUNNER_COOLDOWN_MS = 3_000;
@@ -76,85 +75,6 @@ async function readProjectState() {
 
   const file = await res.json();
   return Buffer.from(file.content, "base64").toString("utf-8");
-}
-
-// TASK HELPERS
-async function readTasksFile() {
-  const { json, sha } = await readGithubJson(TASKS_PATH);
-
-  return {
-    tasks: Array.isArray(json) ? (json as AgentTask[]) : [],
-    sha,
-  };
-}
-
-async function writeTasksFile(tasks: AgentTask[], sha: string, message: string) {
-  await writeGithubJson(TASKS_PATH, tasks, sha, message);
-}
-
-async function createRecoveryTask({
-  failedTask,
-  reason,
-}: {
-  failedTask: AgentTask;
-  reason: string;
-}) {
-  const { tasks, sha } = await readTasksFile();
-
-  const existingRecoveryTask = tasks.find(
-    (task) =>
-      task.recoveryOfTaskId === failedTask.id &&
-      ["todo", "running", "pending-pr"].includes(task.status)
-  );
-
-  if (existingRecoveryTask) {
-    await logActivity({
-      type: "recovery-task-duplicate-blocked",
-      runId: existingRecoveryTask.id,
-      taskId: failedTask.id,
-      agentName: "Senior Recovery Agent",
-      reason,
-    });
-
-    return existingRecoveryTask;
-  }
-
-  const recoveryTask: AgentTask = {
-    id: `recovery-${Date.now()}`,
-    title: `Recovery: ${failedTask.title}`,
-    summary: `Recover failed task: ${failedTask.id}`,
-    targetFile: failedTask.targetFile,
-    status: "todo",
-    priority: "high",
-    createdAt: new Date().toISOString(),
-
-    agentRole: "senior-recovery",
-    agentName: "Senior Recovery Agent",
-
-    recoveryOfTaskId: failedTask.id,
-    recoveryReason: reason,
-
-    plannerNotes:
-      "Automatically generated recovery task after reviewer/execution failure.",
-  };
-
-  tasks.unshift(recoveryTask);
-
-  await writeTasksFile(
-  tasks,
-  sha,
-  `Create recovery task for ${failedTask.id}`
-);
-
-  await logActivity({
-    type: "recovery-task-created",
-    runId: recoveryTask.id,
-    taskId: failedTask.id,
-    agentName: "Senior Recovery Agent",
-    reason,
-  });
-
-  return recoveryTask;
 }
 
 // RUNNER SAFETY
