@@ -94,6 +94,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isObservability =
+    text.includes("observability") ||
+    text.includes("runtime anomaly") ||
+    text.includes("stability") ||
+    text.includes("stalled execution") ||
+    text.includes("runner health");
+
+  if (isObservability) {
+    return {
+      role: "observability",
+      agent: getSmartAgent("observability"),
+      confidence: "high",
+      reason: "Prompt asks for runtime monitoring or anomaly detection.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||

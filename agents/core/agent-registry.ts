@@ -7,7 +7,8 @@ export type SmartAgentRole =
   | "senior-recovery"
   | "repo-context"
   | "architecture-reviewer"
-  | "code-reviewer";
+  | "code-reviewer"
+  | "observability";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -158,6 +159,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic review signals.",
       "Flag runtime/core edits and repeated risky files.",
       "Recommend merge caution or execution caution instead of noisy warnings.",
+    ],
+  },
+  {
+    id: "observability",
+    name: "Observability Agent",
+    purpose:
+      "Monitors runtime stability, orchestration anomalies, and unhealthy execution patterns.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic anomaly signals.",
+      "Track failure spikes, blocked runtime frequency, and stalled chains.",
+      "Recommend runtime cooldown or recovery caution when patterns repeat.",
     ],
   },
 ];

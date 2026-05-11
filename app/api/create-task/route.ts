@@ -12,6 +12,7 @@ import {
   reviewArchitectureTask,
 } from "@/agents/core/architecture-reviewer";
 import { applyCodeReview, reviewCodeTask } from "@/agents/core/code-reviewer";
+import { scanObservabilitySignals } from "@/agents/core/observability";
 import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
 
 const OWNER = "StrMaster";
@@ -743,22 +744,39 @@ if (
           })
         )
       : architectureReviewedTasks;
+    const observabilityReviewedTasks = plannerDriven
+      ? await Promise.all(
+          reviewedGeneratedTasks.map(async (task) => {
+            const scan = await scanObservabilitySignals({ repoContext });
 
-    const updatedTasks = [...tasks, ...reviewedGeneratedTasks];
+            return {
+              ...task,
+              previewOnly: task.previewOnly || scan.recommendation !== "ok",
+              requiresApproval:
+                task.requiresApproval || scan.recommendation !== "ok",
+              plannerNotes: String(task.plannerNotes ?? "").trim()
+                ? `${String(task.plannerNotes).trim()} Observability: ${scan.recommendation}.`
+                : `Observability: ${scan.recommendation}.`,
+            };
+          })
+        )
+      : reviewedGeneratedTasks;
+
+    const updatedTasks = [...tasks, ...observabilityReviewedTasks];
 
     await writeGithubJson(
       TASKS_PATH,
       updatedTasks,
       sha,
-      `Create manual agent task: ${reviewedGeneratedTasks[0].id}`
+      `Create manual agent task: ${observabilityReviewedTasks[0].id}`
     );
 
     await logActivity({
       type: "manual-task-created",
-      taskId: reviewedGeneratedTasks[0].id,
-      summary: reviewedGeneratedTasks[0].title,
-      targetFile: reviewedGeneratedTasks[0].targetFile,
-      priority: reviewedGeneratedTasks[0].priority,
+      taskId: observabilityReviewedTasks[0].id,
+      summary: observabilityReviewedTasks[0].title,
+      targetFile: observabilityReviewedTasks[0].targetFile,
+      priority: observabilityReviewedTasks[0].priority,
       reasoning: reasoningHint,
     });
 
@@ -767,13 +785,13 @@ if (
         ...context,
         activeRuntimeAreas: [
           ...(context.activeRuntimeAreas ?? []),
-          ...reviewedGeneratedTasks.map((task) => task.targetFile),
+          ...observabilityReviewedTasks.map((task) => task.targetFile),
         ],
       }),
-      `Record repo context for task ${reviewedGeneratedTasks[0].id}`,
+      `Record repo context for task ${observabilityReviewedTasks[0].id}`,
       {
-        taskId: reviewedGeneratedTasks[0].id,
-        targetFile: reviewedGeneratedTasks[0].targetFile,
+        taskId: observabilityReviewedTasks[0].id,
+        targetFile: observabilityReviewedTasks[0].targetFile,
       }
     ).catch(() => {});
 
@@ -809,7 +827,7 @@ if (
     "Continuing activity feed improvements.";
 }
 
-    const primaryTask = reviewedGeneratedTasks[0];
+    const primaryTask = observabilityReviewedTasks[0];
 
 const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
 
@@ -820,7 +838,7 @@ const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
 
-    for (const task of reviewedGeneratedTasks) {
+    for (const task of observabilityReviewedTasks) {
       addRuntimeTask({
         id: task.id,
         title: task.title,
@@ -833,8 +851,8 @@ return NextResponse.json({
   mode: "manual-task-created",
   message: conversationalMessage,
   followUp,
-      tasks: reviewedGeneratedTasks,
-});
+      tasks: observabilityReviewedTasks,
+    });
   } catch (error) {
     return NextResponse.json(
       {

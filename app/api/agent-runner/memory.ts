@@ -376,4 +376,30 @@ export async function recordRuntimeExecutionSummary(input: {
   );
 }
 
+export async function recordRuntimeObservationSummary(input: {
+  code: string;
+  recommendation: string;
+  detail: string;
+  observedAt?: string;
+}) {
+  const observedAt = input.observedAt ?? new Date().toISOString();
+
+  return updateRuntimeMemoryWith(
+    (memory) => ({
+      ...memory,
+      lastRun: observedAt,
+      lastFailure:
+        input.recommendation === "execution-stop-suggestion"
+          ? input.detail
+          : memory.lastFailure ?? null,
+    }),
+    "Track observability scan in runtime memory",
+    {
+      code: input.code,
+      recommendation: input.recommendation,
+      observedAt,
+    }
+  );
+}
+
 export type { AgentState };
