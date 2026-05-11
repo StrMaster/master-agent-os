@@ -13,9 +13,9 @@
   "lastDeploymentState": "BUILDING",
   "lastDeployFailureId": null,
   "lastRunAt": 1778448833571,
-  "deployStatus": "success",
+  "deployStatus": "pending",
   "deployStartedAt": "2026-05-11T13:22:32.208Z",
   "deployCompletedAt": "2026-05-11T14:21:47.032Z",
-  "lastDeployUrl": "master-agent-eobwmvz5m-strmasters-projects.vercel.app",
+  "lastDeployUrl": "master-agent-4a4qbcknc-strmasters-projects.vercel.app",
   "recoveryAutoRunResumeEligible": false
 }
