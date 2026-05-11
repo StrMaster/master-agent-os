@@ -1,5 +1,12 @@
 [
   {
+    "id": "035d884b-364a-4aa5-a13d-023e27f9c4f8",
+    "timestamp": "2026-05-11T17:10:09.081Z",
+    "type": "runtime-anomaly-detected",
+    "recommendation": "ok",
+    "details": "[{\"code\":\"stalled-chain\",\"severity\":\"medium\",\"detail\":\"6 runtime areas look stalled or stuck.\"}]"
+  },
+  {
     "id": "c559d3cb-2771-42f6-9d80-f751405a2201",
     "timestamp": "2026-05-11T17:10:08.006Z",
     "type": "observability-scan-completed",
