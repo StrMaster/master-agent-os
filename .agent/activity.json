@@ -1,5 +1,20 @@
 [
   {
+    "id": "12a3fdb8-4ece-4f48-942b-da89543aa933",
+    "timestamp": "2026-05-11T17:10:03.853Z",
+    "type": "code-review-completed",
+    "taskId": "manual-task-1778519402554",
+    "targetFile": "app/page.tsx",
+    "recommendation": "execution-caution",
+    "scopeSize": 3,
+    "previewOnly": false,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "mergeCaution": false,
+    "executionCaution": true,
+    "signals": "[{\"code\":\"moderate-scope\",\"severity\":\"medium\",\"detail\":\"Change scope is 3.\"},{\"code\":\"multi-step\",\"severity\":\"medium\",\"detail\":\"Task is marked multi-step.\"}]"
+  },
+  {
     "id": "effa5abf-8cde-4cdf-9bf7-68f984a65815",
     "timestamp": "2026-05-11T17:10:02.910Z",
     "type": "architecture-review-completed",
