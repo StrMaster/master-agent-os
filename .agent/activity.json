@@ -1,5 +1,14 @@
 [
   {
+    "id": "b263a1f5-829a-4f40-ad9e-c2d689bd0093",
+    "timestamp": "2026-05-11T17:10:11.701Z",
+    "type": "runtime-memory-updated",
+    "reason": "Track observability scan in runtime memory",
+    "code": "observability-scan",
+    "recommendation": "ok",
+    "observedAt": "2026-05-11T17:10:10.526Z"
+  },
+  {
     "id": "035d884b-364a-4aa5-a13d-023e27f9c4f8",
     "timestamp": "2026-05-11T17:10:09.081Z",
     "type": "runtime-anomaly-detected",
