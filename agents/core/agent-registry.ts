@@ -11,6 +11,7 @@ export type SmartAgentRole =
   | "design-specialist"
   | "frontend-specialist"
   | "backend-specialist"
+  | "testing-specialist"
   | "observability"
   | "recovery-intelligence"
   | "control-communication";
@@ -212,6 +213,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic backend safety signals.",
       "Treat runtime, recovery, deploy, and orchestration files as sensitive.",
       "Recommend split or approval when backend scope grows across modules.",
+    ],
+  },
+  {
+    id: "testing-specialist",
+    name: "Testing Specialist Agent",
+    purpose:
+      "Evaluates changes for validation risk, build verification needs, deploy caution, and missing testing coverage.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic validation signals.",
+      "Recommend build verification, additional validation, or execution caution when risk is elevated.",
+      "Treat runtime, deploy, and repeated failure areas as testing-sensitive.",
     ],
   },
   {

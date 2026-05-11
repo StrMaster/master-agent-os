@@ -74,6 +74,28 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isTestingSpecialist =
+    text.includes("testing specialist") ||
+    text.includes("testing review") ||
+    text.includes("test coverage") ||
+    text.includes("validation") ||
+    text.includes("verification") ||
+    text.includes("build verification") ||
+    text.includes("qa") ||
+    text.includes("regression") ||
+    text.includes("lint") ||
+    text.includes("ci") ||
+    text.includes("deploy caution");
+
+  if (isTestingSpecialist) {
+    return {
+      role: "testing-specialist",
+      agent: getSmartAgent("testing-specialist"),
+      confidence: "high",
+      reason: "Prompt asks for validation, testing, or build verification guidance.",
+    };
+  }
+
   const isUi =
     text.includes("ui") ||
     text.includes("layout") ||

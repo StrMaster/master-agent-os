@@ -26,6 +26,11 @@ import {
   reviewDesignTask,
   shouldReviewDesignTask,
 } from "@/agents/core/design-specialist";
+import {
+  applyTestingReview,
+  reviewTestingTask,
+  shouldReviewTestingTask,
+} from "@/agents/core/testing-specialist";
 import { scanObservabilitySignals } from "@/agents/core/observability";
 import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
 
@@ -819,22 +824,38 @@ if (
           })
         )
       : reviewedGeneratedTasks;
+    const testingReviewedTasks = plannerDriven
+      ? await Promise.all(
+          observabilityReviewedTasks.map(async (task) => {
+            if (!shouldReviewTestingTask(task, repoContext)) {
+              return task;
+            }
 
-    const updatedTasks = [...tasks, ...observabilityReviewedTasks];
+            const review = await reviewTestingTask(task, {
+              repoContext,
+              runtimeMemory: runtimeMemory.memory,
+            });
+
+            return applyTestingReview(task, review);
+          })
+        )
+      : observabilityReviewedTasks;
+
+    const updatedTasks = [...tasks, ...testingReviewedTasks];
 
     await writeGithubJson(
       TASKS_PATH,
       updatedTasks,
       sha,
-      `Create manual agent task: ${observabilityReviewedTasks[0].id}`
+      `Create manual agent task: ${testingReviewedTasks[0].id}`
     );
 
     await logActivity({
       type: "manual-task-created",
-      taskId: observabilityReviewedTasks[0].id,
-      summary: observabilityReviewedTasks[0].title,
-      targetFile: observabilityReviewedTasks[0].targetFile,
-      priority: observabilityReviewedTasks[0].priority,
+      taskId: testingReviewedTasks[0].id,
+      summary: testingReviewedTasks[0].title,
+      targetFile: testingReviewedTasks[0].targetFile,
+      priority: testingReviewedTasks[0].priority,
       reasoning: reasoningHint,
     });
 
@@ -843,13 +864,13 @@ if (
         ...context,
         activeRuntimeAreas: [
           ...(context.activeRuntimeAreas ?? []),
-          ...observabilityReviewedTasks.map((task) => task.targetFile),
+          ...testingReviewedTasks.map((task) => task.targetFile),
         ],
       }),
-      `Record repo context for task ${observabilityReviewedTasks[0].id}`,
+      `Record repo context for task ${testingReviewedTasks[0].id}`,
       {
-        taskId: observabilityReviewedTasks[0].id,
-        targetFile: observabilityReviewedTasks[0].targetFile,
+        taskId: testingReviewedTasks[0].id,
+        targetFile: testingReviewedTasks[0].targetFile,
       }
     ).catch(() => {});
 
@@ -885,7 +906,7 @@ if (
     "Continuing activity feed improvements.";
 }
 
-    const primaryTask = observabilityReviewedTasks[0];
+    const primaryTask = testingReviewedTasks[0];
 
 const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
 
@@ -896,7 +917,7 @@ const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
 
-    for (const task of observabilityReviewedTasks) {
+    for (const task of testingReviewedTasks) {
       addRuntimeTask({
         id: task.id,
         title: task.title,
@@ -905,11 +926,11 @@ const followUp = reasoningHint
     }
 
 return NextResponse.json({
-  ok: true,
-  mode: "manual-task-created",
-  message: conversationalMessage,
-  followUp,
-      tasks: observabilityReviewedTasks,
+      ok: true,
+      mode: "manual-task-created",
+      message: conversationalMessage,
+      followUp,
+      tasks: testingReviewedTasks,
     });
   } catch (error) {
     return NextResponse.json(
