@@ -1,5 +1,18 @@
 [
   {
+    "id": "c4e6feea-d625-492c-b01d-2d5f7b9ad42a",
+    "timestamp": "2026-05-11T17:58:16.628Z",
+    "type": "frontend-review-completed",
+    "taskId": "manual-task-1778522292453",
+    "targetFile": "app/page.tsx",
+    "recommendation": "design-review",
+    "scopeSize": 2,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"frontend-surface\",\"severity\":\"low\",\"detail\":\"Target is in a known frontend surface: app/page.tsx\"},{\"code\":\"visual-only\",\"severity\":\"low\",\"detail\":\"Task appears to be visual-only or presentation-focused.\"},{\"code\":\"logic-affecting\",\"severity\":\"medium\",\"detail\":\"Task touches state, data, or other logic-bearing frontend behavior.\"}]"
+  },
+  {
     "id": "a2926590-f5a5-4888-9ea3-df801bde767d",
     "timestamp": "2026-05-11T17:58:15.682Z",
     "type": "design-review-completed",
