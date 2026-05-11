@@ -3,11 +3,13 @@ export type RunnerHealthStatus = "healthy" | "degraded" | "blocked";
 
 export type AgentTaskStatus =
   | "todo"
+  | "queued"
   | "running"
   | "done"
   | "failed"
-  | "pending-pr";
+  | "pending-pr"
   | "planner-required"
+  | "planner-split";
 
 export type AgentTask = {
   id: string;
