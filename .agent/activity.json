@@ -1,5 +1,14 @@
 [
   {
+    "id": "1ba5b2dd-512c-4af4-b35c-682e74f166fa",
+    "timestamp": "2026-05-11T17:07:12.199Z",
+    "type": "task-chain-stopped",
+    "iterations": 1,
+    "taskId": "manual-task-1778518982855",
+    "mode": "pull-request-merged",
+    "reason": "No additional approved ready tasks were available."
+  },
+  {
     "id": "6cfbdaec-5272-41a2-aa13-1ca3837f4853",
     "timestamp": "2026-05-11T17:07:08.216Z",
     "type": "runtime-memory-updated",
