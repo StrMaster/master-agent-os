@@ -188,6 +188,47 @@ function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
   };
 }
 
+function isRecoveryTask(task: AgentTask) {
+  return task.agentRole === "senior-recovery" || Boolean(task.recoveryOfTaskId);
+}
+
+function buildExecutionContext(
+  task: AgentTask,
+  tasks: AgentTask[]
+) {
+  if (!isRecoveryTask(task)) {
+    return {
+      taskTitle: task.title,
+      taskSummary: task.summary ?? task.title,
+    };
+  }
+
+  const originalFailedTask = task.recoveryOfTaskId
+    ? tasks.find((candidate) => candidate.id === task.recoveryOfTaskId)
+    : null;
+
+  const recoverySummaryParts = [
+    task.summary ?? task.title,
+    task.recoveryOfTaskId
+      ? `Recovery task for: ${task.recoveryOfTaskId}`
+      : null,
+    task.recoveryReason
+      ? `Recovery reason: ${task.recoveryReason}`
+      : null,
+    originalFailedTask?.title
+      ? `Original failed task title: ${originalFailedTask.title}`
+      : null,
+    originalFailedTask?.summary
+      ? `Original failed task summary: ${originalFailedTask.summary}`
+      : null,
+  ].filter(Boolean);
+
+  return {
+    taskTitle: task.title,
+    taskSummary: recoverySummaryParts.join("\n"),
+  };
+}
+
 function retryAllowed(task: AgentTask) {
   const retryCount = task.retryCount ?? 0;
 
@@ -599,12 +640,13 @@ try {
     const currentContent = await readTargetFile(task.targetFile);
 
     const projectState = await readProjectState();
+    const executionContext = buildExecutionContext(task, tasks);
 
     const patchedContent = await generateCodePatch({
       filePath: task.targetFile,
       currentContent,
-      taskTitle: task.title,
-      taskSummary: task.summary ?? task.title,
+      taskTitle: executionContext.taskTitle,
+      taskSummary: executionContext.taskSummary,
       projectState,
       agentSystemPrompt: task.agentSystemPrompt,
 agentName: task.agentName,
