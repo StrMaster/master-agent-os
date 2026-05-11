@@ -20,6 +20,9 @@ type AgentTask = {
   branchName?: string;
   parentTaskId?: string;
   wave?: number;
+  previewOnly?: boolean;
+  requiresApproval?: boolean;
+  approvedAt?: string;
   plannerNotes?: string;
   result?: {
     branchName?: string;
@@ -168,6 +171,12 @@ function TaskCard({ task }: { task: AgentTask }) {
         )}
 
         {typeof task.wave === "number" && <div>Wave: {task.wave}</div>}
+
+        {task.previewOnly && <div className="text-amber-300">Preview only</div>}
+
+        {task.requiresApproval && <div className="text-amber-300">Approval required</div>}
+
+        {task.approvedAt && <div className="text-emerald-300">Approved: {task.approvedAt}</div>}
 
         {task.parentTaskId && <div>Parent task: {task.parentTaskId}</div>}
 
