@@ -169,5 +169,22 @@
       "pullRequestNumber": 185,
       "merged": false
     }
+  },
+  {
+    "id": "manual-task-1778518982855",
+    "title": "Add informational tooltip about LLM usage count",
+    "summary": "Add a small UI tooltip or info icon on the main page that displays how many LLMs are currently used or supported, providing users with quick insight without backend changes.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "manual",
+    "createdAt": "2026-05-11T17:03:02.855Z",
+    "queuedAt": "2026-05-11T17:03:02.855Z",
+    "executionMode": "single-file",
+    "wave": 1,
+    "previewOnly": false,
+    "requiresApproval": false,
+    "plannerNotes": "Single safe execution task. Architecture review: approve (scope 1). Code review: approve (scope 1). Backend review: approve (scope 1). Design review: small-design-task (scope 2). Frontend review: small-frontend-task (scope 1). Observability: ok. Testing review: approve (scope 2). Performance review: approve (scope 2).",
+    "riskLevel": "low"
   }
 ]
