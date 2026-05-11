@@ -20,6 +20,32 @@ type ControlState = {
   deployError?: string;
 };
 
+const CONTROL_STATE_STORAGE_KEY = "master-agent-control-state";
+
+function readLocalControlState(): Partial<ControlState> {
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(CONTROL_STATE_STORAGE_KEY) ?? "{}"
+    );
+
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalControlState(patch: Partial<ControlState>) {
+  const current = readLocalControlState();
+
+  window.localStorage.setItem(
+    CONTROL_STATE_STORAGE_KEY,
+    JSON.stringify({
+      ...current,
+      ...patch,
+    })
+  );
+}
+
 export default function RuntimeControlPanel() {
   const [state, setState] = useState<ControlState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,19 +58,36 @@ export default function RuntimeControlPanel() {
       const data = await res.json();
 
       if (data?.ok && data.state) {
-        setState(data.state);
+        const localState = readLocalControlState();
+
+        setState({
+          ...data.state,
+          ...localState,
+        });
         setError(null);
       }
     } catch (err) {
+      const localState = readLocalControlState();
+
+      setState((current) => ({
+        ...(current ?? {}),
+        ...localState,
+      }));
       setError(err instanceof Error ? err.message : "Failed to load control state");
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateState(patch: Record<string, unknown>) {
+  async function updateState(patch: Partial<ControlState>) {
     try {
       setWorking(true);
+      writeLocalControlState(patch);
+
+      setState((current) => ({
+        ...(current ?? {}),
+        ...patch,
+      }));
 
       const res = await fetch("/api/control-state", {
         method: "POST",
@@ -58,7 +101,6 @@ export default function RuntimeControlPanel() {
         throw new Error(data.error ?? "Failed to update control state");
       }
 
-      setState(data.state);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update control state");
@@ -69,9 +111,6 @@ export default function RuntimeControlPanel() {
 
   useEffect(() => {
     loadState();
-
-    const interval = window.setInterval(loadState, 10_000);
-    return () => window.clearInterval(interval);
   }, []);
 
   const runtimeMode = buildRuntimeMode(state);
@@ -90,7 +129,7 @@ export default function RuntimeControlPanel() {
               Safe runtime operation
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/55">
-              Pause, resume, emergency stop, auto-run, and overnight mode controls with live safety state.
+              Pause, resume, emergency stop, auto-run, and overnight mode controls with stable client-side runtime state.
             </p>
           </div>
 
@@ -108,8 +147,8 @@ export default function RuntimeControlPanel() {
         </div>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-            {error}
+          <div className="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-100">
+            Runtime control warning: {error}
           </div>
         )}
 
@@ -184,18 +223,7 @@ export default function RuntimeControlPanel() {
                 active={Boolean(state?.autoRunEnabled)}
                 tone="success"
                 disabled={loading || working || Boolean(state?.emergencyStop)}
-                onClick={async () => {
-                  const next = !state?.autoRunEnabled;
-                  await updateState({ autoRunEnabled: next });
-
-                  if (next) {
-                    await fetch("/api/auto-run", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ forceRunOnce: true }),
-                    });
-                  }
-                }}
+                onClick={() => updateState({ autoRunEnabled: !state?.autoRunEnabled })}
               />
 
               <ControlButton
