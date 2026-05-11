@@ -1,5 +1,18 @@
 [
   {
+    "id": "113ab902-12b8-4bde-9857-a19ad4606f90",
+    "timestamp": "2026-05-11T17:03:05.937Z",
+    "type": "design-review-completed",
+    "taskId": "manual-task-1778518982855",
+    "targetFile": "app/page.tsx",
+    "recommendation": "small-design-task",
+    "scopeSize": 2,
+    "previewOnly": false,
+    "requiresApproval": false,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"design-surface\",\"severity\":\"low\",\"detail\":\"Target is a UI surface: app/page.tsx\"},{\"code\":\"visual-only\",\"severity\":\"low\",\"detail\":\"Task appears to be visual-only or presentation-focused.\"},{\"code\":\"accessibility-basics\",\"severity\":\"low\",\"detail\":\"Design surface should keep keyboard, contrast, and focus behavior in mind.\"}]"
+  },
+  {
     "id": "827de883-82c6-4275-8302-47d0ba176eaa",
     "timestamp": "2026-05-11T17:03:04.449Z",
     "type": "code-review-completed",
