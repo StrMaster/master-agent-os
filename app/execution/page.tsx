@@ -28,6 +28,8 @@ type AgentTask = {
     merged?: boolean;
   };
   error?: string;
+  agentName?: string;
+agentRole?: string;
 };
 
 async function readTasks(): Promise<AgentTask[]> {
