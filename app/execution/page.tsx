@@ -36,7 +36,8 @@ type AgentTask = {
   };
   error?: string;
   agentName?: string;
-agentRole?: string;
+  agentRole?: string;
+  executionPipelineTestMarker?: boolean;
 };
 
 async function readTasks(): Promise<AgentTask[]> {
@@ -153,8 +154,13 @@ function TaskSection({
 function TaskCard({ task }: { task: AgentTask }) {
   return (
     <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
-      <div className="text-sm font-semibold text-white">
-        {task.title ?? "Untitled task"}
+      <div className="flex items-center justify-between text-sm font-semibold text-white">
+        <div>{task.title ?? "Untitled task"}</div>
+        {task.executionPipelineTestMarker && (
+          <div className="ml-2 rounded bg-blue-600 px-2 py-0.5 text-xs font-medium text-white">
+            Test Marker
+          </div>
+        )}
       </div>
 
       {task.summary && (
