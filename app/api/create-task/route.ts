@@ -180,6 +180,76 @@ function normalizeDependencyIds(value: unknown) {
   return uniqueDependencyIds.length > 0 ? uniqueDependencyIds : undefined;
 }
 
+function isBroadPlannerPrompt(prompt: string) {
+  const normalized = prompt.toLowerCase();
+
+  return [
+    "everything",
+    "entire",
+    "whole",
+    "full ",
+    "all of",
+    "all ",
+    "broad",
+    "general",
+    "complete",
+  ].some((needle) => normalized.includes(needle));
+}
+
+function inferPlannerFallbackTargetFile(prompt: string) {
+  const normalized = prompt.toLowerCase();
+
+  if (
+    normalized.includes("activity") ||
+    normalized.includes("feed") ||
+    normalized.includes("timeline") ||
+    normalized.includes("logs")
+  ) {
+    return "app/components/ActivityFeed.tsx";
+  }
+
+  if (
+    normalized.includes("run button") ||
+    normalized.includes("runner") ||
+    normalized.includes("execution") ||
+    normalized.includes("agent")
+  ) {
+    return "app/execution/page.tsx";
+  }
+
+  return "app/page.tsx";
+}
+
+function hardenPlannerGeneratedTask(task: AgentTask, prompt: string): AgentTask {
+  const title = normalizeTitle(task.title) || prompt || "Planner task";
+  const summary = String(task.summary ?? "").trim() || title;
+  const rawTargetFile = String(task.targetFile ?? "").trim();
+  const targetFile = rawTargetFile || inferPlannerFallbackTargetFile(prompt);
+  const broadPrompt = isBroadPlannerPrompt(prompt);
+  const targetFileIsSafe = isSafeTargetFile(targetFile);
+  const previewOnly =
+    task.previewOnly === true ||
+    task.requiresApproval === true ||
+    broadPrompt ||
+    !targetFileIsSafe ||
+    !rawTargetFile;
+  const executionMode =
+    task.executionMode ?? (previewOnly ? "multi-step" : "single-file");
+
+  return {
+    ...task,
+    title,
+    summary,
+    targetFile,
+    priority: task.priority ?? "low",
+    executionMode,
+    riskLevel:
+      task.riskLevel ?? (previewOnly || !targetFileIsSafe ? "high" : "low"),
+    previewOnly,
+    requiresApproval: previewOnly,
+  };
+}
+
 async function logActivity(event: Record<string, unknown>) {
   const { json: activity, sha } = await readGithubJson(ACTIVITY_PATH);
 
@@ -498,7 +568,8 @@ if (
       );
     }
 
-    if (!targetFile) {
+    const plannerDriven = Boolean(prompt);
+    if (!targetFile && !plannerDriven) {
       return NextResponse.json(
         {
           ok: false,
@@ -509,7 +580,13 @@ if (
       );
     }
 
-    if (!isSafeTargetFile(targetFile)) {
+    if (!targetFile && plannerDriven) {
+      targetFile = inferPlannerFallbackTargetFile(prompt);
+    }
+
+    const targetFileIsSafe = isSafeTargetFile(targetFile);
+
+    if (!targetFileIsSafe && !plannerDriven) {
       return NextResponse.json(
         {
           ok: false,
@@ -519,6 +596,11 @@ if (
         },
         { status: 400 }
       );
+    }
+
+    if (plannerDriven && (!targetFileIsSafe || isBroadPlannerPrompt(prompt))) {
+      previewOnly = true;
+      requiresApproval = true;
     }
 
     const { json: tasksJson, sha } = await readGithubJson(TASKS_PATH);
@@ -608,21 +690,25 @@ if (
   });
 }
 
-const updatedTasks = [...tasks, ...generatedTasks];
+    const finalizedGeneratedTasks = plannerDriven
+      ? generatedTasks.map((task) => hardenPlannerGeneratedTask(task, prompt))
+      : generatedTasks;
+
+    const updatedTasks = [...tasks, ...finalizedGeneratedTasks];
 
     await writeGithubJson(
       TASKS_PATH,
       updatedTasks,
       sha,
-      `Create manual agent task: ${generatedTasks[0].id}`
+      `Create manual agent task: ${finalizedGeneratedTasks[0].id}`
     );
 
     await logActivity({
   type: "manual-task-created",
-  taskId: generatedTasks[0].id,
-  summary: generatedTasks[0].title,
-  targetFile: generatedTasks[0].targetFile,
-  priority: generatedTasks[0].priority,
+  taskId: finalizedGeneratedTasks[0].id,
+  summary: finalizedGeneratedTasks[0].title,
+  targetFile: finalizedGeneratedTasks[0].targetFile,
+  priority: finalizedGeneratedTasks[0].priority,
   reasoning: reasoningHint,
 });
 
@@ -658,7 +744,7 @@ if (
     "Continuing activity feed improvements.";
 }
 
-    const primaryTask = generatedTasks[0];
+    const primaryTask = finalizedGeneratedTasks[0];
 
 const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
 
@@ -669,7 +755,7 @@ const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
 
-for (const task of generatedTasks) {
+for (const task of finalizedGeneratedTasks) {
   addRuntimeTask({
     id: task.id,
     title: task.title,
@@ -682,7 +768,7 @@ return NextResponse.json({
   mode: "manual-task-created",
   message: conversationalMessage,
   followUp,
-  tasks: generatedTasks,
+  tasks: finalizedGeneratedTasks,
 });
   } catch (error) {
     return NextResponse.json(

@@ -214,6 +214,23 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
   ];
 }
 
+function hardenWaveTask(task: AgentTask, index: number): AgentTask {
+  const title = String(task.title ?? "").trim() || `Wave ${index + 1}`;
+  const summary = String(task.summary ?? "").trim() || title;
+
+  return {
+    ...task,
+    title,
+    summary,
+    targetFile: String(task.targetFile ?? "").trim() || "app/page.tsx",
+    priority: task.priority ?? (index === 2 ? "medium" : "high"),
+    executionMode: task.executionMode ?? "single-file",
+    riskLevel: task.riskLevel ?? (index === 2 ? "low" : "medium"),
+    previewOnly: true,
+    requiresApproval: true,
+  };
+}
+
 function validateDependencyOrder(tasks: AgentTask[]) {
   return tasks.every((task, index) => {
     const dependencyIds = task.dependsOnTaskIds ?? task.blockedBy ?? [];
@@ -296,7 +313,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const waveTasks = createWaveTasks(task);
+    const waveTasks = createWaveTasks(task).map(hardenWaveTask);
 
     if (!validateDependencyOrder(waveTasks)) {
       return NextResponse.json(

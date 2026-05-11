@@ -41,6 +41,8 @@ Rules:
 - Do not create broad refactors.
 - If request is vague, choose the safest likely UI file.
 - Use recent context to avoid repeating the same work.
+- Always return a specific title, summary, targetFile, priority, and reasoning.
+- If the target is unclear or too broad, keep the task previewOnly with requiresApproval.
 
 Respond ONLY valid JSON.
 Always respond in the same language as the user.
@@ -196,6 +198,8 @@ Rules:
 - Generate 2 to 5 tasks.
 - Keep tasks safe and specific.
 - Prefer UI/dashboard/runtime improvements.
+- Every task must include title, summary, targetFile, priority, executionMode, and riskLevel.
+- If a task is broad or the targetFile is unclear, keep it previewOnly with requiresApproval.
 - Use only these target files:
 
 - app/page.tsx
@@ -418,6 +422,7 @@ Rules:
 - Prefer dependsOnTaskIds and blockedBy for explicit dependency ordering.
 - Use waveStatus to mark each step as ready, blocked, or completed.
 - Mark planner-generated multi-step work as previewOnly with requiresApproval.
+- Keep every step small, targeted, and approval-gated when the target is unclear.
 - Use only these target files:
 
 - app/page.tsx
