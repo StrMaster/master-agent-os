@@ -1,5 +1,18 @@
 [
   {
+    "id": "271ae8ee-e70f-416f-b430-88174e1fb04b",
+    "timestamp": "2026-05-11T17:58:21.874Z",
+    "type": "testing-review-completed",
+    "taskId": "manual-task-1778522292453",
+    "targetFile": "app/page.tsx",
+    "recommendation": "build-verification",
+    "scopeSize": 2,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"frontend-impact\",\"severity\":\"low\",\"detail\":\"Target is a frontend surface: app/page.tsx\"},{\"code\":\"testing-intent\",\"severity\":\"low\",\"detail\":\"Task already references validation or testing concerns.\"}]"
+  },
+  {
     "id": "19e77bd6-b0fd-4de1-babe-935b1fa86a25",
     "timestamp": "2026-05-11T17:58:20.902Z",
     "type": "runtime-memory-updated",
