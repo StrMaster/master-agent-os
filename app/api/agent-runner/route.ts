@@ -19,13 +19,15 @@ import {
   readStateFile,
   releaseRunnerLock,
   resetRuntimeFailureCounters,
-  recordRuntimeExecutionSummary,
-  recordRuntimeFailureMemory,
   summarizeRunnerHealth,
   trackRuntimeFailure,
   updateStateWith,
   writeStateFile,
 } from "./state";
+import {
+  recordRuntimeExecutionSummary,
+  recordRuntimeFailureMemory,
+} from "./memory";
 import { createRecoveryTask, readTasksFile, writeTasksFile } from "./tasks";
 import type {
   AgentTask,

@@ -1,5 +1,5 @@
 import { logActivity } from "./activity";
-import { recordRuntimeRecoveryMemory } from "./state";
+import { recordRuntimeRecoveryMemory } from "./memory";
 import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
 

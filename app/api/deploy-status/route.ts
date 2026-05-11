@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRecoveryTask, readTasksFile } from "../agent-runner/tasks";
-import { recordRuntimeDeployMemory } from "../agent-runner/state";
+import { recordRuntimeDeployMemory } from "../agent-runner/memory";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
