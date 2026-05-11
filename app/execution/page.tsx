@@ -1,6 +1,8 @@
 import ActivityFeed from "../components/ActivityFeed";
 import PendingPRQueue from "../components/PendingPRQueue";
 import DeleteTaskButton from "../components/DeleteTaskButton";
+import RuntimeDashboard from "../components/RuntimeDashboard";
+import { readActivityFile } from "../api/agent-runner/activity";
 
 
 export const dynamic = "force-dynamic";
@@ -66,7 +68,10 @@ async function readTasks(): Promise<AgentTask[]> {
 }
 
 export default async function ExecutionPage() {
-  const tasks = await readTasks();
+  const [tasks, activityFile] = await Promise.all([readTasks(), readActivityFile()]);
+  const activity = Array.isArray(activityFile.activity)
+    ? activityFile.activity
+    : [];
 
   const runningTasks = tasks.filter((task) => task.status === "running");
 
@@ -102,6 +107,8 @@ export default async function ExecutionPage() {
           Manage and monitor task execution.
         </p>
       </div>
+
+      <RuntimeDashboard tasks={tasks} activity={activity} />
 
       <PendingPRQueue />
 
