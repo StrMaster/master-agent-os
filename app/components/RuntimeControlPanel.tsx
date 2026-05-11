@@ -20,6 +20,11 @@ type ControlState = {
   deployError?: string;
 };
 
+type ControlStatePatch = Partial<ControlState> & {
+  clearOvernightSession?: boolean;
+  clearRecovery?: boolean;
+};
+
 const CONTROL_STATE_STORAGE_KEY = "master-agent-control-state";
 
 function readLocalControlState(): Partial<ControlState> {
@@ -79,14 +84,18 @@ export default function RuntimeControlPanel() {
     }
   }
 
-  async function updateState(patch: Partial<ControlState>) {
+  async function updateState(patch: ControlStatePatch) {
+    const localPatch: Partial<ControlState> = { ...patch };
+    delete (localPatch as ControlStatePatch).clearOvernightSession;
+    delete (localPatch as ControlStatePatch).clearRecovery;
+
     try {
       setWorking(true);
-      writeLocalControlState(patch);
+      writeLocalControlState(localPatch);
 
       setState((current) => ({
         ...(current ?? {}),
-        ...patch,
+        ...localPatch,
       }));
 
       const res = await fetch("/api/control-state", {
