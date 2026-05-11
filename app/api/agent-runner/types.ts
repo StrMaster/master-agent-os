@@ -1,4 +1,5 @@
 export type Priority = "low" | "medium" | "high";
+export type RunnerHealthStatus = "healthy" | "degraded" | "blocked";
 
 export type AgentTaskStatus =
   | "todo"
@@ -59,6 +60,7 @@ export type AgentState = {
   lastFailureAt?: string;
   consecutiveFailures?: number;
   runtimeBlockedUntil?: string;
+  runnerHealthStatus?: RunnerHealthStatus;
   recoveryActive?: boolean;
 };
 

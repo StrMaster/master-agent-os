@@ -1,4 +1,4 @@
-import type { AgentState } from "./types";
+import type { AgentState, RunnerHealthStatus } from "./types";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -149,6 +149,22 @@ export async function trackRuntimeFailure(message: string) {
     }),
     message
   );
+}
+
+export function summarizeRunnerHealth(state: AgentState): RunnerHealthStatus {
+  const runtimeBlockedUntilMs = state.runtimeBlockedUntil
+    ? new Date(state.runtimeBlockedUntil).getTime()
+    : 0;
+
+  if (runtimeBlockedUntilMs > Date.now()) {
+    return "blocked";
+  }
+
+  if (state.runnerLocked || (state.consecutiveFailures ?? 0) > 0) {
+    return "degraded";
+  }
+
+  return "healthy";
 }
 
 export async function releaseRunnerLock() {

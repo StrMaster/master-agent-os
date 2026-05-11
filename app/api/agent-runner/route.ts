@@ -19,12 +19,18 @@ import {
   readStateFile,
   releaseRunnerLock,
   resetRuntimeFailureCounters,
+  summarizeRunnerHealth,
   trackRuntimeFailure,
   updateStateWith,
   writeStateFile,
 } from "./state";
 import { createRecoveryTask, readTasksFile, writeTasksFile } from "./tasks";
-import type { AgentTask, GitHubFile, Priority } from "./types";
+import type {
+  AgentTask,
+  GitHubFile,
+  Priority,
+  RunnerHealthStatus,
+} from "./types";
 
 // Flow: task -> validation -> branch -> PR -> optional merge -> recovery
 export const runtime = "nodejs";
@@ -302,6 +308,58 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
   return candidates[0] ?? null;
 }
 
+async function syncRunnerHealth(
+  state: {
+    consecutiveFailures?: number;
+    runtimeBlockedUntil?: string;
+    runnerLocked?: boolean;
+    runnerHealthStatus?: RunnerHealthStatus;
+  },
+  {
+    runId,
+    taskId,
+  }: {
+    runId: string;
+    taskId?: string;
+  }
+) {
+  const nextHealth = summarizeRunnerHealth(state);
+  const previousHealth = state.runnerHealthStatus ?? "healthy";
+
+  if (nextHealth === previousHealth) {
+    return;
+  }
+
+  await updateStateWith(
+    (currentState) => ({
+      ...currentState,
+      runnerHealthStatus: nextHealth,
+    }),
+    `Update runner health to ${nextHealth}`
+  );
+
+  if (nextHealth === "healthy" && previousHealth !== "healthy") {
+    await logActivity({
+      type: "runner-health-recovered",
+      runId,
+      taskId,
+      previousHealth,
+      runnerHealth: nextHealth,
+    });
+    return;
+  }
+
+  if (nextHealth !== "healthy") {
+    await logActivity({
+      type: "runner-health-degraded",
+      runId,
+      taskId,
+      previousHealth,
+      runnerHealth: nextHealth,
+    });
+  }
+}
+
 export async function GET() {
   try {
     const { tasks } = await readTasksFile();
@@ -351,6 +409,7 @@ let activeTask: AgentTask | null = null;
 try {
     const { state, sha: stateSha } = await readStateFile();
     const now = Date.now();
+    await syncRunnerHealth(state, { runId }).catch(() => {});
     
     const stopCheck = evaluateStopConditions({
   emergencyStop: state.emergencyStop,
@@ -1096,5 +1155,16 @@ if (activeTask) {
     if (lockAcquired) {
       await releaseRunnerLock();
     }
+    const { state: finalState } = await readStateFile().catch(() => ({
+  state: null,
+  sha: "",
+}));
+
+if (finalState) {
+  await syncRunnerHealth(finalState, {
+    runId,
+    taskId: activeTask?.id,
+  }).catch(() => {});
+}
   }
 }
