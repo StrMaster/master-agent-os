@@ -2,6 +2,20 @@
 
 import { useState } from "react";
 
+const HIDDEN_TASKS_KEY = "master-agent-hidden-task-ids";
+
+function readHiddenTaskIds() {
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(HIDDEN_TASKS_KEY) ?? "[]"
+    );
+
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function RemoveTaskButton({
   taskId,
 }: {
@@ -9,8 +23,10 @@ export default function RemoveTaskButton({
 }) {
   const [isPending, setIsPending] = useState(false);
 
-  async function removeTask() {
-    const confirmed = window.confirm("Remove this task from the queue?");
+  function removeTask() {
+    const confirmed = window.confirm(
+      "Hide this task from this browser? This will not trigger a deploy."
+    );
 
     if (!confirmed) {
       return;
@@ -19,15 +35,17 @@ export default function RemoveTaskButton({
     setIsPending(true);
 
     try {
-      await fetch("/api/delete-task", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ taskId }),
-      });
+      const hiddenTaskIds = new Set(readHiddenTaskIds());
+      hiddenTaskIds.add(taskId);
 
-      window.location.reload();
+      window.localStorage.setItem(
+        HIDDEN_TASKS_KEY,
+        JSON.stringify([...hiddenTaskIds])
+      );
+
+      document
+        .querySelector(`[data-task-id="${taskId}"]`)
+        ?.remove();
     } finally {
       setIsPending(false);
     }
