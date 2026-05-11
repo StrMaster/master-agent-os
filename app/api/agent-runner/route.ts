@@ -80,6 +80,8 @@ lastRetryAt?: string;
 agentName?: string;
 agentSystemPrompt?: string;
 routingReason?: string;
+recoveryOfTaskId?: string;
+recoveryReason?: string;
 };
 
 type AgentState = {
@@ -219,6 +221,50 @@ async function readActivityFile() {
     activity: Array.isArray(json) ? json : [],
     sha,
   };
+}
+
+async function createRecoveryTask({
+  failedTask,
+  reason,
+}: {
+  failedTask: AgentTask;
+  reason: string;
+}) {
+  const tasks = await loadTasks();
+
+  const recoveryTask: AgentTask = {
+    id: `recovery-${Date.now()}`,
+    title: `Recovery: ${failedTask.title}`,
+    summary: `Recover failed task: ${failedTask.id}`,
+    targetFile: failedTask.targetFile,
+    status: "todo",
+    priority: "high",
+    source: "recovery",
+    createdAt: new Date().toISOString(),
+
+    agentRole: "senior-recovery",
+    agentName: "Senior Recovery Agent",
+
+    recoveryOfTaskId: failedTask.id,
+    recoveryReason: reason,
+
+    plannerNotes:
+      "Automatically generated recovery task after reviewer/execution failure.",
+  };
+
+  tasks.unshift(recoveryTask);
+
+  await saveTasks(tasks);
+
+  await logActivity({
+    type: "recovery-task-created",
+    runId: recoveryTask.id,
+    taskId: failedTask.id,
+    agentName: "Senior Recovery Agent",
+    reason,
+  });
+
+  return recoveryTask;
 }
 
 async function logActivity(event: Record<string, unknown>) {
@@ -540,9 +586,10 @@ if (now - lastExecutionAt < MIN_EXECUTION_SPACING_MS) {
 lastExecutionAt = now;
 
   const runId = crypto.randomUUID();
-  let lockAcquired = false;
+let lockAcquired = false;
+let activeTask: AgentTask | null = null;
 
-  try {
+try {
     const { state, sha: stateSha } = await readStateFile();
     const now = Date.now();
     
@@ -692,6 +739,7 @@ if (stopCheck.stop) {
 
     const task = selected.task;
     const taskIndex = selected.index;
+    activeTask = task;
 
         if (task.result?.pullRequestUrl) {
       task.status = "pending-pr";
@@ -872,6 +920,13 @@ if (!reviewerResult.passed) {
     "Reviewer Agent blocked unsafe UI implementation.",
   agentName: task.agentName,
 agentRole: task.agentRole,
+});
+
+await createRecoveryTask({
+  failedTask: task,
+  reason:
+    reviewerResult.reason ??
+    "Reviewer Agent blocked unsafe patch.",
 });
 
   return NextResponse.json({
