@@ -15,10 +15,11 @@ type AgentTask = {
   id: string;
   title: string;
   targetFile: string;
-  status: "todo";
+  status: "todo" | "queued";
   priority: Priority;
   createdAt: string;
   queuedAt?: string;
+  updatedAt?: string;
   source: "manual";
   summary?: string;
   intent?: string;
@@ -138,6 +139,7 @@ function buildTask(body: Record<string, unknown>): AgentTask {
   const targetFile = String(body.targetFile ?? "").trim() || inferTargetFile(prompt);
   const queueOnly = shouldQueueOnly(prompt, body);
   const priority = inferPriority(prompt, body.priority);
+  const createdAt = new Date().toISOString();
 
   return {
     id: `manual-task-${Date.now()}`,
@@ -146,11 +148,12 @@ function buildTask(body: Record<string, unknown>): AgentTask {
       String(body.summary ?? "").trim() ||
       `Plan safe work for: ${title}`,
     targetFile: SAFE_TARGET_FILES.includes(targetFile) ? targetFile : "app/page.tsx",
-    status: "todo",
+    status: queueOnly ? "todo" : "queued",
     priority,
     source: "manual",
-    createdAt: new Date().toISOString(),
-    queuedAt: new Date().toISOString(),
+    createdAt,
+    queuedAt: createdAt,
+    updatedAt: createdAt,
     agentRole: typeof body.agentRole === "string" ? body.agentRole : undefined,
     agentName: typeof body.agentName === "string" ? body.agentName : undefined,
     agentSystemPrompt:
@@ -161,7 +164,7 @@ function buildTask(body: Record<string, unknown>): AgentTask {
       typeof body.routingReason === "string" ? body.routingReason : undefined,
     intent: prompt.toLowerCase().includes("fix") ? "bugfix" : "ui-polish",
     riskLevel: queueOnly ? "medium" : "low",
-    executionMode: queueOnly ? "single-file" : "single-file",
+    executionMode: "single-file",
     wave: 1,
     previewOnly: queueOnly,
     requiresApproval: queueOnly,
@@ -179,9 +182,9 @@ export async function POST(req: Request) {
     const queueOnly = shouldQueueOnly(prompt, body);
 
     addRuntimeTask({
-      id: task.id,
-      title: task.title,
-      status: "queued",
+      ...task,
+      status: queueOnly ? "todo" : "queued",
+      runtimeOnly: true,
     });
 
     const taskWord = "task";
