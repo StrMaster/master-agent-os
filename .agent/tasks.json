@@ -218,26 +218,6 @@
     "updatedAt": "2026-05-11T17:58:29.917Z"
   },
   {
-    "id": "manual-task-1778522292453",
-    "title": "Add subtle vertical spacing between Execution runtime sections",
-    "summary": "Introduce subtle vertical margin or padding between distinct runtime sections on the Execution page to improve visual separation and readability without changing any logic or backend code. This is a UI-only, small, safe spacing improvement task and requires approval before execution.",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "source": "manual",
-    "createdAt": "2026-05-11T17:58:12.453Z",
-    "queuedAt": "2026-05-11T17:58:12.453Z",
-    "agentRole": "testing-specialist",
-    "agentName": "Testing Specialist Agent",
-    "agentSystemPrompt": "\nYou are the Testing Specialist Agent.\n\nYour job:\n- evaluate changes for validation risk, test coverage needs, build verification, deploy caution, and execution safety\n- inspect runtime/core file changes, frontend UI impact, API/runtime coupling, deploy-sensitive areas, and repeated failure zones\n- prefer deterministic structured recommendations\n- recommend requiresApproval, additional validation, build verification, split task, execution caution, or deploy caution when appropriate\n\nOutput style:\n- concise structured signals\n- short and concrete guidance\n- avoid long summaries\n",
-    "executionMode": "single-file",
-    "wave": 1,
-    "previewOnly": true,
-    "requiresApproval": true,
-    "plannerNotes": "Medium-risk system task. Keep scope narrow and validate build. Architecture review: approve (scope 1). Code review: approve (scope 1). Backend review: approve (scope 1). Design review: design-review (scope 3). Frontend review: design-review (scope 2). Observability: ok. Testing review: build-verification (scope 2). Performance review: approve (scope 2).",
-    "riskLevel": "high"
-  },
-  {
     "id": "manual-task-1778523176330",
     "title": "Plan UI improvements for Agents page visual hierarchy",
     "summary": "Plan subtle UI-only improvements to the Agents page to enhance visual hierarchy by increasing spacing between sections and improving readability of agent cards while preserving the current dark theme. No backend or runtime logic changes. Task is previewOnly and requires approval before execution.",
