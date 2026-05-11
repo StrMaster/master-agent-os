@@ -134,14 +134,21 @@ function hasCircularDependency(tasks: AgentTask[]) {
 }
 
 function dependenciesCompleted(task: AgentTask, tasks: AgentTask[]) {
-  if (!task.dependsOn?.length) {
+  const dependencyIds = [
+    ...(task.dependsOn ?? []),
+    ...(task.dependsOnTaskIds ?? []),
+    ...(task.blockedBy ?? []),
+  ];
+
+  if (!dependencyIds.length) {
     return true;
   }
 
-  return task.dependsOn.every((dependencyId) =>
+  return dependencyIds.every((dependencyId) =>
     tasks.some(
       (candidate) =>
-        candidate.id === dependencyId && candidate.status === "done"
+        candidate.id === dependencyId &&
+        (candidate.status === "done" || candidate.status === "pending-pr")
     )
   );
 }
@@ -257,8 +264,10 @@ function retryAllowed(task: AgentTask) {
 function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
+    // Ready gate: approval, waves, and dependency state must be clear before selection.
     .filter(({ task }) => task.status === "todo")
     .filter(({ task }) => !task.previewOnly && !task.requiresApproval)
+    .filter(({ task }) => task.waveStatus !== "blocked")
     .filter(({ task }) => dependenciesCompleted(task, tasks))
     .filter(({ task }) => previousWaveCompleted(task, tasks))
     .filter(({ task }) => retryAllowed(task))
