@@ -396,11 +396,13 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => ({}));
+  const forceRunOnce = body?.forceRunOnce === true;
 
-const now = Date.now();
+  const now = Date.now();
 
-if (now - lastExecutionAt < MIN_EXECUTION_SPACING_MS) {
+if (!forceRunOnce && now - lastExecutionAt < MIN_EXECUTION_SPACING_MS) {
   return NextResponse.json({
     ok: false,
     mode: "execution-spacing-active",

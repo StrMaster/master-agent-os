@@ -9,6 +9,7 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 
 const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
+const AUTO_RUN_MAX_ITERATIONS = 3;
 const RUNTIME_STOP_FAILURE_THRESHOLD = 3;
 
 let lastAutoRunAt: number | null = null;
@@ -98,6 +99,68 @@ async function mergePullRequest(prNumber: number) {
     status: res.status,
     data,
   };
+}
+
+function dependenciesSatisfied(task: any, tasks: any[]) {
+  const dependencyIds = [
+    ...(task.dependsOn ?? []),
+    ...(task.dependsOnTaskIds ?? []),
+    ...(task.blockedBy ?? []),
+  ];
+
+  if (!dependencyIds.length) {
+    return true;
+  }
+
+  return dependencyIds.every((dependencyId) =>
+    tasks.some(
+      (candidate) =>
+        candidate &&
+        candidate.id === dependencyId &&
+        (candidate.status === "done" || candidate.status === "pending-pr"),
+    ),
+  );
+}
+
+function previousWaveSatisfied(task: any, tasks: any[]) {
+  if (!task.parentTaskId || !task.wave || task.wave <= 1) {
+    return true;
+  }
+
+  const previousWave = tasks.find(
+    (candidate) =>
+      candidate &&
+      candidate.parentTaskId === task.parentTaskId &&
+      candidate.wave === task.wave - 1,
+  );
+
+  if (!previousWave) {
+    return false;
+  }
+
+  return (
+    previousWave.status === "done" || previousWave.status === "pending-pr"
+  );
+}
+
+function isReadyForAutoRun(task: any, tasks: any[]) {
+  if (!task || (task.status !== "todo" && task.status !== "queued")) {
+    return false;
+  }
+
+  if (task.previewOnly || task.requiresApproval) {
+    return false;
+  }
+
+  if (task.waveStatus === "blocked") {
+    return false;
+  }
+
+  return dependenciesSatisfied(task, tasks) && previousWaveSatisfied(task, tasks);
+}
+
+function findReadyTask(tasks: any[]) {
+  return tasks.find((task) => isReadyForAutoRun(task, tasks)) ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -192,6 +255,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (state.runnerHealthStatus === "blocked") {
+      return NextResponse.json({
+        ok: false,
+        mode: "runner-health-blocked",
+        message: "Runner health is blocked",
+      });
+    }
+
     if (!forceRunOnce && runtimeBlockedUntilMs > Date.now()) {
       return NextResponse.json({
         ok: false,
@@ -237,13 +308,7 @@ if (false && state.autoMergeEnabled && pendingPrTask) {
 }
 
     const availableTask = Array.isArray(tasks)
-      ? tasks.find(
-          (task) =>
-            task &&
-            (task.status === "todo" || task.status === "queued") &&
-            !task.previewOnly &&
-            !task.requiresApproval,
-        )
+      ? findReadyTask(tasks)
       : null;
 
     if (!availableTask) {
@@ -305,19 +370,77 @@ if (
       });
     }
 
-    const { res: runnerRes, data: runnerData } = await internalJsonFetch(
-  req,
-  "/api/agent-runner",
-  {
-    method: "POST",
-  }
-);
+    let runnerData: any = null;
+    let runnerRes: Response | null = null;
+    let iterations = 0;
+    const seenTaskIds = new Set<string>();
+
+    while (iterations < AUTO_RUN_MAX_ITERATIONS) {
+      const { res: nextRunnerRes, data: nextRunnerData } = await internalJsonFetch(
+        req,
+        "/api/agent-runner",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            forceRunOnce: true,
+          }),
+        },
+      );
+
+      runnerRes = nextRunnerRes;
+      runnerData = nextRunnerData;
+      iterations += 1;
+
+      const processedTaskId = nextRunnerData?.taskId ?? nextRunnerData?.task?.id;
+
+      if (processedTaskId && seenTaskIds.has(processedTaskId)) {
+        await logActivity({
+          type: "auto-run-loop-stopped",
+          iterations,
+          taskId: processedTaskId,
+          reason: "Repeated task detected during auto-run continuation.",
+        }).catch(() => {});
+        break;
+      }
+
+      if (processedTaskId) {
+        seenTaskIds.add(processedTaskId);
+      }
+
+      if (!nextRunnerRes.ok || nextRunnerData.ok === false) {
+        break;
+      }
+
+      if (
+        !["pull-request-created", "pull-request-merged", "existing-pr"].includes(
+          nextRunnerData.mode,
+        )
+      ) {
+        break;
+      }
+
+      if (iterations >= AUTO_RUN_MAX_ITERATIONS) {
+        break;
+      }
+
+      await logActivity({
+        type: "auto-run-continued",
+        iterations,
+        taskId: processedTaskId,
+        mode: nextRunnerData.mode,
+      }).catch(() => {});
+    }
+
     return NextResponse.json({
-  ok: runnerRes.ok && runnerData.ok !== false,
-  mode: "auto-run",
-  task: availableTask,
-  runner: runnerData,
-});
+      ok: runnerRes?.ok && runnerData?.ok !== false,
+      mode: "auto-run",
+      iterations,
+      task: availableTask,
+      runner: runnerData,
+    });
   } catch (error) {
     return NextResponse.json(
       {
