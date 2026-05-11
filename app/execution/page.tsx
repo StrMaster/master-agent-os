@@ -110,14 +110,13 @@ export default async function ExecutionPage() {
 
       <RuntimeDashboard tasks={tasks} activity={activity} />
 
+      <ActivityFeed initialActivity={activity} />
+
       <PendingPRQueue />
 
       <TaskSection title="Running" tasks={runningTasks} empty="No tasks are currently running." />
 
       <TaskSection title="Todo" tasks={todoTasks} empty="No pending tasks at the moment." />
-
-
-      <ActivityFeed />
     </div>
   );
 }

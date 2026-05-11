@@ -1,6 +1,7 @@
 import ControlCenterControls from "../components/ControlCenterControls";
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
+import ActivityFeed from "../components/ActivityFeed";
 import RecoveryControlCard from "../components/RecoveryControlCard";
 import RuntimeDashboard from "../components/RuntimeDashboard";
 import { readActivityFile } from "../api/agent-runner/activity";
@@ -172,6 +173,8 @@ export default async function TasksPage() {
       </div>
 
       <RuntimeDashboard tasks={tasks} activity={activity} />
+
+      <ActivityFeed initialActivity={activity} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ControlCenterControls />

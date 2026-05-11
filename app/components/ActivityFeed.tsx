@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 type ActivityEvent = {
   id: string;
@@ -10,6 +9,14 @@ type ActivityEvent = {
   runId?: string;
   taskId?: string;
   summary?: string;
+  reason?: string;
+  message?: string;
+  targetFile?: string;
+  priority?: string;
+  reasoning?: string;
+  wave?: number;
+  agentName?: string;
+  agentRole?: string;
   changedLines?: number;
   safe?: boolean;
   branch?: string;
@@ -19,13 +26,6 @@ type ActivityEvent = {
   retryAfterMs?: number;
   provider?: string;
   status?: string;
-  message?: string;
-  targetFile?: string;
-  priority?: string;
-  reasoning?: string;
-  wave?: number;
-  agentName?: string;
-agentRole?: string;
 };
 
 type RunnerHealthState = {
@@ -39,637 +39,691 @@ type RunnerHealthState = {
   deployStatus?: "pending" | "success" | "failed";
 };
 
-export default function ActivityFeed() {
-  const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [runnerHealth, setRunnerHealth] = useState<RunnerHealthState | null>(null);
-  const [loading, setLoading] = useState(true);
-const [filter, setFilter] = useState("all");
+type ActivityCategory =
+  | "planner"
+  | "review"
+  | "approval"
+  | "execution"
+  | "deploy"
+  | "recovery"
+  | "runtime"
+  | "observability"
+  | "other";
+
+type ActivityTone =
+  | "success"
+  | "warning"
+  | "blocked"
+  | "recovery"
+  | "deploy"
+  | "approval-required"
+  | "neutral";
+
+const CATEGORY_FILTERS: Array<{ key: ActivityCategory | "all"; label: string }> =
+  [
+    { key: "all", label: "All" },
+    { key: "planner", label: "Planner" },
+    { key: "review", label: "Review" },
+    { key: "approval", label: "Approval" },
+    { key: "execution", label: "Execution" },
+    { key: "deploy", label: "Deploy" },
+    { key: "recovery", label: "Recovery" },
+    { key: "runtime", label: "Runtime" },
+    { key: "observability", label: "Observability" },
+  ];
+
+const TONE_STYLES: Record<
+  ActivityTone,
+  { border: string; background: string; text: string }
+> = {
+  success: {
+    border: "border-emerald-500/25",
+    background: "bg-emerald-500/10",
+    text: "text-emerald-100",
+  },
+  warning: {
+    border: "border-amber-500/25",
+    background: "bg-amber-500/10",
+    text: "text-amber-100",
+  },
+  blocked: {
+    border: "border-red-500/25",
+    background: "bg-red-500/10",
+    text: "text-red-100",
+  },
+  recovery: {
+    border: "border-orange-500/25",
+    background: "bg-orange-500/10",
+    text: "text-orange-100",
+  },
+  deploy: {
+    border: "border-cyan-500/25",
+    background: "bg-cyan-500/10",
+    text: "text-cyan-100",
+  },
+  "approval-required": {
+    border: "border-violet-500/25",
+    background: "bg-violet-500/10",
+    text: "text-violet-100",
+  },
+  neutral: {
+    border: "border-white/10",
+    background: "bg-white/5",
+    text: "text-white",
+  },
+};
+
+const CATEGORY_STYLES: Record<
+  ActivityCategory,
+  { label: string; dot: string; chip: string }
+> = {
+  planner: {
+    label: "Planner",
+    dot: "bg-blue-400",
+    chip: "border-blue-500/30 bg-blue-500/10 text-blue-100",
+  },
+  review: {
+    label: "Review",
+    dot: "bg-indigo-400",
+    chip: "border-indigo-500/30 bg-indigo-500/10 text-indigo-100",
+  },
+  approval: {
+    label: "Approval",
+    dot: "bg-violet-400",
+    chip: "border-violet-500/30 bg-violet-500/10 text-violet-100",
+  },
+  execution: {
+    label: "Execution",
+    dot: "bg-emerald-400",
+    chip: "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
+  },
+  deploy: {
+    label: "Deploy",
+    dot: "bg-cyan-400",
+    chip: "border-cyan-500/30 bg-cyan-500/10 text-cyan-100",
+  },
+  recovery: {
+    label: "Recovery",
+    dot: "bg-orange-400",
+    chip: "border-orange-500/30 bg-orange-500/10 text-orange-100",
+  },
+  runtime: {
+    label: "Runtime",
+    dot: "bg-amber-400",
+    chip: "border-amber-500/30 bg-amber-500/10 text-amber-100",
+  },
+  observability: {
+    label: "Observability",
+    dot: "bg-sky-400",
+    chip: "border-sky-500/30 bg-sky-500/10 text-sky-100",
+  },
+  other: {
+    label: "Other",
+    dot: "bg-slate-400",
+    chip: "border-white/10 bg-white/5 text-white/70",
+  },
+};
+
+type NormalizedEvent = ActivityEvent & {
+  category: ActivityCategory;
+  tone: ActivityTone;
+  label: string;
+};
+
+type ActivityFeedProps = {
+  initialActivity?: ActivityEvent[];
+};
+
+export default function ActivityFeed({
+  initialActivity = [],
+}: ActivityFeedProps) {
+  const [activity, setActivity] = useState<ActivityEvent[]>(initialActivity);
+  const [runnerHealth, setRunnerHealth] = useState<RunnerHealthState | null>(
+    null
+  );
+  const [loading, setLoading] = useState(initialActivity.length === 0);
+  const [filter, setFilter] = useState<ActivityCategory | "all">("all");
+
+  useEffect(() => {
+    setActivity(initialActivity);
+    if (initialActivity.length > 0) {
+      setLoading(false);
+    }
+  }, [initialActivity]);
 
   async function loadActivity() {
-    const [activityRes, controlStateRes] = await Promise.all([
-      fetch("/api/activity", { cache: "no-store" }),
-      fetch("/api/control-state", { cache: "no-store" }),
-    ]);
-    const data = await activityRes.json();
-    const controlStateData = await controlStateRes.json();
+    try {
+      const [activityRes, controlStateRes] = await Promise.all([
+        fetch("/api/activity", { cache: "no-store" }),
+        fetch("/api/control-state", { cache: "no-store" }),
+      ]);
+      const activityData = await activityRes.json();
+      const controlStateData = await controlStateRes.json();
 
-    if (data.ok) {
-      setActivity(data.activity ?? []);
+      if (activityData.ok) {
+        setActivity(Array.isArray(activityData.activity) ? activityData.activity : []);
+      }
+
+      if (controlStateData.ok && controlStateData.state) {
+        setRunnerHealth({
+          runnerHealthStatus:
+            controlStateData.state.runnerHealthStatus ?? "healthy",
+          consecutiveFailures:
+            controlStateData.state.consecutiveFailures ?? 0,
+          failedRuns: controlStateData.state.failedRuns ?? 0,
+          lastFailureAt: controlStateData.state.lastFailureAt,
+          runtimeBlockedUntil: controlStateData.state.runtimeBlockedUntil,
+          recoveryActive: controlStateData.state.recoveryActive ?? false,
+          overnightModeActive:
+            controlStateData.state.overnightModeActive ?? false,
+          deployStatus: controlStateData.state.deployStatus,
+        });
+      }
+    } catch {
+      // Keep the timeline usable if one of the lightweight reads fails.
+    } finally {
+      setLoading(false);
     }
-
-    if (controlStateData.ok && controlStateData.state) {
-      setRunnerHealth({
-        runnerHealthStatus:
-          controlStateData.state.runnerHealthStatus ?? "healthy",
-        consecutiveFailures:
-          controlStateData.state.consecutiveFailures ?? 0,
-        failedRuns: controlStateData.state.failedRuns ?? 0,
-        lastFailureAt: controlStateData.state.lastFailureAt,
-        runtimeBlockedUntil:
-          controlStateData.state.runtimeBlockedUntil,
-        recoveryActive: controlStateData.state.recoveryActive ?? false,
-        overnightModeActive:
-          controlStateData.state.overnightModeActive ?? false,
-        deployStatus: controlStateData.state.deployStatus,
-      });
-    }
-
-    setLoading(false);
   }
 
   useEffect(() => {
-  loadActivity();
-
-  const interval = setInterval(() => {
     loadActivity();
-  }, 5000);
 
-  return () => clearInterval(interval);
-}, []);
+    const interval = window.setInterval(() => {
+      loadActivity();
+    }, 5000);
 
-function getEventColors(type: string) {
-  switch (type) {
-    case "proposal":
-      return {
-        border: "#2563eb",
-        background: "#0b1220",
-      };
+    return () => window.clearInterval(interval);
+  }, []);
 
-    case "apply":
-      return {
-        border: "#16a34a",
-        background: "#07150d",
-      };
+  const normalizedEvents = useMemo(
+    () => activity.map(normalizeEvent),
+    [activity]
+  );
 
-case "deploy-triggered":
+  const visibleEvents = useMemo(() => {
+    if (filter === "all") {
+      return normalizedEvents;
+    }
+
+    return normalizedEvents.filter((event) => event.category === filter);
+  }, [filter, normalizedEvents]);
+
+  const categoryCounts = useMemo(
+    () =>
+      normalizedEvents.reduce<Record<ActivityCategory, number>>(
+        (acc, event) => {
+          acc[event.category] += 1;
+          return acc;
+        },
+        {
+          planner: 0,
+          review: 0,
+          approval: 0,
+          execution: 0,
+          deploy: 0,
+          recovery: 0,
+          runtime: 0,
+          observability: 0,
+          other: 0,
+        }
+      ),
+    [normalizedEvents]
+  );
+
+  const runtimePill = runnerHealth
+    ? runnerHealth.runnerHealthStatus
+    : "unknown";
+
+  return (
+    <section className="space-y-4">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase tracking-[0.22em] text-white/40">
+              Activity Timeline
+            </div>
+            <h2 className="mt-2 text-lg font-semibold text-white">
+              Live orchestration timeline
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/55">
+              Structured planner, review, approval, execution, deploy, recovery, and runtime events in one place.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <StatusChip tone="neutral">Live updates</StatusChip>
+            <StatusChip tone={runtimeTone(runtimePill)}>
+              {runnerHealth ? runtimePill : "loading"}
+            </StatusChip>
+            {runnerHealth?.recoveryActive && (
+              <StatusChip tone="recovery">Recovery active</StatusChip>
+            )}
+            {runnerHealth?.overnightModeActive && (
+              <StatusChip tone="warning">Overnight active</StatusChip>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatPill label="Events" value={normalizedEvents.length} />
+          <StatPill label="Planner" value={categoryCounts.planner} />
+          <StatPill label="Execution" value={categoryCounts.execution} />
+          <StatPill label="Runtime" value={categoryCounts.runtime} />
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatPill label="Review" value={categoryCounts.review} />
+          <StatPill label="Approval" value={categoryCounts.approval} />
+          <StatPill label="Deploy" value={categoryCounts.deploy} />
+          <StatPill label="Recovery" value={categoryCounts.recovery} />
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {CATEGORY_FILTERS.map((item) => {
+            const count =
+              item.key === "all"
+                ? normalizedEvents.length
+                : categoryCounts[item.key];
+
+            return (
+              <button
+                key={item.key}
+                onClick={() => setFilter(item.key)}
+                className={[
+                  "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition",
+                  filter === item.key
+                    ? "border-cyan-400/40 bg-cyan-500/15 text-cyan-100"
+                    : "border-white/10 bg-neutral-950/60 text-white/70 hover:border-white/20 hover:text-white",
+                ].join(" ")}
+              >
+                <span>{item.label}</span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/55">
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {runnerHealth && (
+          <div className="mt-4 grid gap-2 lg:grid-cols-4">
+            <StateChip label="Consecutive failures" value={runnerHealth.consecutiveFailures} />
+            <StateChip label="Failed runs" value={runnerHealth.failedRuns ?? 0} />
+            <StateChip
+              label="Runtime blocked"
+              value={runnerHealth.runtimeBlockedUntil ? "Yes" : "No"}
+            />
+            <StateChip
+              label="Deploy"
+              value={runnerHealth.deployStatus ?? "idle"}
+            />
+          </div>
+        )}
+      </div>
+
+      {runnerHealth?.runtimeBlockedUntil && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100">
+          Runtime blocked until{" "}
+          {new Date(runnerHealth.runtimeBlockedUntil).toLocaleString()}
+        </div>
+      )}
+
+      {loading && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/55">
+          Loading activity timeline...
+        </div>
+      )}
+
+      {!loading && visibleEvents.length === 0 && (
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/55">
+          No activity events yet.
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {visibleEvents.slice(0, 24).map((event) => (
+          <TimelineCard key={event.id} event={event} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TimelineCard({
+  event,
+}: {
+  event: NormalizedEvent;
+}) {
+  const tone = TONE_STYLES[event.tone];
+  const category = CATEGORY_STYLES[event.category];
+  const timeLabel = new Date(event.timestamp).toLocaleString();
+
+  return (
+    <article className="relative pl-7">
+      <span
+        className={[
+          "absolute left-0 top-4 h-3 w-3 rounded-full ring-4 ring-neutral-950",
+          category.dot,
+        ].join(" ")}
+      />
+      <div className="absolute left-[5px] top-6 h-full w-px bg-white/10" />
+
+      <div className={["rounded-2xl border p-4", tone.border, tone.background].join(" ")}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={[
+                "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium",
+                category.chip,
+              ].join(" ")}
+            >
+              {category.label}
+            </span>
+            <span
+              className={[
+                "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize",
+                statusChipClasses(event.tone),
+              ].join(" ")}
+            >
+              {event.tone.replace("-", " ")}
+            </span>
+            <span className="text-sm font-semibold text-white">{event.label}</span>
+          </div>
+
+          <div className="text-xs text-white/45">{timeLabel}</div>
+        </div>
+
+        {event.summary && (
+          <p className="mt-3 text-sm leading-6 text-white/80">{event.summary}</p>
+        )}
+
+        {(event.message || event.reason || event.reasoning) && (
+          <p className="mt-2 text-sm leading-6 text-white/60">
+            {event.message ?? event.reason ?? event.reasoning}
+          </p>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-2">
+          {event.taskId && <MetaChip label={`Task ${shorten(event.taskId, 10)}`} />}
+          {event.runId && <MetaChip label={`Run ${shorten(event.runId, 10)}`} />}
+          {typeof event.wave === "number" && <MetaChip label={`Wave ${event.wave}`} />}
+          {event.targetFile && <MetaChip label={shorten(event.targetFile, 42)} />}
+          {event.priority && <MetaChip label={`Priority ${event.priority}`} />}
+          {event.agentName && <MetaChip label={shorten(event.agentName, 24)} />}
+          {event.agentRole && <MetaChip label={shorten(event.agentRole, 24)} />}
+          {event.branch && <MetaChip label={`Branch ${shorten(event.branch, 20)}`} />}
+          {typeof event.changedLines === "number" && (
+            <MetaChip label={`${event.changedLines} lines`} />
+          )}
+          {typeof event.lockAgeMs === "number" && (
+            <MetaChip label={`Lock ${Math.round(event.lockAgeMs / 1000)}s`} />
+          )}
+          {typeof event.retryAfterMs === "number" && (
+            <MetaChip label={`Retry ${Math.ceil(event.retryAfterMs / 1000)}s`} />
+          )}
+          {typeof event.merged === "boolean" && (
+            <MetaChip label={event.merged ? "Merged" : "Not merged"} />
+          )}
+          {event.status && <MetaChip label={event.status} />}
+          {event.pullRequestUrl && (
+            <a
+              href={event.pullRequestUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-medium text-cyan-100 transition hover:border-cyan-400/50 hover:bg-cyan-500/15"
+            >
+              Open PR
+            </a>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function normalizeEvent(event: ActivityEvent): NormalizedEvent {
+  const category = classifyCategory(event.type);
+  const tone = classifyTone(event.type, category);
+
   return {
-    border: "#06b6d4",
-    background: "#071b22",
+    ...event,
+    category,
+    tone,
+    label: humanizeEventType(event.type),
   };
+}
 
-    case "failed":
-      return {
-        border: "#dc2626",
-        background: "#1a0b0b",
-      };
+function classifyCategory(type: string): ActivityCategory {
+  const normalized = type.toLowerCase();
 
-case "retry":
-  return {
-    border: "#a855f7",
-    background: "#160b22",
-  };
+  if (
+    normalized.startsWith("planner-") ||
+    normalized === "manual-task-created" ||
+    normalized === "recovery-task-created" ||
+    normalized === "deploy-recovery-created"
+  ) {
+    return "planner";
+  }
 
+  if (
+    normalized.startsWith("review-") ||
+    normalized.endsWith("-review-completed") ||
+    normalized === "architecture-review-completed" ||
+    normalized === "code-review-completed" ||
+    normalized === "frontend-review-completed" ||
+    normalized === "backend-review-completed" ||
+    normalized === "design-review-completed" ||
+    normalized === "testing-review-completed" ||
+    normalized === "security-review-completed" ||
+    normalized === "performance-review-completed"
+  ) {
+    return "review";
+  }
+
+  if (
+    normalized.startsWith("approval-") ||
+    normalized.includes("approved") ||
+    normalized === "pending-pr"
+  ) {
+    return "approval";
+  }
+
+  if (
+    normalized.startsWith("deploy-") ||
+    normalized.includes("pull-request")
+  ) {
+    return "deploy";
+  }
+
+  if (normalized.startsWith("recovery-")) {
+    return "recovery";
+  }
+
+  if (
+    normalized.startsWith("runtime-") ||
+    normalized.startsWith("runner-") ||
+    normalized === "blocked" ||
+    normalized === "cooldown" ||
+    normalized === "auto-paused"
+  ) {
+    return "runtime";
+  }
+
+  if (
+    normalized.startsWith("observability-") ||
+    normalized === "runtime-anomaly-detected" ||
+    normalized === "control-summary-generated" ||
+    normalized === "repo-context-updated"
+  ) {
+    return "observability";
+  }
+
+  if (
+    normalized.startsWith("execution-") ||
+    normalized === "proposal" ||
+    normalized === "apply" ||
+    normalized === "retry" ||
+    normalized === "failed" ||
+    normalized === "pending-pr"
+  ) {
+    return "execution";
+  }
+
+  return "other";
+}
+
+function classifyTone(type: string, category: ActivityCategory): ActivityTone {
+  const normalized = type.toLowerCase();
+
+  if (
+    normalized.includes("blocked") ||
+    normalized.includes("failed") ||
+    normalized.includes("unsafe") ||
+    normalized.includes("stopped") ||
+    normalized.includes("merge-failed") ||
+    normalized.includes("validation-failed")
+  ) {
+    return "blocked";
+  }
+
+  if (normalized.includes("recovery")) {
+    return "recovery";
+  }
+
+  if (category === "deploy") {
+    if (normalized.includes("success") || normalized.includes("merged")) {
+      return "success";
+    }
+
+    if (normalized.includes("pending")) {
+      return "warning";
+    }
+
+    return "deploy";
+  }
+
+  if (category === "approval") {
+    if (normalized.includes("approved") || normalized.includes("validated")) {
+      return "success";
+    }
+
+    return "approval-required";
+  }
+
+  if (normalized.includes("warning") || normalized.includes("degraded")) {
+    return "warning";
+  }
+
+  if (normalized.includes("retry") || normalized.includes("cooldown")) {
+    return "warning";
+  }
+
+  if (normalized.includes("completed") || normalized.includes("created")) {
+    return "success";
+  }
+
+  if (category === "observability") {
+    return "warning";
+  }
+
+  if (category === "runtime") {
+    return "warning";
+  }
+
+  return "neutral";
+}
+
+function humanizeEventType(type: string) {
+  return type
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function shorten(value: string, limit: number) {
+  if (value.length <= limit) {
+    return value;
+  }
+
+  return `${value.slice(0, limit - 3)}...`;
+}
+
+function runtimeTone(value: string): ActivityTone {
+  if (value === "blocked") {
+    return "blocked";
+  }
+
+  if (value === "degraded") {
+    return "warning";
+  }
+
+  return "neutral";
+}
+
+function statusChipClasses(tone: ActivityTone) {
+  switch (tone) {
+    case "success":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-100";
+    case "warning":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-100";
     case "blocked":
-      return {
-        border: "#ca8a04",
-        background: "#1a1607",
-      };
-
-case "auto-paused":
-  return {
-    border: "#f97316",
-    background: "#1f1207",
-  };
-
-case "dependency-blocked":
-  return {
-    border: "#ca8a04",
-    background: "#1a1607",
-  };
-
-case "circular-dependency":
-  return {
-    border: "#dc2626",
-    background: "#220909",
-  };
-
-case "cooldown":
-  return {
-    border: "#38bdf8",
-    background: "#071923",
-  };
-
-case "runner-busy":
-  return {
-    border: "#f59e0b",
-    background: "#1f1605",
-  };
-
-case "runner-stale-lock-recovered":
-  return {
-    border: "#8b5cf6",
-    background: "#160b22",
-  };
-
-case "duplicate-pr-blocked":
-  return {
-    border: "#eab308",
-    background: "#221a04",
-  };
-
-case "pending-pr":
-  return {
-    border: "#3b82f6",
-    background: "#0b1220",
-  };
-
-case "deploy-pending":
-  return {
-    border: "#06b6d4",
-    background: "#071b22",
-  };
-
-case "manual-task-created":
-  return {
-    border: "#8b5cf6",
-    background: "#160b22",
-  };
-
-case "recovery-task-created":
-  return {
-    border: "#f97316",
-    background: "#211008",
-  };
-
-case "deploy-recovery-created":
-  return {
-    border: "#22c55e",
-    background: "#071a12",
-  };
-
-case "deploy-recovery-failed":
-  return {
-    border: "#ef4444",
-    background: "#220909",
-  };
-
-case "patch-validation-failed":
-  return {
-    border: "#dc2626",
-    background: "#220909",
-  };
-
-case "pull-request-created":
-  return {
-    border: "#3b82f6",
-    background: "#0b1220",
-  };
-
-case "pull-request-failed":
-  return {
-    border: "#ef4444",
-    background: "#220909",
-  };
-
-case "pull-request-duplicate":
-  return {
-    border: "#eab308",
-    background: "#221a04",
-  };
-
-case "pull-request-validated":
-  return {
-    border: "#22c55e",
-    background: "#071a12",
-  };
-
-case "pull-request-validation-failed":
-  return {
-    border: "#ef4444",
-    background: "#220909",
-  };
-
-case "pull-request-merged":
-  return {
-    border: "#22c55e",
-    background: "#071a12",
-  };
-
-case "pull-request-merge-failed":
-  return {
-    border: "#ef4444",
-    background: "#220909",
-  };
-
-case "runner-health-degraded":
-  return {
-    border: "#f59e0b",
-    background: "#1f1605",
-  };
-
-case "runner-health-recovered":
-  return {
-    border: "#22c55e",
-    background: "#071a12",
-  };
-
-case "runtime-stop-triggered":
-  return {
-    border: "#ef4444",
-    background: "#220909",
-  };
-
+      return "border-red-500/30 bg-red-500/10 text-red-100";
+    case "recovery":
+      return "border-orange-500/30 bg-orange-500/10 text-orange-100";
+    case "deploy":
+      return "border-cyan-500/30 bg-cyan-500/10 text-cyan-100";
+    case "approval-required":
+      return "border-violet-500/30 bg-violet-500/10 text-violet-100";
     default:
-      return {
-        border: "#333",
-        background: "#111",
-      };
+      return "border-white/10 bg-white/5 text-white/70";
   }
 }
 
-const proposalCount = activity.filter((event) => event.type === "proposal").length;
-const applyCount = activity.filter((event) => event.type === "apply").length;
-const mergedCount = activity.filter(
-  (event) => event.type === "apply" && event.merged === true
-).length;
-const failedCount = activity.filter((event) => event.type === "failed").length;
-const recentEvents = activity.slice(0, 10);
-
-const recentFailed = recentEvents.filter(
-  (event) => event.type === "failed"
-).length;
-
-let healthStatus = "Healthy";
-let healthColor = "#16a34a";
-
-if (recentFailed >= 3) {
-  healthStatus = "Failing";
-  healthColor = "#dc2626";
-} else if (recentFailed >= 1) {
-  healthStatus = "Warning";
-  healthColor = "#ca8a04";
-}
-
-const filteredActivity =
-  filter === "all"
-    ? activity
-    : activity.filter((event) => event.type === filter);
-const limitedActivity = filteredActivity.slice(0, 8);
-
-const latestEvent = activity[0];
-
-let agentState = "Idle";
-let agentStateColor = "#6b7280";
-
-if (latestEvent?.type === "failed") {
-  agentState = "Failing";
-  agentStateColor = "#dc2626";
-} else if (recentFailed > 0) {
-  agentState = "Warning";
-  agentStateColor = "#ca8a04";
-} else if (latestEvent) {
-  agentState = "Active";
-  agentStateColor = "#16a34a";
-}
-
-const groupedRuns = limitedActivity.reduce(
-  (acc: Record<string, ActivityEvent[]>, event) => {
-    const key = event.runId || "no-run";
-
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-
-    acc[key].push(event);
-
-    return acc;
-  },
-  {}
-);
-
-const groupedEntries = Object.entries(groupedRuns);
-
+function StatusChip({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: ActivityTone;
+}) {
   return (
-
-    <div
-      style={{
-        marginTop: 24,
-        padding: 18,
-        borderRadius: 16,
-        border: "1px solid #333",
-        background: "#151515",
-        color: "white",
-      }}
+    <span
+      className={[
+        "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium capitalize",
+        statusChipClasses(tone),
+      ].join(" ")}
     >
-      <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
-      {runnerHealth && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: 14,
-            borderRadius: 12,
-            border:
-              runnerHealth.runnerHealthStatus === "healthy"
-                ? "1px solid #16a34a"
-                : runnerHealth.runnerHealthStatus === "blocked"
-                  ? "1px solid #dc2626"
-                  : "1px solid #ca8a04",
-            background: "#0f0f0f",
-          }}
-        >
-          <div style={{ fontSize: 13, color: "#999", marginBottom: 6 }}>
-            Runner Health
-          </div>
-          <div
-            style={{
-              fontWeight: 700,
-              textTransform: "capitalize",
-              color:
-                runnerHealth.runnerHealthStatus === "healthy"
-                  ? "#86efac"
-                  : runnerHealth.runnerHealthStatus === "blocked"
-                    ? "#fca5a5"
-                    : "#fcd34d",
-            }}
-          >
-            {runnerHealth.runnerHealthStatus}
-          </div>
-          <div style={{ marginTop: 6, color: "#999", fontSize: 13 }}>
-            Consecutive failures: {runnerHealth.consecutiveFailures}
-          </div>
-          {typeof runnerHealth.failedRuns === "number" && (
-            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-              Failed runs: {runnerHealth.failedRuns}
-            </div>
-          )}
-          {runnerHealth.lastFailureAt && (
-            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-              Last failure: {new Date(runnerHealth.lastFailureAt).toLocaleString()}
-            </div>
-          )}
-          <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-            Recovery active: {runnerHealth.recoveryActive ? "Yes" : "No"}
-          </div>
-          <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-            Overnight mode: {runnerHealth.overnightModeActive ? "On" : "Off"}
-          </div>
-          {runnerHealth.deployStatus && (
-            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-              Deploy status: {runnerHealth.deployStatus}
-            </div>
-          )}
-          {runnerHealth.runtimeBlockedUntil && (
-            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
-              Blocked until:{" "}
-              {new Date(runnerHealth.runtimeBlockedUntil).toLocaleString()}
-            </div>
-          )}
-        </div>
-      )}
-      <div
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
-    padding: "8px 12px",
-    borderRadius: 999,
-    border: `1px solid ${agentStateColor}`,
-    color: agentStateColor,
-    background: "#0f0f0f",
-    fontWeight: 700,
-  }}
->
-  <span
-    style={{
-      width: 8,
-      height: 8,
-      borderRadius: 999,
-      background: agentStateColor,
-      display: "inline-block",
-    }}
-  />
-  Agent State: {agentState}
-</div>
-      <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-    gap: 10,
-    marginBottom: 16,
-  }}
->
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{activity.length}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Total events</div>
-  </div>
+      {children}
+    </span>
+  );
+}
 
-<div
-  style={{
-    marginBottom: 18,
-    padding: 14,
-    borderRadius: 12,
-    border: `1px solid ${healthColor}`,
-    background: "#0f0f0f",
-  }}
->
-  <div
-    style={{
-      fontSize: 13,
-      color: "#999",
-      marginBottom: 6,
-    }}
-  >
-    Agent Health
-  </div>
-
-<div style={{
-  display: "flex",
-  gap: 8,
-  overflowX: "auto",
-  paddingBottom: 6,
-  marginBottom: 16,
-}}>
-  {[
-  "all",
-  "generated-task",
-  "proposal",
-  "retry",
-  "apply",
-  "deploy-triggered",
-  "blocked",
-  "failed",
-  "auto-paused",
-  "cooldown",
-  "runner-busy",
-  "runner-stale-lock-recovered",
-  "duplicate-pr-blocked",
-  "pending-pr",
-  "manual-task-created",
-  "recovery-task-created",
-  "deploy-recovery-created",
-  "deploy-recovery-failed",
-  "patch-validation-failed",
-  "pull-request-created",
-  "pull-request-failed",
-  "pull-request-duplicate",
-  "pull-request-validated",
-  "pull-request-validation-failed",
-  "pull-request-merged",
-  "pull-request-merge-failed",
-].map((item) => (
-    <button
-      key={item}
-      onClick={() => setFilter(item)}
-      style={{
-        padding: "8px 12px",
-        borderRadius: 10,
-        border: filter === item ? "1px solid #0f6" : "1px solid #333",
-        background: filter === item ? "#06210f" : "#111",
-        color: filter === item ? "#8dffb0" : "#aaa",
-        cursor: "pointer",
-      }}
-    >
-      {item}
-    </button>
-  ))}
-</div>
-
-  <div
-    style={{
-      fontWeight: 700,
-      color: healthColor,
-      fontSize: 18,
-    }}
-  >
-    {healthStatus}
-  </div>
-
-  <div
-    style={{
-      marginTop: 6,
-      color: "#777",
-      fontSize: 13,
-    }}
-  >
-    Recent failed events: {recentFailed}
-  </div>
-</div>
-
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{proposalCount}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Proposals</div>
-  </div>
-
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{applyCount}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Apply events</div>
-  </div>
-
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{mergedCount}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Merged</div>
-  </div>
-
-  <div style={{ padding: 12, borderRadius: 10, background: "#0f0f0f" }}>
-    <strong>{failedCount}</strong>
-    <div style={{ color: "#999", fontSize: 13 }}>Failed</div>
-  </div>
-</div>
-
-      {loading && <div style={{ color: "#999" }}>Loading activity...</div>}
-
-      {!loading && filteredActivity.length === 0 && (
-        <div style={{ color: "#999" }}>No activity yet.</div>
-      )}
-
-      {!loading &&
-        groupedEntries.map(([runId, events]) =>
-  events.map((event) => (
-          <div
-            key={event.id}
-            style={{
-              marginTop: 12,
-              padding: 10,
-              borderRadius: 10,
-              border: `1px solid ${getEventColors(event.type).border}`,
-background: getEventColors(event.type).background,
-              lineHeight: 1.35,
-            }}
-          >
-            {event.runId && (
-  <div
-    style={{
-      marginBottom: 8,
-      color: "#8dffb0",
-      fontWeight: 700,
-      fontSize: 13,
-    }}
-  >
-    RUN {event.runId.slice(0, 8)}
-  </div>
-)}
-
-<div
-  style={{
-    fontWeight: 700,
-    fontSize: 14,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  }}
->
-  {event.type}
-</div>
-{event.message && <div>Message: {event.message}</div>}
-{event.agentName && (
-  <div className="text-xs text-cyan-400">
-    Agent: {event.agentName}
-  </div>
-)}
-              <div style={{ color: "#999", fontSize: 13 }}>
-  {new Date(event.timestamp).toLocaleString()}
-</div>
-
-{event.reasoning && <div>Reasoning: {event.reasoning}</div>}
-{event.wave !== undefined && (
-  <div className="text-xs text-cyan-400">
-    Wave: {event.wave}
-  </div>
-)} 
-{event.targetFile && <div>Target: {event.targetFile}</div>}
-{event.priority && <div>Priority: {event.priority}</div>}
-
-            {event.runId && (
-  <div style={{ color: "#999", fontSize: 13 }}>
-    Run: {event.runId.slice(0, 8)}
-  </div>
-)}
-
-            {event.taskId && <div>Task: {event.taskId}</div>}
-            {event.summary && <div>Summary: {event.summary}</div>}
-            
-            {typeof event.changedLines === "number" && (
-              <div>Lines: {event.changedLines}</div>
-            )}
-            {event.branch && <div>Branch: {event.branch.slice(0, 28)}...</div>}
-            {typeof event.merged === "boolean" && (
-              <div>Merged: {event.merged ? "✅ yes" : "❌ no"}</div>
-            )}
-            {event.provider && <div>Provider: {event.provider}</div>}
-{event.status && <div>Status: {event.status}</div>}
-           {typeof event.lockAgeMs === "number" && (
-  <div style={{ color: "#94a3b8" }}>
-    Lock age: {Math.round(event.lockAgeMs / 1000)}s
-  </div>
-)}
-
-{typeof event.retryAfterMs === "number" && (
-  <div style={{ color: "#94a3b8" }}>
-    Retry after: {Math.ceil(event.retryAfterMs / 1000)}s
-  </div>
-)}
-            {event.pullRequestUrl && (
-              <a
-                href={event.pullRequestUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "#8dffb0" }}
-              >
-                Open PR
-              </a>
-            )}
-          </div>
-        )))}
+function StatPill({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-neutral-950/55 px-4 py-3">
+      <div className="text-xs uppercase tracking-[0.18em] text-white/40">
+        {label}
+      </div>
+      <div className="mt-1 text-2xl font-semibold text-white">{value}</div>
     </div>
+  );
+}
+
+function StateChip({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-neutral-950/50 px-3 py-2">
+      <div className="text-xs uppercase tracking-[0.18em] text-white/35">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-medium text-white">{value}</div>
+    </div>
+  );
+}
+
+function MetaChip({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/70">
+      {label}
+    </span>
   );
 }
