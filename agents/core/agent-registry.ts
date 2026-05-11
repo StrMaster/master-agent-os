@@ -8,6 +8,7 @@ export type SmartAgentRole =
   | "repo-context"
   | "architecture-reviewer"
   | "code-reviewer"
+  | "frontend-specialist"
   | "observability"
   | "recovery-intelligence"
   | "control-communication";
@@ -161,6 +162,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic review signals.",
       "Flag runtime/core edits and repeated risky files.",
       "Recommend merge caution or execution caution instead of noisy warnings.",
+    ],
+  },
+  {
+    id: "frontend-specialist",
+    name: "Frontend Specialist Agent",
+    purpose:
+      "Evaluates frontend and UI tasks for scope, state coupling, visual-only safety, and runtime overlap.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic frontend safety signals.",
+      "Keep UI-only changes separate from runtime or backend files.",
+      "Recommend split or approval when state and data flow are involved.",
     ],
   },
   {

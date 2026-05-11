@@ -10,6 +10,26 @@ export type AgentRouteDecision = {
 export function routePromptToAgent(prompt: string): AgentRouteDecision {
   const text = prompt.toLowerCase();
 
+  const isFrontendSpecialist =
+    text.includes("frontend specialist") ||
+    text.includes("frontend review") ||
+    text.includes("front-end") ||
+    text.includes("frontend task") ||
+    text.includes("frontend") ||
+    text.includes("visual only") ||
+    text.includes("runtime coupling") ||
+    text.includes("state/data") ||
+    text.includes("design review");
+
+  if (isFrontendSpecialist) {
+    return {
+      role: "frontend-specialist",
+      agent: getSmartAgent("frontend-specialist"),
+      confidence: "high",
+      reason: "Prompt asks for frontend planning or UI safety guidance.",
+    };
+  }
+
   const isUi =
     text.includes("ui") ||
     text.includes("layout") ||
