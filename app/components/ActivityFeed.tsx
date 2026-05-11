@@ -494,6 +494,11 @@ background: getEventColors(event.type).background,
   {event.type}
 </div>
 {event.message && <div>Message: {event.message}</div>}
+{event.agentName && (
+  <div className="text-xs text-cyan-400">
+    Agent: {event.agentName}
+  </div>
+)}
               <div style={{ color: "#999", fontSize: 13 }}>
   {new Date(event.timestamp).toLocaleString()}
 </div>
