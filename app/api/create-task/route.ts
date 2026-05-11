@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { generateTaskPlan } from "@/app/lib/ai-task-planner";
+import { addRuntimeTask } from "@/app/lib/task-runtime";
 import {
-  addRuntimeTask,
-} from "@/app/lib/task-runtime";
-
+  getActiveFileHints,
+  getLegacyFileHints,
+  readRepoContext,
+  updateRepoContext,
+} from "@/agents/core/repo-context";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -99,10 +102,11 @@ async function readOptionalGithubJson(path: string, fallback: unknown) {
 }
 
 async function getProjectContext() {
-  const [tasks, activity, conversationMemory] = await Promise.all([
+  const [tasks, activity, conversationMemory, repoContext] = await Promise.all([
     readOptionalGithubJson(TASKS_PATH, []),
     readOptionalGithubJson(ACTIVITY_PATH, []),
     readOptionalGithubJson(".agent/conversation-memory.json", []),
+    readRepoContext(),
   ]);
 
   return {
@@ -111,6 +115,7 @@ async function getProjectContext() {
     conversationMemory: Array.isArray(conversationMemory)
       ? conversationMemory.slice(0, 10)
       : [],
+    repoContext,
   };
 }
 
@@ -220,19 +225,29 @@ function inferPlannerFallbackTargetFile(prompt: string) {
   return "app/page.tsx";
 }
 
-function hardenPlannerGeneratedTask(task: AgentTask, prompt: string): AgentTask {
+function hardenPlannerGeneratedTask(
+  task: AgentTask,
+  prompt: string,
+  repoContext: Awaited<ReturnType<typeof readRepoContext>>
+): AgentTask {
   const title = normalizeTitle(task.title) || prompt || "Planner task";
   const summary = String(task.summary ?? "").trim() || title;
   const rawTargetFile = String(task.targetFile ?? "").trim();
   const targetFile = rawTargetFile || inferPlannerFallbackTargetFile(prompt);
   const broadPrompt = isBroadPlannerPrompt(prompt);
   const targetFileIsSafe = isSafeTargetFile(targetFile);
+  const legacyHints = getLegacyFileHints(repoContext);
+  const activeHints = getActiveFileHints(repoContext);
+  const targetIsLegacy = legacyHints.includes(targetFile);
+  const targetIsInactive = activeHints.length > 0 && !activeHints.includes(targetFile);
   const previewOnly =
     task.previewOnly === true ||
     task.requiresApproval === true ||
     broadPrompt ||
     !targetFileIsSafe ||
-    !rawTargetFile;
+    !rawTargetFile ||
+    targetIsLegacy ||
+    targetIsInactive;
   const executionMode =
     task.executionMode ?? (previewOnly ? "multi-step" : "single-file");
 
@@ -244,7 +259,8 @@ function hardenPlannerGeneratedTask(task: AgentTask, prompt: string): AgentTask 
     priority: task.priority ?? "low",
     executionMode,
     riskLevel:
-      task.riskLevel ?? (previewOnly || !targetFileIsSafe ? "high" : "low"),
+      task.riskLevel ??
+      (previewOnly || !targetFileIsSafe || targetIsLegacy ? "high" : "low"),
     previewOnly,
     requiresApproval: previewOnly,
   };
@@ -690,8 +706,11 @@ if (
   });
 }
 
+    const repoContext = await readRepoContext();
     const finalizedGeneratedTasks = plannerDriven
-      ? generatedTasks.map((task) => hardenPlannerGeneratedTask(task, prompt))
+      ? generatedTasks.map((task) =>
+          hardenPlannerGeneratedTask(task, prompt, repoContext)
+        )
       : generatedTasks;
 
     const updatedTasks = [...tasks, ...finalizedGeneratedTasks];
@@ -711,6 +730,21 @@ if (
   priority: finalizedGeneratedTasks[0].priority,
   reasoning: reasoningHint,
 });
+
+    await updateRepoContext(
+      (context) => ({
+        ...context,
+        activeRuntimeAreas: [
+          ...(context.activeRuntimeAreas ?? []),
+          ...finalizedGeneratedTasks.map((task) => task.targetFile),
+        ],
+      }),
+      `Record repo context for task ${finalizedGeneratedTasks[0].id}`,
+      {
+        taskId: finalizedGeneratedTasks[0].id,
+        targetFile: finalizedGeneratedTasks[0].targetFile,
+      }
+    ).catch(() => {});
 
 await updateConversationMemory({
   prompt,

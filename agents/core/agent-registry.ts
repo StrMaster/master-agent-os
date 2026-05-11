@@ -4,7 +4,8 @@ export type SmartAgentRole =
   | "senior-reviewer"
   | "senior-ui"
   | "senior-deploy"
-  | "senior-recovery";
+  | "senior-recovery"
+  | "repo-context";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -107,6 +108,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Stabilize first, improve later.",
       "Undo broken partial changes before adding new behavior.",
       "Prefer smallest fix that restores build.",
+    ],
+  },
+  {
+    id: "repo-context",
+    name: "Repo Context Agent",
+    purpose:
+      "Maintains structured repository context, active runtime areas, legacy zones, and risky file hints.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: false,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic file lists over prose.",
+      "Track active and legacy architecture zones separately.",
+      "Keep context lightweight and structured.",
     ],
   },
 ];

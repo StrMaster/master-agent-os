@@ -46,6 +46,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isRepoContext =
+    text.includes("repo context") ||
+    text.includes("active runtime areas") ||
+    text.includes("legacy zones") ||
+    text.includes("file hints") ||
+    text.includes("architecture map");
+
+  if (isRepoContext) {
+    return {
+      role: "repo-context",
+      agent: getSmartAgent("repo-context"),
+      confidence: "high",
+      reason: "Prompt asks for repository structure or architecture context.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||

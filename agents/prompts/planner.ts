@@ -8,6 +8,7 @@ Your job:
 - Always protect build stability.
 - Never suggest legacy propose/apply flow.
 - Use PR-only architecture.
+- Use repo-context hints and avoid legacy or deprecated zones when choosing work.
 
 Output style:
 - Clear goal

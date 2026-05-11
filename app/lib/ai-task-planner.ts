@@ -1,9 +1,11 @@
 import { openai } from "./openai";
+import type { RepoContext } from "@/agents/core/repo-context";
 
 type ProjectContext = {
   recentTasks: unknown[];
   recentActivity: unknown[];
   conversationMemory: unknown[];
+  repoContext?: RepoContext;
 };
 
 export async function generateTaskPlan(prompt: string, context?: ProjectContext) {
@@ -21,6 +23,7 @@ You receive:
 - recent tasks
 - recent activity
 - conversation memory
+- repo context hints
 
 Your job:
 - understand the user's intent
@@ -41,6 +44,7 @@ Rules:
 - Do not create broad refactors.
 - If request is vague, choose the safest likely UI file.
 - Use recent context to avoid repeating the same work.
+- Prefer active runtime areas and avoid legacy or deprecated zones.
 - Always return a specific title, summary, targetFile, priority, and reasoning.
 - If the target is unclear or too broad, keep the task previewOnly with requiresApproval.
 
@@ -66,6 +70,7 @@ JSON format:
               recentTasks: context?.recentTasks ?? [],
               recentActivity: context?.recentActivity ?? [],
               conversationMemory: context?.conversationMemory ?? [],
+              repoContext: context?.repoContext ?? null,
             },
           },
           null,
