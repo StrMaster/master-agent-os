@@ -201,7 +201,7 @@
     "title": "Enhance visual clarity of runtime sections on Execution page",
     "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
     "targetFile": "app/page.tsx",
-    "status": "todo",
+    "status": "running",
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-11T17:10:02.554Z",
@@ -213,7 +213,9 @@
     "plannerNotes": "High-risk multi-step task. Planner should split this into safe execution waves. Architecture review: approve (scope 3). Code review: execution-caution (scope 3). Backend review: approve (scope 3). Design review: split (scope 5). Frontend review: design-review (scope 4). Observability: ok. Testing review: execution-caution (scope 4). Performance review: approve (scope 4).",
     "riskLevel": "high",
     "approvedAt": "2026-05-11T17:13:26.132Z",
-    "approvedBy": "system"
+    "approvedBy": "system",
+    "startedAt": "2026-05-11T17:58:29.917Z",
+    "updatedAt": "2026-05-11T17:58:29.917Z"
   },
   {
     "id": "manual-task-1778522292453",
