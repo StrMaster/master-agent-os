@@ -123,6 +123,8 @@ export default async function HomePage() {
       (task.status === "pending-pr" || task.status === "running")
   );
 
+  const llmUsageCount = 3; // Hardcoded count of LLMs used or supported
+
   const stats = [
     { label: "Active Goal", value: "1", subtext: activeGoal.title },
     { label: "Active Agents", value: String(agents.length), subtext: "System registry loaded" },
@@ -159,9 +161,29 @@ export default async function HomePage() {
           description="This is the operating view of your orchestration system. It shows the active goal, task pressure, execution state, and current focus."
         />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <ActionButton label="New Goal" />
           <ActionButton label="Ask Master" variant="primary" />
+          <div className="relative group ml-2 cursor-default">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 text-zinc-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"
+              />
+            </svg>
+            <div className="absolute bottom-full mb-2 hidden w-max max-w-xs rounded bg-zinc-900 px-3 py-2 text-xs text-zinc-300 group-hover:block">
+              {llmUsageCount} LLM{llmUsageCount !== 1 ? "s" : ""} currently used/supported
+            </div>
+          </div>
         </div>
       </div>
 
