@@ -1,5 +1,18 @@
 [
   {
+    "id": "225dda6d-ab1e-43f4-8d06-ea1d116664d7",
+    "timestamp": "2026-05-11T17:10:05.914Z",
+    "type": "design-review-completed",
+    "taskId": "manual-task-1778519402554",
+    "targetFile": "app/page.tsx",
+    "recommendation": "split",
+    "scopeSize": 5,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "shouldSplit": true,
+    "signals": "[{\"code\":\"design-surface\",\"severity\":\"low\",\"detail\":\"Target is a UI surface: app/page.tsx\"},{\"code\":\"visual-only\",\"severity\":\"low\",\"detail\":\"Task appears to be visual-only or presentation-focused.\"},{\"code\":\"logic-affecting\",\"severity\":\"medium\",\"detail\":\"Task touches state, data, or other logic-bearing UI behavior.\"},{\"code\":\"accessibility-basics\",\"severity\":\"low\",\"detail\":\"Design surface should keep keyboard, contrast, and focus behavior in mind.\"},{\"code\":\"multi-step\",\"severity\":\"medium\",\"detail\":\"Task is marked multi-step.\"},{\"code\":\"oversized-scope\",\"severity\":\"medium\",\"detail\":\"Scope size is 5, which suggests splitting the design work.\"}]"
+  },
+  {
     "id": "6dbf5231-6fb3-48ad-abdd-67e509c0ce56",
     "timestamp": "2026-05-11T17:10:04.925Z",
     "type": "backend-review-completed",
