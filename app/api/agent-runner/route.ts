@@ -1266,6 +1266,16 @@ agentRole: task.agentRole,
   "Track failed agent runner execution"
 ).catch(() => {});
 
+if (activeTask) {
+  await createRecoveryTask({
+    failedTask: activeTask,
+    reason:
+      error instanceof Error
+        ? error.message
+        : "Unknown execution failure",
+  });
+}
+
     return NextResponse.json(
       {
         ok: false,
