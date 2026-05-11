@@ -8,6 +8,8 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 const ACTIVITY_PATH = ".agent/activity.json";
 
+const ACTIVE_QUEUE_STATUSES = ["queued", "running", "pending-pr"];
+
 type AgentTask = {
   id: string;
   title?: string;
@@ -152,6 +154,14 @@ export async function POST(req: Request) {
     }
 
     const task = tasks[taskIndex];
+
+    if (ACTIVE_QUEUE_STATUSES.includes(task.status ?? "")) {
+      return NextResponse.json({
+        ok: true,
+        mode: "task-already-queued",
+        task,
+      });
+    }
 
     if (!task.previewOnly && !task.requiresApproval) {
       return NextResponse.json({
