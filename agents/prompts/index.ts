@@ -9,6 +9,7 @@ import { REPO_CONTEXT_AGENT_PROMPT } from "./repo-context";
 import { ARCHITECTURE_REVIEWER_AGENT_PROMPT } from "./architecture-reviewer";
 import { CODE_REVIEWER_AGENT_PROMPT } from "./code-reviewer";
 import { OBSERVABILITY_AGENT_PROMPT } from "./observability";
+import { RECOVERY_INTELLIGENCE_AGENT_PROMPT } from "./recovery-intelligence";
 
 export function getAgentPrompt(role: SmartAgentRole) {
   switch (role) {
@@ -30,6 +31,8 @@ export function getAgentPrompt(role: SmartAgentRole) {
       return CODE_REVIEWER_AGENT_PROMPT;
     case "observability":
       return OBSERVABILITY_AGENT_PROMPT;
+    case "recovery-intelligence":
+      return RECOVERY_INTELLIGENCE_AGENT_PROMPT;
     case "senior-execution":
     default:
       return EXECUTION_AGENT_PROMPT;

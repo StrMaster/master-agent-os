@@ -8,7 +8,8 @@ export type SmartAgentRole =
   | "repo-context"
   | "architecture-reviewer"
   | "code-reviewer"
-  | "observability";
+  | "observability"
+  | "recovery-intelligence";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -175,6 +176,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic anomaly signals.",
       "Track failure spikes, blocked runtime frequency, and stalled chains.",
       "Recommend runtime cooldown or recovery caution when patterns repeat.",
+    ],
+  },
+  {
+    id: "recovery-intelligence",
+    name: "Recovery Intelligence Agent",
+    purpose:
+      "Improves recovery decisions using runtime memory, failure patterns, and observability signals.",
+    canCreateTasks: true,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: true,
+    canHandleRecovery: true,
+    rules: [
+      "Use deterministic recovery signals.",
+      "Watch recovery loops, deploy failures and repeated risky targets.",
+      "Prefer cooldown or retry-later guidance when failure patterns repeat.",
     ],
   },
 ];

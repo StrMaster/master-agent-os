@@ -110,6 +110,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isRecoveryIntelligence =
+    text.includes("recovery intelligence") ||
+    text.includes("retry later") ||
+    text.includes("cooldown runtime") ||
+    text.includes("recovery loop") ||
+    text.includes("stop execution");
+
+  if (isRecoveryIntelligence) {
+    return {
+      role: "recovery-intelligence",
+      agent: getSmartAgent("recovery-intelligence"),
+      confidence: "high",
+      reason: "Prompt asks for recovery decision support or loop analysis.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||

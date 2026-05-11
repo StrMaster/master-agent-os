@@ -2,6 +2,7 @@ import { logActivity } from "./activity";
 import { recordRuntimeRecoveryMemory } from "./memory";
 import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
+import { analyzeRecoveryIntelligence } from "@/agents/core/recovery-intelligence";
 
 const TASKS_PATH = ".agent/tasks.json";
 const MAX_RECOVERY_RETRIES = 3;
@@ -37,6 +38,11 @@ export async function createRecoveryTask({
   const { tasks, sha } = await readTasksFile();
   const recoveryOfTaskId = failedTask.recoveryOfTaskId ?? failedTask.id;
   const recoverySignature = normalizeRecoverySignature(reason);
+  const intelligence = await analyzeRecoveryIntelligence({
+    taskId: recoveryOfTaskId,
+    targetFile: failedTask.targetFile,
+    reason,
+  }).catch(() => null);
 
   const existingRecoveryTask = tasks.find(
     (task) =>
@@ -55,7 +61,10 @@ export async function createRecoveryTask({
           taskId: recoveryOfTaskId,
           agentName: "Senior Recovery Agent",
           reason: "Recovery retry limit reached",
-          details: reason,
+          details: JSON.stringify({
+            reason,
+            intelligence: intelligence?.recommendation,
+          }),
         });
 
         await recordRuntimeRecoveryMemory({
@@ -83,17 +92,18 @@ export async function createRecoveryTask({
         `Retry recovery task for ${recoveryOfTaskId}`
       );
 
-      await logActivity({
-        type: "recovery-retry-started",
-        runId: existingRecoveryTask.id,
-        taskId: recoveryOfTaskId,
-        agentName: "Senior Recovery Agent",
-        reason,
-        details: JSON.stringify({
-          retryCount: existingRecoveryTask.retryCount,
-          recoveryOfTaskId,
-        }),
-      });
+        await logActivity({
+          type: "recovery-retry-started",
+          runId: existingRecoveryTask.id,
+          taskId: recoveryOfTaskId,
+          agentName: "Senior Recovery Agent",
+          reason,
+          details: JSON.stringify({
+            retryCount: existingRecoveryTask.retryCount,
+            recoveryOfTaskId,
+            intelligence: intelligence?.recommendation,
+          }),
+        });
 
       await recordRuntimeRecoveryMemory({
         taskId: recoveryOfTaskId,
@@ -110,7 +120,7 @@ export async function createRecoveryTask({
       runId: existingRecoveryTask.id,
       taskId: recoveryOfTaskId,
       agentName: "Senior Recovery Agent",
-      reason,
+      reason: intelligence?.recommendation ? `${reason} (${intelligence.recommendation})` : reason,
     });
 
     await recordRuntimeRecoveryMemory({
@@ -141,7 +151,9 @@ export async function createRecoveryTask({
     recoveryReason: reason,
     recoverySignature,
     plannerNotes:
-      "Automatically generated recovery task after reviewer/execution failure.",
+      intelligence?.recommendation
+        ? `Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: ${intelligence.recommendation}.`
+        : "Automatically generated recovery task after reviewer/execution failure.",
   };
 
   tasks.unshift(recoveryTask);
@@ -157,6 +169,7 @@ export async function createRecoveryTask({
     details: JSON.stringify({
       retryCount: recoveryTask.retryCount,
       recoveryOfTaskId,
+      intelligence: intelligence?.recommendation,
     }),
   });
 
