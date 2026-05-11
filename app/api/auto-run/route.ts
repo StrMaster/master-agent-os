@@ -240,7 +240,9 @@ if (false && state.autoMergeEnabled && pendingPrTask) {
       ? tasks.find(
           (task) =>
             task &&
-            (task.status === "todo" || task.status === "queued"),
+            (task.status === "todo" || task.status === "queued") &&
+            !task.previewOnly &&
+            !task.requiresApproval,
         )
       : null;
 
@@ -248,7 +250,7 @@ if (false && state.autoMergeEnabled && pendingPrTask) {
       return NextResponse.json({
         ok: true,
         mode: "no-work",
-        message: "No queued or todo tasks available",
+        message: "No runnable queued or todo tasks available",
       });
     }
 

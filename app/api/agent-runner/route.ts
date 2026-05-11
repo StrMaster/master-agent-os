@@ -258,6 +258,7 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
     .filter(({ task }) => task.status === "todo")
+    .filter(({ task }) => !task.previewOnly && !task.requiresApproval)
     .filter(({ task }) => dependenciesCompleted(task, tasks))
     .filter(({ task }) => previousWaveCompleted(task, tasks))
     .filter(({ task }) => retryAllowed(task))

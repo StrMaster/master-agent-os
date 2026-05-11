@@ -1,4 +1,5 @@
 import ControlCenterControls from "../components/ControlCenterControls";
+import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import RecoveryControlCard from "../components/RecoveryControlCard";
 
 
@@ -21,6 +22,10 @@ type AgentTask = {
   riskLevel?: "low" | "medium" | "high";
   executionMode?: "single-file" | "multi-step";
   wave?: number;
+  previewOnly?: boolean;
+  requiresApproval?: boolean;
+  approvedAt?: string;
+  approvedBy?: string;
   parentTaskId?: string;
   plannerNotes?: string;
   retryCount?: number;
@@ -255,6 +260,8 @@ function TaskSection({
 }
 
 function TaskCard({ task }: { task: AgentTask }) {
+  const needsApproval = task.previewOnly || task.requiresApproval;
+
   return (
     <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -278,6 +285,10 @@ function TaskCard({ task }: { task: AgentTask }) {
           {task.executionMode && <Badge>{task.executionMode}</Badge>}
 
           {typeof task.wave === "number" && <Badge>Wave {task.wave}</Badge>}
+
+          {task.previewOnly && <Badge>Preview</Badge>}
+
+          {task.requiresApproval && <Badge>Approval required</Badge>}
         </div>
       </div>
 
@@ -287,6 +298,8 @@ function TaskCard({ task }: { task: AgentTask }) {
         <Meta label="Intent" value={task.intent} />
         <Meta label="Target" value={task.targetFile} />
         <Meta label="Parent" value={task.parentTaskId} />
+        <Meta label="Approved by" value={task.approvedBy} />
+        <Meta label="Approved at" value={task.approvedAt} />
         <Meta
           label="Retries"
           value={
@@ -318,6 +331,10 @@ function TaskCard({ task }: { task: AgentTask }) {
         >
           Open pull request
         </a>
+      )}
+
+      {needsApproval && (
+        <ApprovePreviewTaskButton taskId={task.id} />
       )}
     </div>
   );

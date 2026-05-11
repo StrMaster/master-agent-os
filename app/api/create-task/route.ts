@@ -40,6 +40,8 @@ riskLevel?: "low" | "medium" | "high";
   wave?: number;
   previewOnly?: boolean;
   requiresApproval?: boolean;
+  approvedAt?: string;
+  approvedBy?: string;
   parentTaskId?: string;
   plannerNotes?: string;
   dependsOn?: string[];
