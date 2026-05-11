@@ -9,6 +9,32 @@ type ControlState = {
   emergencyStop: boolean;
 };
 
+const CONTROL_STATE_STORAGE_KEY = 'master-agent-control-state';
+
+function readLocalControlState(): Partial<ControlState> {
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(CONTROL_STATE_STORAGE_KEY) ?? '{}'
+    );
+
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalControlState(patch: Partial<ControlState>) {
+  const current = readLocalControlState();
+
+  window.localStorage.setItem(
+    CONTROL_STATE_STORAGE_KEY,
+    JSON.stringify({
+      ...current,
+      ...patch,
+    })
+  );
+}
+
 export default function ControlCenterControls() {
   const [state, setState] = useState<ControlState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,9 +49,22 @@ export default function ControlCenterControls() {
         throw new Error(data.error ?? 'Failed to load control state');
       }
 
-      setState(data.state);
+      const localState = readLocalControlState();
+
+      setState({
+        ...data.state,
+        ...localState,
+      });
       setError(null);
     } catch (err) {
+      const localState = readLocalControlState();
+
+      setState({
+        paused: Boolean(localState.paused),
+        autoRunEnabled: Boolean(localState.autoRunEnabled),
+        autoMergeEnabled: Boolean(localState.autoMergeEnabled),
+        emergencyStop: Boolean(localState.emergencyStop),
+      });
       setError(err instanceof Error ? err.message : 'Failed to load state');
     }
   }
@@ -33,17 +72,16 @@ export default function ControlCenterControls() {
   async function updateState(patch: Partial<ControlState>) {
     try {
       setLoading(true);
+      writeLocalControlState(patch);
 
-      const optimisticState = state
-        ? {
-            ...state,
-            ...patch,
-          }
-        : state;
-
-      if (optimisticState) {
-        setState(optimisticState);
-      }
+      setState((current) =>
+        current
+          ? {
+              ...current,
+              ...patch,
+            }
+          : current
+      );
 
       const res = await fetch('/api/control-state', {
         method: 'POST',
@@ -57,14 +95,9 @@ export default function ControlCenterControls() {
         throw new Error(data.error ?? 'Failed to update control state');
       }
 
-      setState((current) => ({
-        ...(current ?? data.state),
-        ...patch,
-      }));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update state');
-      await loadState();
     } finally {
       setLoading(false);
     }
@@ -97,8 +130,8 @@ export default function ControlCenterControls() {
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-          {error}
+        <div className="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
+          Runtime control warning: {error}
         </div>
       )}
 
