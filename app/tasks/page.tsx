@@ -1,6 +1,7 @@
 import ControlCenterControls from "../components/ControlCenterControls";
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
+import AgentsWorkspace from "../components/AgentsWorkspace";
 import ActivityFeed from "../components/ActivityFeed";
 import RecoveryControlCard from "../components/RecoveryControlCard";
 import RuntimeDashboard from "../components/RuntimeDashboard";
@@ -173,6 +174,8 @@ export default async function TasksPage() {
       </div>
 
       <RuntimeDashboard tasks={tasks} activity={activity} />
+
+      <AgentsWorkspace initialActivity={activity} />
 
       <ActivityFeed initialActivity={activity} />
 
