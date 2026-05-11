@@ -230,7 +230,7 @@ async function createRecoveryTask({
   failedTask: AgentTask;
   reason: string;
 }) {
-  const tasks = await readTasks();
+  const { tasks, sha } = await readTasksFile();
 
   const recoveryTask: AgentTask = {
     id: `recovery-${Date.now()}`,
@@ -239,7 +239,6 @@ async function createRecoveryTask({
     targetFile: failedTask.targetFile,
     status: "todo",
     priority: "high",
-    source: "recovery",
     createdAt: new Date().toISOString(),
 
     agentRole: "senior-recovery",
@@ -254,7 +253,11 @@ async function createRecoveryTask({
 
   tasks.unshift(recoveryTask);
 
-  await saveTasks(tasks);
+  await writeTasksFile(
+  tasks,
+  sha,
+  `Create recovery task for ${failedTask.id}`
+);
 
   await logActivity({
     type: "recovery-task-created",
