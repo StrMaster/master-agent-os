@@ -1,60 +1,10 @@
 import { NextResponse } from "next/server";
-import { generateTaskPlan } from "@/app/lib/ai-task-planner";
 import { addRuntimeTask } from "@/app/lib/task-runtime";
-import {
-  getActiveFileHints,
-  getLegacyFileHints,
-  readRepoContext,
-  updateRepoContext,
-} from "@/agents/core/repo-context";
-import {
-  applyArchitectureReview,
-  reviewArchitectureTask,
-} from "@/agents/core/architecture-reviewer";
-import { applyCodeReview, reviewCodeTask } from "@/agents/core/code-reviewer";
-import {
-  applyFrontendReview,
-  reviewFrontendTask,
-} from "@/agents/core/frontend-specialist";
-import {
-  applyBackendReview,
-  reviewBackendTask,
-  shouldReviewBackendTask,
-} from "@/agents/core/backend-specialist";
-import {
-  applyDesignReview,
-  reviewDesignTask,
-  shouldReviewDesignTask,
-} from "@/agents/core/design-specialist";
-import {
-  applyTestingReview,
-  reviewTestingTask,
-  shouldReviewTestingTask,
-} from "@/agents/core/testing-specialist";
-import {
-  applySecurityReview,
-  reviewSecurityTask,
-  shouldReviewSecurityTask,
-} from "@/agents/core/security-specialist";
-import {
-  applyPerformanceReview,
-  reviewPerformanceTask,
-  shouldReviewPerformanceTask,
-} from "@/agents/core/performance-specialist";
-import { scanObservabilitySignals } from "@/agents/core/observability";
-import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
-
-const OWNER = "StrMaster";
-const REPO = "master-agent-os";
-const BRANCH = "main";
-const TASKS_PATH = ".agent/tasks.json";
-const ACTIVITY_PATH = ".agent/activity.json";
-const CONVERSATION_MEMORY_PATH =
-  ".agent/conversation-memory.json";
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
   "app/execution/page.tsx",
+  "app/agents/page.tsx",
   "app/components/RunAgentButton.tsx",
   "app/components/ActivityFeed.tsx",
 ];
@@ -69,126 +19,20 @@ type AgentTask = {
   priority: Priority;
   createdAt: string;
   queuedAt?: string;
-  startedAt?: string;
-  completedAt?: string;
   source: "manual";
   summary?: string;
-intent?: string;
-riskLevel?: "low" | "medium" | "high";
+  intent?: string;
+  riskLevel?: "low" | "medium" | "high";
   executionMode?: "single-file" | "multi-step";
   wave?: number;
   previewOnly?: boolean;
   requiresApproval?: boolean;
-  approvedAt?: string;
-  approvedBy?: string;
-  parentTaskId?: string;
   plannerNotes?: string;
-  dependsOn?: string[];
-  dependsOnTaskIds?: string[];
-  blockedBy?: string[];
   agentRole?: string;
-agentName?: string;
-agentSystemPrompt?: string;
-routingReason?: string;
+  agentName?: string;
+  agentSystemPrompt?: string;
+  routingReason?: string;
 };
-
-type GitHubFile = {
-  sha: string;
-  content: string;
-};
-
-async function readGithubJson(path: string) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to read ${path}: ${res.status}`);
-  }
-
-  const file = (await res.json()) as GitHubFile;
-  const content = Buffer.from(file.content, "base64").toString("utf-8");
-
-  return {
-    json: JSON.parse(content),
-    sha: file.sha,
-  };
-}
-
-async function readOptionalGithubJson(path: string, fallback: unknown) {
-  try {
-    const { json } = await readGithubJson(path);
-    return json;
-  } catch {
-    return fallback;
-  }
-}
-
-async function getProjectContext() {
-  const [tasks, activity, conversationMemory, repoContext] = await Promise.all([
-    readOptionalGithubJson(TASKS_PATH, []),
-    readOptionalGithubJson(ACTIVITY_PATH, []),
-    readOptionalGithubJson(".agent/conversation-memory.json", []),
-    readRepoContext(),
-  ]);
-
-  return {
-    recentTasks: Array.isArray(tasks) ? tasks.slice(-10) : [],
-    recentActivity: Array.isArray(activity) ? activity.slice(0, 15) : [],
-    conversationMemory: Array.isArray(conversationMemory)
-      ? conversationMemory.slice(0, 10)
-      : [],
-    repoContext,
-  };
-}
-
-async function writeGithubJson(path: string, json: unknown, sha: string, message: string) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const content = Buffer.from(JSON.stringify(json, null, 2) + "\n").toString(
-    "base64"
-  );
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message,
-        content,
-        sha,
-        branch: BRANCH,
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to write ${path}: ${res.status} ${text}`);
-  }
-}
 
 function normalizeTitle(value: unknown) {
   return String(value ?? "").trim();
@@ -202,43 +46,12 @@ function normalizePriority(value: unknown): Priority {
   return "low";
 }
 
-function isSafeTargetFile(targetFile: string) {
-  return SAFE_TARGET_FILES.includes(targetFile);
-}
+function inferTargetFile(prompt: string) {
+  const normalized = prompt.toLowerCase();
 
-function normalizeDependencyIds(value: unknown) {
-  if (!Array.isArray(value)) {
-    return undefined;
+  if (normalized.includes("agents page") || normalized.includes("agent cards")) {
+    return "app/agents/page.tsx";
   }
-
-  const dependencyIds = value.filter(
-    (dependencyId: unknown): dependencyId is string =>
-      typeof dependencyId === "string" && dependencyId.trim().length > 0,
-  );
-
-  const uniqueDependencyIds = [...new Set(dependencyIds)];
-
-  return uniqueDependencyIds.length > 0 ? uniqueDependencyIds : undefined;
-}
-
-function isBroadPlannerPrompt(prompt: string) {
-  const normalized = prompt.toLowerCase();
-
-  return [
-    "everything",
-    "entire",
-    "whole",
-    "full ",
-    "all of",
-    "all ",
-    "broad",
-    "general",
-    "complete",
-  ].some((needle) => normalized.includes(needle));
-}
-
-function inferPlannerFallbackTargetFile(prompt: string) {
-  const normalized = prompt.toLowerCase();
 
   if (
     normalized.includes("activity") ||
@@ -252,8 +65,7 @@ function inferPlannerFallbackTargetFile(prompt: string) {
   if (
     normalized.includes("run button") ||
     normalized.includes("runner") ||
-    normalized.includes("execution") ||
-    normalized.includes("agent")
+    normalized.includes("execution")
   ) {
     return "app/execution/page.tsx";
   }
@@ -261,718 +73,133 @@ function inferPlannerFallbackTargetFile(prompt: string) {
   return "app/page.tsx";
 }
 
-function hardenPlannerGeneratedTask(
-  task: AgentTask,
-  prompt: string,
-  repoContext: Awaited<ReturnType<typeof readRepoContext>>
-): AgentTask {
-  const title = normalizeTitle(task.title) || prompt || "Planner task";
-  const summary = String(task.summary ?? "").trim() || title;
-  const rawTargetFile = String(task.targetFile ?? "").trim();
-  const targetFile = rawTargetFile || inferPlannerFallbackTargetFile(prompt);
-  const broadPrompt = isBroadPlannerPrompt(prompt);
-  const targetFileIsSafe = isSafeTargetFile(targetFile);
-  const legacyHints = getLegacyFileHints(repoContext);
-  const activeHints = getActiveFileHints(repoContext);
-  const targetIsLegacy = legacyHints.includes(targetFile);
-  const targetIsInactive = activeHints.length > 0 && !activeHints.includes(targetFile);
-  const previewOnly =
-    task.previewOnly === true ||
-    task.requiresApproval === true ||
-    broadPrompt ||
-    !targetFileIsSafe ||
-    !rawTargetFile ||
-    targetIsLegacy ||
-    targetIsInactive;
-  const executionMode =
-    task.executionMode ?? (previewOnly ? "multi-step" : "single-file");
+function inferTitle(prompt: string) {
+  const cleanPrompt = prompt
+    .replace(/^create task:/i, "")
+    .replace(/^create task/i, "")
+    .trim();
+
+  const firstSentence = cleanPrompt.split(/\n|\. Goals:|\. Constraints:/i)[0]?.trim();
+
+  return firstSentence || cleanPrompt || "Manual task";
+}
+
+function inferPriority(prompt: string, explicitPriority: unknown): Priority {
+  const normalized = prompt.toLowerCase();
+  const explicit = normalizePriority(explicitPriority);
+
+  if (explicit !== "low") {
+    return explicit;
+  }
+
+  if (
+    normalized.includes("urgent") ||
+    normalized.includes("broken") ||
+    normalized.includes("error") ||
+    normalized.includes("high priority")
+  ) {
+    return "high";
+  }
+
+  if (
+    normalized.includes("improve") ||
+    normalized.includes("spacing") ||
+    normalized.includes("ui") ||
+    normalized.includes("ux") ||
+    normalized.includes("readability")
+  ) {
+    return "medium";
+  }
+
+  return "low";
+}
+
+function shouldQueueOnly(prompt: string, body: Record<string, unknown>) {
+  const normalized = prompt.toLowerCase();
+
+  return (
+    body.previewOnly === true ||
+    body.requiresApproval === true ||
+    normalized.includes("no auto-run") ||
+    normalized.includes("no auto run") ||
+    normalized.includes("do not auto-run") ||
+    normalized.includes("do not auto run") ||
+    normalized.includes("planner only") ||
+    normalized.includes("preview only") ||
+    normalized.includes("wait for approval") ||
+    normalized.includes("approval before execution") ||
+    normalized.includes("manual approval")
+  );
+}
+
+function buildTask(body: Record<string, unknown>): AgentTask {
+  const prompt = String(body.prompt ?? "").trim();
+  const title = normalizeTitle(body.title) || inferTitle(prompt);
+  const targetFile = String(body.targetFile ?? "").trim() || inferTargetFile(prompt);
+  const queueOnly = shouldQueueOnly(prompt, body);
+  const priority = inferPriority(prompt, body.priority);
 
   return {
-    ...task,
+    id: `manual-task-${Date.now()}`,
     title,
-    summary,
-    targetFile,
-    priority: task.priority ?? "low",
-    executionMode,
-    riskLevel:
-      task.riskLevel ??
-      (previewOnly || !targetFileIsSafe || targetIsLegacy ? "high" : "low"),
-    previewOnly,
-    requiresApproval: previewOnly,
-  };
-}
-
-async function logActivity(event: Record<string, unknown>) {
-  const { json: activity, sha } = await readGithubJson(ACTIVITY_PATH);
-
-  const updatedActivity = [
-    {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      ...event,
-    },
-    ...(Array.isArray(activity) ? activity : []),
-  ].slice(0, 100);
-
-  await writeGithubJson(
-    ACTIVITY_PATH,
-    updatedActivity,
-    sha,
-    "Log manual task creation"
-  );
-}
-
-async function updateConversationMemory(entry: {
-  prompt?: string;
-  summary?: string;
-  targetFile?: string;
-}) {
-  const { json, sha } = await readGithubJson(
-    CONVERSATION_MEMORY_PATH
-  );
-
-  const memory = Array.isArray(json) ? json : [];
-
-  const updatedMemory = [
-    {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      ...entry,
-    },
-    ...memory,
-  ].slice(0, 25);
-
-  await writeGithubJson(
-    CONVERSATION_MEMORY_PATH,
-    updatedMemory,
-    sha,
-    "Update conversation memory"
-  );
-}
-
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-const agentMetadata = {
-  agentRole:
-    typeof body.agentRole === "string" ? body.agentRole : undefined,
-  agentName:
-    typeof body.agentName === "string" ? body.agentName : undefined,
-  agentSystemPrompt:
-    typeof body.agentSystemPrompt === "string"
-      ? body.agentSystemPrompt
-      : undefined,
-  routingReason:
-    typeof body.routingReason === "string" ? body.routingReason : undefined,
-};
-const plannerMetadata = {
-  executionMode:
-    body.executionMode === "multi-step" || body.executionMode === "single-file"
-      ? body.executionMode
-      : undefined,
-  wave:
-    typeof body.wave === "number" && Number.isFinite(body.wave)
-      ? body.wave
-      : undefined,
-  previewOnly: body.previewOnly === true,
-  requiresApproval: body.requiresApproval === true,
-  parentTaskId:
-    typeof body.parentTaskId === "string" ? body.parentTaskId : undefined,
-  plannerNotes:
-    typeof body.plannerNotes === "string" ? body.plannerNotes : undefined,
-  dependsOn:
-    normalizeDependencyIds(body.dependsOn) ??
-    normalizeDependencyIds(body.dependsOnTaskIds),
-  dependsOnTaskIds: normalizeDependencyIds(body.dependsOnTaskIds),
-  blockedBy: normalizeDependencyIds(body.blockedBy),
-};
-
-    const prompt = String(body.prompt ?? "").trim();
-
-let title = normalizeTitle(body.title);
-let targetFile = String(body.targetFile ?? "").trim();
-let priority = normalizePriority(body.priority);
-let summary = title || prompt;
-let reasoningHint = "";
-let intent = "code-improvement";
-let riskLevel: "low" | "medium" | "high" = "low";
-let executionMode: "single-file" | "multi-step" = "single-file";
-let wave = 1;
-let previewOnly = false;
-let requiresApproval = false;
-let parentTaskId = plannerMetadata.parentTaskId;
-let plannerNotes = "Single safe execution task.";
-let dependsOn = plannerMetadata.dependsOn;
-let dependsOnTaskIds = plannerMetadata.dependsOnTaskIds ?? plannerMetadata.dependsOn;
-let blockedBy =
-  plannerMetadata.blockedBy ??
-  plannerMetadata.dependsOnTaskIds ??
-  plannerMetadata.dependsOn;
-
-
-if (prompt && process.env.OPENAI_API_KEY) {
-  try {
-    const projectContext = await getProjectContext();
-const aiPlan = await generateTaskPlan(prompt, projectContext);
-
-    title = normalizeTitle(aiPlan.title) || title || prompt;
-    summary = aiPlan.summary || summary || title;
-    targetFile = aiPlan.targetFile || targetFile;
-    priority = normalizePriority(aiPlan.priority);
-    reasoningHint = aiPlan.reasoning || reasoningHint;
-  } catch (error) {
-    console.warn("AI task planner failed, using rule-based fallback:", error);
-  }
-}
-
-if (prompt) {
-  title = title || prompt;
-
-  const normalizedPrompt = prompt.toLowerCase();
-
-  if (
-  normalizedPrompt.includes("activity") ||
-  normalizedPrompt.includes("feed") ||
-  normalizedPrompt.includes("timeline") ||
-  normalizedPrompt.includes("logs")
-) {
-  targetFile = "app/components/ActivityFeed.tsx";
-  reasoningHint =
-  "Detected activity/feed related keywords.";
-}
-
-if (
-  normalizedPrompt.includes("dashboard") ||
-  normalizedPrompt.includes("layout") ||
-  normalizedPrompt.includes("home") ||
-  normalizedPrompt.includes("page")
-) {
-  targetFile = "app/page.tsx";
-  reasoningHint =
-  "Detected dashboard/layout related keywords.";
-}
-
-if (
-  normalizedPrompt.includes("run button") ||
-  normalizedPrompt.includes("runner") ||
-  normalizedPrompt.includes("execution")
-) {
-  targetFile = "app/components/RunAgentButton.tsx";
-  reasoningHint =
-  "Detected execution/runner related keywords.";
-}
-
-if (
-  normalizedPrompt.includes("agent") ||
-  normalizedPrompt.includes("agents")
-) {
-  targetFile = "app/execution/page.tsx";
-  reasoningHint =
-  "Detected agent execution related keywords.";
-}
-
-if (
-  normalizedPrompt.includes("mobile") ||
-  normalizedPrompt.includes("responsive") ||
-  normalizedPrompt.includes("spacing") ||
-  normalizedPrompt.includes("overflow")
-) {
-  priority = "high";
-}
-
-if (
-  normalizedPrompt.includes("fix") ||
-  normalizedPrompt.includes("urgent") ||
-  normalizedPrompt.includes("broken") ||
-  normalizedPrompt.includes("error") ||
-  normalizedPrompt.includes("crash")
-) {
-  priority = "high";
-}
-
-if (
-  normalizedPrompt.includes("improve") ||
-  normalizedPrompt.includes("cleanup") ||
-  normalizedPrompt.includes("optimize") ||
-  normalizedPrompt.includes("refactor") ||
-  normalizedPrompt.includes("simplify")
-) {
-  priority = priority === "high"
-    ? "high"
-    : "medium";
-}
-if (
-  normalizedPrompt.includes("ui") ||
-  normalizedPrompt.includes("ux") ||
-  normalizedPrompt.includes("design")
-) {
-  targetFile = "app/page.tsx";
-}
-
-if (
-  normalizedPrompt.includes("activity timeline") ||
-  normalizedPrompt.includes("activity card")
-) {
-  targetFile = "app/components/ActivityFeed.tsx";
-}
-
-if (
-  normalizedPrompt.includes("agent execution") ||
-  normalizedPrompt.includes("run flow")
-) {
-  targetFile = "app/components/RunAgentButton.tsx";
-}
-if (
-  normalizedPrompt.includes("mobile") &&
-  normalizedPrompt.includes("dashboard")
-) {
-  summary =
-    "Improve dashboard mobile layout and spacing for smaller screens";
-}
-
-if (
-  normalizedPrompt.includes("activity") &&
-  normalizedPrompt.includes("layout")
-) {
-  summary =
-    "Improve activity feed layout and visual hierarchy";
-}
-
-if (
-  normalizedPrompt.includes("run") &&
-  normalizedPrompt.includes("button")
-) {
-  summary =
-    "Improve run agent button execution experience";
-}
-}
-
-    if (prompt) {
-  const normalizedPrompt = prompt.toLowerCase();
-
-  if (
-    normalizedPrompt.includes("refactor") ||
-    normalizedPrompt.includes("runtime") ||
-    normalizedPrompt.includes("agent-runner") ||
-    normalizedPrompt.includes("api") ||
-    normalizedPrompt.includes("recovery") ||
-    normalizedPrompt.includes("deploy")
-  ) {
-    riskLevel = "medium";
-    plannerNotes = "Medium-risk system task. Keep scope narrow and validate build.";
-  }
-
-  if (
-    normalizedPrompt.includes("auto-merge") ||
-    normalizedPrompt.includes("overnight") ||
-    normalizedPrompt.includes("database") ||
-    normalizedPrompt.includes("auth") ||
-    normalizedPrompt.includes("multi-file")
-  ) {
-    riskLevel = "high";
-    executionMode = "multi-step";
-    wave = 1;
-    previewOnly = true;
-    requiresApproval = true;
-    plannerNotes =
-      "High-risk multi-step task. Planner should split this into safe execution waves.";
-  }
-
-  if (
-    normalizedPrompt.includes("button") ||
-    normalizedPrompt.includes("copy") ||
-    normalizedPrompt.includes("microcopy") ||
-    normalizedPrompt.includes("spacing")
-  ) {
-    intent = "ui-polish";
-  }
-
-  if (
-    normalizedPrompt.includes("fix") ||
-    normalizedPrompt.includes("bug") ||
-    normalizedPrompt.includes("error")
-  ) {
-    intent = "bugfix";
-  }
-
-  if (
-    normalizedPrompt.includes("recovery") ||
-    normalizedPrompt.includes("failed") ||
-    normalizedPrompt.includes("failure")
-  ) {
-    intent = "recovery";
-  }
-
-  if (executionMode === "multi-step") {
-    previewOnly = true;
-    requiresApproval = true;
-  }
-}
-
-    if (!title) {
-      return NextResponse.json(
-        {
-          ok: false,
-          mode: "validation-error",
-          error: "Missing task title",
-        },
-        { status: 400 }
-      );
-    }
-
-    const plannerDriven = Boolean(prompt);
-    if (!targetFile && !plannerDriven) {
-      return NextResponse.json(
-        {
-          ok: false,
-          mode: "validation-error",
-          error: "Missing targetFile",
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!targetFile && plannerDriven) {
-      targetFile = inferPlannerFallbackTargetFile(prompt);
-    }
-
-    const targetFileIsSafe = isSafeTargetFile(targetFile);
-
-    if (!targetFileIsSafe && !plannerDriven) {
-      return NextResponse.json(
-        {
-          ok: false,
-          mode: "blocked",
-          error: `Target file is not allowed: ${targetFile}`,
-          allowedFiles: SAFE_TARGET_FILES,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (plannerDriven && (!targetFileIsSafe || isBroadPlannerPrompt(prompt))) {
-      previewOnly = true;
-      requiresApproval = true;
-    }
-
-    const { json: tasksJson, sha } = await readGithubJson(TASKS_PATH);
-    const tasks = Array.isArray(tasksJson) ? tasksJson : [];
-
-    const duplicate = tasks.find(
-      (task: any) =>
-        String(task.title ?? "").trim().toLowerCase() ===
-          title.toLowerCase() &&
-        String(task.targetFile ?? "").trim() === targetFile
-    );
-
-    if (duplicate) {
-      return NextResponse.json(
-        {
-          ok: false,
-          mode: "duplicate-task",
-          error: "Similar task already exists",
-          existingTask: {
-            id: duplicate.id,
-            title: duplicate.title,
-            targetFile: duplicate.targetFile,
-            status: duplicate.status,
-          },
-        },
-        { status: 409 }
-      );
-    }
-
-    const generatedTasks: AgentTask[] = [];
-
-    const baseTask: AgentTask = {
-  id: `manual-task-${Date.now()}`,
-  title,
-  summary,
-  targetFile,
-  status: "todo",
-  priority,
-  source: "manual",
-  createdAt: new Date().toISOString(),
-  queuedAt: new Date().toISOString(),
-  ...agentMetadata,
-  executionMode: plannerMetadata.executionMode ?? executionMode,
-  wave: plannerMetadata.wave ?? wave,
-  previewOnly: plannerMetadata.previewOnly ?? previewOnly,
-  requiresApproval:
-    plannerMetadata.requiresApproval ??
-    (requiresApproval ||
-      (plannerMetadata.executionMode ?? executionMode) === "multi-step"),
-  parentTaskId,
-  plannerNotes: plannerMetadata.plannerNotes ?? plannerNotes,
-  dependsOn,
-  dependsOnTaskIds,
-  blockedBy,
-};
-
-generatedTasks.push(baseTask);
-
-if (
-  prompt &&
-  prompt.toLowerCase().includes("dashboard") &&
-  prompt.toLowerCase().includes("activity")
-) {
-  generatedTasks.push({
-    id: `manual-task-${Date.now()}-activity`,
-    title: "Improve activity feed layout",
     summary:
-      "Improve activity feed layout and visual hierarchy",
-    targetFile: "app/components/ActivityFeed.tsx",
+      String(body.summary ?? "").trim() ||
+      `Plan safe work for: ${title}`,
+    targetFile: SAFE_TARGET_FILES.includes(targetFile) ? targetFile : "app/page.tsx",
     status: "todo",
     priority,
     source: "manual",
     createdAt: new Date().toISOString(),
     queuedAt: new Date().toISOString(),
-    ...agentMetadata,
-    intent: "ui-polish",
-    riskLevel: "low",
-    executionMode: "single-file",
+    agentRole: typeof body.agentRole === "string" ? body.agentRole : undefined,
+    agentName: typeof body.agentName === "string" ? body.agentName : undefined,
+    agentSystemPrompt:
+      typeof body.agentSystemPrompt === "string"
+        ? body.agentSystemPrompt
+        : undefined,
+    routingReason:
+      typeof body.routingReason === "string" ? body.routingReason : undefined,
+    intent: prompt.toLowerCase().includes("fix") ? "bugfix" : "ui-polish",
+    riskLevel: queueOnly ? "medium" : "low",
+    executionMode: queueOnly ? "single-file" : "single-file",
     wave: 1,
-    previewOnly: false,
-    requiresApproval: false,
-    plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
-    dependsOn,
-    dependsOnTaskIds,
-    blockedBy,
-    parentTaskId,
-  });
+    previewOnly: queueOnly,
+    requiresApproval: queueOnly,
+    plannerNotes: queueOnly
+      ? "Preview/planner task only. Runtime state is not committed to GitHub. Wait for approval before execution."
+      : "Runtime task created. Code execution should still happen through protected PR flow.",
+  };
 }
 
-    const repoContext = await readRepoContext();
-    const runtimeMemory = await readRuntimeMemoryFile();
-    const finalizedGeneratedTasks = plannerDriven
-      ? generatedTasks.map((task) =>
-          hardenPlannerGeneratedTask(task, prompt, repoContext)
-        )
-      : generatedTasks;
-    const architectureReviewedTasks = plannerDriven
-      ? await Promise.all(
-          finalizedGeneratedTasks.map(async (task) => {
-            const review = await reviewArchitectureTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
+export async function POST(req: Request) {
+  try {
+    const body = (await req.json()) as Record<string, unknown>;
+    const prompt = String(body.prompt ?? "").trim();
+    const task = buildTask(body);
+    const queueOnly = shouldQueueOnly(prompt, body);
 
-            return applyArchitectureReview(task, review);
-          })
-        )
-      : finalizedGeneratedTasks;
-    const reviewedGeneratedTasks = plannerDriven
-      ? await Promise.all(
-          architectureReviewedTasks.map(async (task) => {
-            const review = await reviewCodeTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyCodeReview(task, review);
-          })
-        )
-      : architectureReviewedTasks;
-    const backendReviewedTasks = plannerDriven
-      ? await Promise.all(
-          reviewedGeneratedTasks.map(async (task) => {
-            if (!shouldReviewBackendTask(task, repoContext)) {
-              return task;
-            }
-
-            const review = await reviewBackendTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyBackendReview(task, review);
-          })
-        )
-      : reviewedGeneratedTasks;
-    const designReviewedTasks = plannerDriven
-      ? await Promise.all(
-          backendReviewedTasks.map(async (task) => {
-            if (!shouldReviewDesignTask(task, repoContext)) {
-              return task;
-            }
-
-            const review = await reviewDesignTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyDesignReview(task, review);
-          })
-        )
-      : backendReviewedTasks;
-    const frontendReviewedTasks = plannerDriven
-      ? await Promise.all(
-          designReviewedTasks.map(async (task) => {
-            const review = await reviewFrontendTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyFrontendReview(task, review);
-          })
-        )
-      : designReviewedTasks;
-    const observabilityReviewedTasks = plannerDriven
-      ? await Promise.all(
-          frontendReviewedTasks.map(async (task) => {
-            const scan = await scanObservabilitySignals({ repoContext });
-
-            return {
-              ...task,
-              previewOnly: task.previewOnly || scan.recommendation !== "ok",
-              requiresApproval:
-                task.requiresApproval || scan.recommendation !== "ok",
-              plannerNotes: String(task.plannerNotes ?? "").trim()
-                ? `${String(task.plannerNotes).trim()} Observability: ${scan.recommendation}.`
-                : `Observability: ${scan.recommendation}.`,
-            };
-          })
-        )
-      : reviewedGeneratedTasks;
-    const testingReviewedTasks = plannerDriven
-      ? await Promise.all(
-          observabilityReviewedTasks.map(async (task) => {
-            if (!shouldReviewTestingTask(task, repoContext)) {
-              return task;
-            }
-
-            const review = await reviewTestingTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyTestingReview(task, review);
-          })
-        )
-      : observabilityReviewedTasks;
-    const securityReviewedTasks = plannerDriven
-      ? await Promise.all(
-          testingReviewedTasks.map(async (task) => {
-            if (!shouldReviewSecurityTask(task, repoContext)) {
-              return task;
-            }
-
-            const review = await reviewSecurityTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applySecurityReview(task, review);
-          })
-        )
-      : testingReviewedTasks;
-    const performanceReviewedTasks = plannerDriven
-      ? await Promise.all(
-          securityReviewedTasks.map(async (task) => {
-            if (!shouldReviewPerformanceTask(task, repoContext)) {
-              return task;
-            }
-
-            const review = await reviewPerformanceTask(task, {
-              repoContext,
-              runtimeMemory: runtimeMemory.memory,
-            });
-
-            return applyPerformanceReview(task, review);
-          })
-        )
-      : securityReviewedTasks;
-
-    const updatedTasks = [...tasks, ...performanceReviewedTasks];
-
-    await writeGithubJson(
-      TASKS_PATH,
-      updatedTasks,
-      sha,
-      `Create manual agent task: ${performanceReviewedTasks[0].id}`
-    );
-
-    await logActivity({
-      type: "manual-task-created",
-      taskId: performanceReviewedTasks[0].id,
-      summary: performanceReviewedTasks[0].title,
-      targetFile: performanceReviewedTasks[0].targetFile,
-      priority: performanceReviewedTasks[0].priority,
-      reasoning: reasoningHint,
+    addRuntimeTask({
+      id: task.id,
+      title: task.title,
+      status: "queued",
     });
 
-    await updateRepoContext(
-      (context) => ({
-        ...context,
-        activeRuntimeAreas: [
-          ...(context.activeRuntimeAreas ?? []),
-          ...performanceReviewedTasks.map((task) => task.targetFile),
-        ],
-      }),
-      `Record repo context for task ${performanceReviewedTasks[0].id}`,
-      {
-        taskId: performanceReviewedTasks[0].id,
-        targetFile: performanceReviewedTasks[0].targetFile,
-      }
-    ).catch(() => {});
+    const taskWord = "task";
+    const message = queueOnly
+      ? `Created 1 preview ${taskWord}. Auto-run was not started.`
+      : `Created 1 runtime ${taskWord}. Use protected runner controls to execute.`;
 
-    await updateConversationMemory({
-      prompt,
-      summary,
-      targetFile,
-    });
+    const followUp = queueOnly
+      ? "This task is stored in runtime memory only, so it will not create a GitHub commit or trigger a Vercel build."
+      : "Runtime task was queued without metadata commits. Code changes should still be made through PR-only flow.";
 
-let conversationalPrefix = "Understood.";
-
-const recentDashboardTasks = tasks.filter((task: any) =>
-  String(task.targetFile).includes("page.tsx")
-);
-
-const recentActivityTasks = tasks.filter((task: any) =>
-  String(task.targetFile).includes("ActivityFeed")
-);
-
-if (
-  targetFile.includes("page.tsx") &&
-  recentDashboardTasks.length > 2
-) {
-  conversationalPrefix =
-    "Continuing dashboard improvement work.";
-}
-
-if (
-  targetFile.includes("ActivityFeed") &&
-  recentActivityTasks.length > 2
-) {
-  conversationalPrefix =
-    "Continuing activity feed improvements.";
-}
-
-    const primaryTask = performanceReviewedTasks[0];
-
-const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
-
-const conversationalMessage =
-  `${conversationalPrefix} I created ${generatedTasks.length} ${taskWord}. ` +
-  `Primary task: ${primaryTask.priority} priority for ${primaryTask.targetFile}.`;
-const followUp = reasoningHint
-  ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
-  : "You can monitor execution progress in the Activity Feed.";
-
-    for (const task of performanceReviewedTasks) {
-      addRuntimeTask({
-        id: task.id,
-        title: task.title,
-        status: "queued",
-      });
-    }
-
-return NextResponse.json({
+    return NextResponse.json({
       ok: true,
-      mode: "manual-task-created",
-      message: conversationalMessage,
+      mode: queueOnly ? "preview-task-created" : "manual-task-created",
+      message,
       followUp,
-      tasks: performanceReviewedTasks,
+      task,
+      tasks: [task],
     });
   } catch (error) {
     return NextResponse.json(
