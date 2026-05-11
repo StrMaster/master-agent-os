@@ -4,7 +4,6 @@ import { useState } from "react";
 
 const TARGET_FILES = [
   "app/execution/page.tsx",
-  "app/agents/page.tsx",
   "app/components/RunAgentButton.tsx",
   "app/components/ActivityFeed.tsx",
 ];

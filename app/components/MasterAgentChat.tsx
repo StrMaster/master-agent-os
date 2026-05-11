@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import RunAgentButton from "./RunAgentButton";
-import { routePromptToAgent } from "@/agents/core/agent-router";
 import { delegateTaskToAgent } from "@/agents/core/agent-delegation";
 
 
@@ -414,7 +413,7 @@ addMessage(
 );
 
 
-if (
+if (false && (
   normalizedMessage.includes("review") ||
   normalizedMessage.includes("analyze") ||
   normalizedMessage.includes("plan") ||
@@ -424,13 +423,13 @@ if (
   normalizedMessage.includes("perziurek") ||
   normalizedMessage.includes("peržiūrėk") ||
   normalizedMessage.includes("suplanuok")
-) {
+)) {
   addMessage("user", currentMessage);
   setMessage("");
   setLoading(true);
 
   try {
-    const res = await fetch("/api/agent-delegate", {
+    const res = await fetch("/api/create-task", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

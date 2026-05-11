@@ -16,7 +16,6 @@ const CONVERSATION_MEMORY_PATH =
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
   "app/execution/page.tsx",
-  "app/agents/page.tsx",
   "app/components/RunAgentButton.tsx",
   "app/components/ActivityFeed.tsx",
 ];
@@ -289,9 +288,9 @@ if (
   normalizedPrompt.includes("agent") ||
   normalizedPrompt.includes("agents")
 ) {
-  targetFile = "app/agents/page.tsx";
+  targetFile = "app/execution/page.tsx";
   reasoningHint =
-  "Detected agent management related keywords.";
+  "Detected agent execution related keywords.";
 }
 
 if (

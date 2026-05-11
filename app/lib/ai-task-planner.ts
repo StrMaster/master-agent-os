@@ -32,7 +32,6 @@ Allowed target files:
 - app/page.tsx
 - app/components/ActivityFeed.tsx
 - app/components/RunAgentButton.tsx
-- app/agents/page.tsx
 - app/execution/page.tsx
 
 Rules:
@@ -202,7 +201,6 @@ Rules:
 - app/page.tsx
 - app/components/ActivityFeed.tsx
 - app/components/RunAgentButton.tsx
-- app/agents/page.tsx
 - app/execution/page.tsx
 
 Respond ONLY valid JSON array.
@@ -351,7 +349,6 @@ Rules:
   - app/page.tsx
   - app/components/ActivityFeed.tsx
   - app/components/RunAgentButton.tsx
-  - app/agents/page.tsx
   - app/execution/page.tsx
 - Do not suggest backend/config/package changes.
 - If Lithuanian is used, respond in Lithuanian.
@@ -421,7 +418,6 @@ Rules:
 - app/page.tsx
 - app/components/ActivityFeed.tsx
 - app/components/RunAgentButton.tsx
-- app/agents/page.tsx
 - app/execution/page.tsx
 
 Allowed agent roles:
@@ -503,7 +499,6 @@ Rules:
   - app/page.tsx
   - app/components/ActivityFeed.tsx
   - app/components/RunAgentButton.tsx
-  - app/agents/page.tsx
   - app/execution/page.tsx
 - Do not suggest backend/config/package changes.
 - If Lithuanian is used, respond in Lithuanian.
@@ -565,7 +560,6 @@ Rules:
   - app/page.tsx
   - app/components/*
   - app/execution/page.tsx
-  - app/agents/page.tsx
 - response must be valid JSON
 - never respond in German
 

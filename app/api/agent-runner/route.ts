@@ -36,7 +36,6 @@ const SAFE_TARGET_FILES = [
   "app/page.tsx",
   "app/components/ActivityFeed.tsx",
   "app/components/RunAgentButton.tsx",
-  "app/agents/page.tsx",
   "app/execution/page.tsx",
 ];
 
