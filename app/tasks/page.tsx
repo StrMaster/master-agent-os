@@ -1,6 +1,7 @@
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
 import RemoveTaskButton from "../components/RemoveTaskButton";
+import HiddenTaskCleaner from "../components/HiddenTaskCleaner";
 
 
 export const dynamic = "force-dynamic";
@@ -220,6 +221,7 @@ export default async function TasksPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
+      <HiddenTaskCleaner />
       <div>
         <h1 className="text-3xl font-bold">Tasks</h1>
         <p className="mt-2 text-sm text-white/60">
