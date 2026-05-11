@@ -1,5 +1,15 @@
 [
   {
+    "id": "0cf21b19-a4ce-4b8a-b0e9-0a71bc643403",
+    "timestamp": "2026-05-11T17:03:15.962Z",
+    "type": "manual-task-created",
+    "taskId": "manual-task-1778518982855",
+    "summary": "Add informational tooltip about LLM usage count",
+    "targetFile": "app/page.tsx",
+    "priority": "medium",
+    "reasoning": "The user asks about how many LLMs are used. Since backend or API changes are not allowed, the safest approach is to add a small UI element on the main page that can show this info if available or a placeholder. This improves user understanding with minimal risk and no backend impact."
+  },
+  {
     "id": "9ed328d6-2c3e-4fda-b824-186df7cd1eb7",
     "timestamp": "2026-05-11T17:03:13.714Z",
     "type": "performance-review-completed",
