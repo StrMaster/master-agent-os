@@ -1,5 +1,14 @@
 [
   {
+    "id": "d706f044-c549-47e7-8db5-ca960ae380b0",
+    "timestamp": "2026-05-11T17:58:34.371Z",
+    "type": "task-chain-stopped",
+    "iterations": 1,
+    "taskId": "manual-task-1778519402554",
+    "mode": "planner-required",
+    "reason": "Runner returned a non-successful result."
+  },
+  {
     "id": "fe02cc9a-2043-42f3-9834-db419a55754a",
     "timestamp": "2026-05-11T17:58:32.584Z",
     "type": "planner-waves-auto-failed",
