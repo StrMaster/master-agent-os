@@ -1,5 +1,17 @@
 [
   {
+    "id": "7f9081be-7203-46f1-8e19-e06bb508ab98",
+    "timestamp": "2026-05-11T17:03:08.569Z",
+    "type": "observability-scan-completed",
+    "recommendation": "ok",
+    "failedTasks": 0,
+    "recoveryEvents": 0,
+    "deployFailures": 0,
+    "blockedRuntime": false,
+    "unhealthyRunner": false,
+    "stalledChains": 6
+  },
+  {
     "id": "801edeb1-9a45-4030-bcd0-7fef9cdf8620",
     "timestamp": "2026-05-11T17:03:07.097Z",
     "type": "frontend-review-completed",
