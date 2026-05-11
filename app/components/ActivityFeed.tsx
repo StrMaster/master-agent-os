@@ -28,17 +28,39 @@ type ActivityEvent = {
 agentRole?: string;
 };
 
+type RunnerHealthState = {
+  runnerHealthStatus: "healthy" | "degraded" | "blocked";
+  consecutiveFailures: number;
+  runtimeBlockedUntil?: string;
+};
+
 export default function ActivityFeed() {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
+  const [runnerHealth, setRunnerHealth] = useState<RunnerHealthState | null>(null);
   const [loading, setLoading] = useState(true);
 const [filter, setFilter] = useState("all");
 
   async function loadActivity() {
-    const res = await fetch("/api/activity", { cache: "no-store" });
-    const data = await res.json();
+    const [activityRes, controlStateRes] = await Promise.all([
+      fetch("/api/activity", { cache: "no-store" }),
+      fetch("/api/control-state", { cache: "no-store" }),
+    ]);
+    const data = await activityRes.json();
+    const controlStateData = await controlStateRes.json();
 
     if (data.ok) {
       setActivity(data.activity ?? []);
+    }
+
+    if (controlStateData.ok && controlStateData.state) {
+      setRunnerHealth({
+        runnerHealthStatus:
+          controlStateData.state.runnerHealthStatus ?? "healthy",
+        consecutiveFailures:
+          controlStateData.state.consecutiveFailures ?? 0,
+        runtimeBlockedUntil:
+          controlStateData.state.runtimeBlockedUntil,
+      });
     }
 
     setLoading(false);
@@ -218,6 +240,24 @@ case "pull-request-merge-failed":
     background: "#220909",
   };
 
+case "runner-health-degraded":
+  return {
+    border: "#f59e0b",
+    background: "#1f1605",
+  };
+
+case "runner-health-recovered":
+  return {
+    border: "#22c55e",
+    background: "#071a12",
+  };
+
+case "runtime-stop-triggered":
+  return {
+    border: "#ef4444",
+    background: "#220909",
+  };
+
     default:
       return {
         border: "#333",
@@ -301,6 +341,49 @@ const groupedEntries = Object.entries(groupedRuns);
       }}
     >
       <h2 style={{ marginTop: 0 }}>Agent Activity</h2>
+      {runnerHealth && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 14,
+            borderRadius: 12,
+            border:
+              runnerHealth.runnerHealthStatus === "healthy"
+                ? "1px solid #16a34a"
+                : runnerHealth.runnerHealthStatus === "blocked"
+                  ? "1px solid #dc2626"
+                  : "1px solid #ca8a04",
+            background: "#0f0f0f",
+          }}
+        >
+          <div style={{ fontSize: 13, color: "#999", marginBottom: 6 }}>
+            Runner Health
+          </div>
+          <div
+            style={{
+              fontWeight: 700,
+              textTransform: "capitalize",
+              color:
+                runnerHealth.runnerHealthStatus === "healthy"
+                  ? "#86efac"
+                  : runnerHealth.runnerHealthStatus === "blocked"
+                    ? "#fca5a5"
+                    : "#fcd34d",
+            }}
+          >
+            {runnerHealth.runnerHealthStatus}
+          </div>
+          <div style={{ marginTop: 6, color: "#999", fontSize: 13 }}>
+            Consecutive failures: {runnerHealth.consecutiveFailures}
+          </div>
+          {runnerHealth.runtimeBlockedUntil && (
+            <div style={{ marginTop: 4, color: "#999", fontSize: 13 }}>
+              Blocked until:{" "}
+              {new Date(runnerHealth.runtimeBlockedUntil).toLocaleString()}
+            </div>
+          )}
+        </div>
+      )}
       <div
   style={{
     display: "inline-flex",

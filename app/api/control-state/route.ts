@@ -20,6 +20,9 @@ type ControlState = {
   recentValidationFailures?: number;
   recentMergeFailures?: number;
   recentDeployFailures?: number;
+  consecutiveFailures?: number;
+  runtimeBlockedUntil?: string;
+  runnerHealthStatus?: "healthy" | "degraded" | "blocked";
 };
 
 type GitHubFile = {
@@ -119,6 +122,12 @@ recentMergeFailures:
   state.recentMergeFailures ?? 0,
 recentDeployFailures:
   state.recentDeployFailures ?? 0,
+consecutiveFailures:
+  state.consecutiveFailures ?? 0,
+runtimeBlockedUntil:
+  state.runtimeBlockedUntil,
+runnerHealthStatus:
+  state.runnerHealthStatus ?? "healthy",
       },
     });
   } catch (error) {
