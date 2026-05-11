@@ -38,7 +38,9 @@ intent?: string;
 riskLevel?: "low" | "medium" | "high";
 executionMode?: "single-file" | "multi-step";
 wave?: number;
+parentTaskId?: string;
 plannerNotes?: string;
+dependsOn?: string[];
 agentRole?: string;
 agentName?: string;
 agentSystemPrompt?: string;
@@ -220,6 +222,26 @@ const agentMetadata = {
   routingReason:
     typeof body.routingReason === "string" ? body.routingReason : undefined,
 };
+const plannerMetadata = {
+  executionMode:
+    body.executionMode === "multi-step" || body.executionMode === "single-file"
+      ? body.executionMode
+      : undefined,
+  wave:
+    typeof body.wave === "number" && Number.isFinite(body.wave)
+      ? body.wave
+      : undefined,
+  parentTaskId:
+    typeof body.parentTaskId === "string" ? body.parentTaskId : undefined,
+  plannerNotes:
+    typeof body.plannerNotes === "string" ? body.plannerNotes : undefined,
+  dependsOn: Array.isArray(body.dependsOn)
+    ? body.dependsOn.filter(
+        (dependencyId: unknown): dependencyId is string =>
+          typeof dependencyId === "string" && dependencyId.trim().length > 0
+      )
+    : undefined,
+};
 
     const prompt = String(body.prompt ?? "").trim();
 
@@ -232,7 +254,9 @@ let intent = "code-improvement";
 let riskLevel: "low" | "medium" | "high" = "low";
 let executionMode: "single-file" | "multi-step" = "single-file";
 let wave = 1;
+let parentTaskId = plannerMetadata.parentTaskId;
 let plannerNotes = "Single safe execution task.";
+let dependsOn = plannerMetadata.dependsOn;
 
 
 if (prompt && process.env.OPENAI_API_KEY) {
@@ -501,6 +525,11 @@ if (
   createdAt: new Date().toISOString(),
   queuedAt: new Date().toISOString(),
   ...agentMetadata,
+  executionMode: plannerMetadata.executionMode ?? executionMode,
+  wave: plannerMetadata.wave ?? wave,
+  parentTaskId,
+  plannerNotes: plannerMetadata.plannerNotes ?? plannerNotes,
+  dependsOn,
 };
 
 generatedTasks.push(baseTask);
@@ -527,6 +556,8 @@ riskLevel: "low",
 executionMode: "single-file",
 wave: 1,
 plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
+dependsOn,
+parentTaskId,
   });
 }
 

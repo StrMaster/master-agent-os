@@ -413,6 +413,8 @@ Rules:
 - Generate 2 to 5 steps.
 - Prefer small safe improvements.
 - Avoid backend refactors.
+- Preserve dependency order with dependsOn.
+- Use parentTaskId and wave when returning planner-generated subtasks.
 - Use only these target files:
 
 - app/page.tsx
@@ -440,6 +442,12 @@ Format:
     "agentRole": "executor",
 
     "targetFile": "...",
+
+    "executionMode": "single-file|multi-step",
+
+    "wave": 1,
+
+    "parentTaskId": "optional-parent-task-id",
 
     "priority": "low|medium|high",
 
