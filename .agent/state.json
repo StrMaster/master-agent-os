@@ -23,5 +23,7 @@
   "overnightPrsCreated": 0,
   "overnightFailures": 0,
   "overnightRecoveries": 0,
-  "runnerLockStartedAt": 1778543071142
+  "runnerLockStartedAt": 1778543071142,
+  "failedRuns": 0,
+  "consecutiveFailures": 0
 }
