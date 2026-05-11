@@ -16,6 +16,11 @@ import {
   applyFrontendReview,
   reviewFrontendTask,
 } from "@/agents/core/frontend-specialist";
+import {
+  applyBackendReview,
+  reviewBackendTask,
+  shouldReviewBackendTask,
+} from "@/agents/core/backend-specialist";
 import { scanObservabilitySignals } from "@/agents/core/observability";
 import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
 
@@ -748,9 +753,25 @@ if (
           })
         )
       : architectureReviewedTasks;
-    const frontendReviewedTasks = plannerDriven
+    const backendReviewedTasks = plannerDriven
       ? await Promise.all(
           reviewedGeneratedTasks.map(async (task) => {
+            if (!shouldReviewBackendTask(task, repoContext)) {
+              return task;
+            }
+
+            const review = await reviewBackendTask(task, {
+              repoContext,
+              runtimeMemory: runtimeMemory.memory,
+            });
+
+            return applyBackendReview(task, review);
+          })
+        )
+      : reviewedGeneratedTasks;
+    const frontendReviewedTasks = plannerDriven
+      ? await Promise.all(
+          backendReviewedTasks.map(async (task) => {
             const review = await reviewFrontendTask(task, {
               repoContext,
               runtimeMemory: runtimeMemory.memory,
@@ -759,7 +780,7 @@ if (
             return applyFrontendReview(task, review);
           })
         )
-      : reviewedGeneratedTasks;
+      : backendReviewedTasks;
     const observabilityReviewedTasks = plannerDriven
       ? await Promise.all(
           frontendReviewedTasks.map(async (task) => {

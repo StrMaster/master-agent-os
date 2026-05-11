@@ -30,6 +30,28 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isBackendSpecialist =
+    text.includes("backend specialist") ||
+    text.includes("backend review") ||
+    text.includes("backend task") ||
+    text.includes("server-side") ||
+    text.includes("route handler") ||
+    text.includes("api route") ||
+    text.includes("runtime module") ||
+    text.includes("orchestration") ||
+    text.includes("deploy risk") ||
+    text.includes("state helper") ||
+    text.includes("recovery flow");
+
+  if (isBackendSpecialist) {
+    return {
+      role: "backend-specialist",
+      agent: getSmartAgent("backend-specialist"),
+      confidence: "high",
+      reason: "Prompt asks for backend, API, runtime, or orchestration guidance.",
+    };
+  }
+
   const isUi =
     text.includes("ui") ||
     text.includes("layout") ||

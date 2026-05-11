@@ -9,6 +9,7 @@ export type SmartAgentRole =
   | "architecture-reviewer"
   | "code-reviewer"
   | "frontend-specialist"
+  | "backend-specialist"
   | "observability"
   | "recovery-intelligence"
   | "control-communication";
@@ -178,6 +179,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic frontend safety signals.",
       "Keep UI-only changes separate from runtime or backend files.",
       "Recommend split or approval when state and data flow are involved.",
+    ],
+  },
+  {
+    id: "backend-specialist",
+    name: "Backend Specialist Agent",
+    purpose:
+      "Evaluates backend, API, runtime, and orchestration tasks for scope, deploy risk, and state impact.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic backend safety signals.",
+      "Treat runtime, recovery, deploy, and orchestration files as sensitive.",
+      "Recommend split or approval when backend scope grows across modules.",
     ],
   },
   {
