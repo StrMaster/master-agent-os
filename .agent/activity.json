@@ -1,5 +1,18 @@
 [
   {
+    "id": "a2926590-f5a5-4888-9ea3-df801bde767d",
+    "timestamp": "2026-05-11T17:58:15.682Z",
+    "type": "design-review-completed",
+    "taskId": "manual-task-1778522292453",
+    "targetFile": "app/page.tsx",
+    "recommendation": "design-review",
+    "scopeSize": 3,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"design-surface\",\"severity\":\"low\",\"detail\":\"Target is a UI surface: app/page.tsx\"},{\"code\":\"visual-only\",\"severity\":\"low\",\"detail\":\"Task appears to be visual-only or presentation-focused.\"},{\"code\":\"logic-affecting\",\"severity\":\"medium\",\"detail\":\"Task touches state, data, or other logic-bearing UI behavior.\"},{\"code\":\"accessibility-basics\",\"severity\":\"low\",\"detail\":\"Design surface should keep keyboard, contrast, and focus behavior in mind.\"}]"
+  },
+  {
     "id": "dd7cbabe-d06d-478c-a7bc-d11e8d9f2ca8",
     "timestamp": "2026-05-11T17:58:14.714Z",
     "type": "backend-review-completed",
