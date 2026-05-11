@@ -1,5 +1,18 @@
 [
   {
+    "id": "6dbf5231-6fb3-48ad-abdd-67e509c0ce56",
+    "timestamp": "2026-05-11T17:10:04.925Z",
+    "type": "backend-review-completed",
+    "taskId": "manual-task-1778519402554",
+    "targetFile": "app/page.tsx",
+    "recommendation": "approve",
+    "scopeSize": 3,
+    "previewOnly": false,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"multi-step\",\"severity\":\"medium\",\"detail\":\"Task is marked multi-step.\"}]"
+  },
+  {
     "id": "12a3fdb8-4ece-4f48-942b-da89543aa933",
     "timestamp": "2026-05-11T17:10:03.853Z",
     "type": "code-review-completed",
