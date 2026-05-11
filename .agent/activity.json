@@ -1,5 +1,14 @@
 [
   {
+    "id": "fe02cc9a-2043-42f3-9834-db419a55754a",
+    "timestamp": "2026-05-11T17:58:32.584Z",
+    "type": "planner-waves-auto-failed",
+    "runId": "17bde029-aa11-4e43-b1e5-c76979953fc0",
+    "taskId": "manual-task-1778519402554",
+    "reason": "Planner waves auto-trigger failed",
+    "details": "Unexpected token '<', \"<!doctype \"... is not valid JSON"
+  },
+  {
     "id": "71e5af5a-91cf-4257-82dd-e686b688a018",
     "timestamp": "2026-05-11T17:58:31.621Z",
     "type": "planner-required",
