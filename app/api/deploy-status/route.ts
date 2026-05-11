@@ -24,6 +24,19 @@ type AgentState = {
   recoveryActive?: boolean;
   autoRunEnabled?: boolean;
   recoveryAutoRunResumeEligible?: boolean;
+  overnightModeActive?: boolean;
+  overnightSessionStartedAt?: string;
+  overnightSessionCompletedAt?: string;
+  overnightSessionStopReason?: string;
+  overnightTasksCompleted?: number;
+  overnightPrsCreated?: number;
+  overnightFailures?: number;
+  overnightRecoveries?: number;
+  overnightMaxTasks?: number;
+  overnightMaxPrs?: number;
+  overnightMaxFailures?: number;
+  overnightMaxRecoveryAttempts?: number;
+  overnightMaxDurationMs?: number;
 };
 
 type DeployStatus = "pending" | "success" | "failed";
@@ -299,6 +312,21 @@ export async function GET() {
       });
 
       await createDeployRecoveryTask(deployError ?? "Deployment failed").catch(() => {});
+
+      if (currentState.overnightModeActive) {
+        nextState.overnightModeActive = false;
+        nextState.overnightSessionCompletedAt = new Date().toISOString();
+        nextState.overnightSessionStopReason = "deploy-failed";
+        nextState.overnightFailures = (currentState.overnightFailures ?? 0) + 1;
+        nextState.overnightRecoveries = (currentState.overnightRecoveries ?? 0) + 1;
+
+        await logActivity({
+          type: "overnight-session-stopped",
+          reason: "Deployment failed during overnight mode.",
+          deploymentId: deployment.uid,
+          deploymentUrl: deployment.url,
+        }).catch(() => {});
+      }
     }
 
     if (deploySucceeded && currentState.deployStatus !== "success") {

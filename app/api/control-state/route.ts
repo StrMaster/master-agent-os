@@ -29,6 +29,19 @@ type ControlState = {
   deployCompletedAt?: string;
   deployError?: string;
   lastDeployUrl?: string;
+  overnightModeActive?: boolean;
+  overnightSessionStartedAt?: string;
+  overnightSessionCompletedAt?: string;
+  overnightSessionStopReason?: string;
+  overnightTasksCompleted?: number;
+  overnightPrsCreated?: number;
+  overnightFailures?: number;
+  overnightRecoveries?: number;
+  overnightMaxTasks?: number;
+  overnightMaxPrs?: number;
+  overnightMaxFailures?: number;
+  overnightMaxRecoveryAttempts?: number;
+  overnightMaxDurationMs?: number;
 };
 
 type GitHubFile = {
@@ -141,6 +154,19 @@ recentMergeFailures:
         deployCompletedAt: state.deployCompletedAt,
         deployError: state.deployError,
         lastDeployUrl: state.lastDeployUrl,
+        overnightModeActive: state.overnightModeActive ?? false,
+        overnightSessionStartedAt: state.overnightSessionStartedAt,
+        overnightSessionCompletedAt: state.overnightSessionCompletedAt,
+        overnightSessionStopReason: state.overnightSessionStopReason,
+        overnightTasksCompleted: state.overnightTasksCompleted ?? 0,
+        overnightPrsCreated: state.overnightPrsCreated ?? 0,
+        overnightFailures: state.overnightFailures ?? 0,
+        overnightRecoveries: state.overnightRecoveries ?? 0,
+        overnightMaxTasks: state.overnightMaxTasks,
+        overnightMaxPrs: state.overnightMaxPrs,
+        overnightMaxFailures: state.overnightMaxFailures,
+        overnightMaxRecoveryAttempts: state.overnightMaxRecoveryAttempts,
+        overnightMaxDurationMs: state.overnightMaxDurationMs,
       },
     });
   } catch (error) {
@@ -188,6 +214,70 @@ export async function POST(req: Request) {
         body.recoveryAutoRunResumeEligible;
     }
 
+    if (typeof body.overnightModeActive === "boolean") {
+      nextState.overnightModeActive = body.overnightModeActive;
+    }
+
+    if (
+      typeof body.overnightSessionStartedAt === "string" ||
+      body.overnightSessionStartedAt === null
+    ) {
+      nextState.overnightSessionStartedAt =
+        body.overnightSessionStartedAt ?? undefined;
+    }
+
+    if (
+      typeof body.overnightSessionCompletedAt === "string" ||
+      body.overnightSessionCompletedAt === null
+    ) {
+      nextState.overnightSessionCompletedAt =
+        body.overnightSessionCompletedAt ?? undefined;
+    }
+
+    if (
+      typeof body.overnightSessionStopReason === "string" ||
+      body.overnightSessionStopReason === null
+    ) {
+      nextState.overnightSessionStopReason =
+        body.overnightSessionStopReason ?? undefined;
+    }
+
+    if (typeof body.overnightTasksCompleted === "number") {
+      nextState.overnightTasksCompleted = body.overnightTasksCompleted;
+    }
+
+    if (typeof body.overnightPrsCreated === "number") {
+      nextState.overnightPrsCreated = body.overnightPrsCreated;
+    }
+
+    if (typeof body.overnightFailures === "number") {
+      nextState.overnightFailures = body.overnightFailures;
+    }
+
+    if (typeof body.overnightRecoveries === "number") {
+      nextState.overnightRecoveries = body.overnightRecoveries;
+    }
+
+    if (typeof body.overnightMaxTasks === "number") {
+      nextState.overnightMaxTasks = body.overnightMaxTasks;
+    }
+
+    if (typeof body.overnightMaxPrs === "number") {
+      nextState.overnightMaxPrs = body.overnightMaxPrs;
+    }
+
+    if (typeof body.overnightMaxFailures === "number") {
+      nextState.overnightMaxFailures = body.overnightMaxFailures;
+    }
+
+    if (typeof body.overnightMaxRecoveryAttempts === "number") {
+      nextState.overnightMaxRecoveryAttempts = body.overnightMaxRecoveryAttempts;
+    }
+
+    if (typeof body.overnightMaxDurationMs === "number") {
+      nextState.overnightMaxDurationMs = body.overnightMaxDurationMs;
+    }
+
     if (
       typeof body.runtimeBlockedUntil === "string" ||
       body.runtimeBlockedUntil === null
@@ -205,6 +295,17 @@ export async function POST(req: Request) {
   nextState.recentMergeFailures = 0;
   nextState.recentDeployFailures = 0;
 }
+
+    if (body.clearOvernightSession === true) {
+      nextState.overnightModeActive = false;
+      nextState.overnightSessionStartedAt = undefined;
+      nextState.overnightSessionCompletedAt = undefined;
+      nextState.overnightSessionStopReason = undefined;
+      nextState.overnightTasksCompleted = 0;
+      nextState.overnightPrsCreated = 0;
+      nextState.overnightFailures = 0;
+      nextState.overnightRecoveries = 0;
+    }
 
     await writeStateFile(nextState, sha, "Update Master Agent control state");
 

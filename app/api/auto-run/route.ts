@@ -11,6 +11,11 @@ const TASKS_PATH = ".agent/tasks.json";
 const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
 const AUTO_RUN_MAX_ITERATIONS = 3;
 const RUNTIME_STOP_FAILURE_THRESHOLD = 3;
+const OVERNIGHT_DEFAULT_MAX_TASKS = 12;
+const OVERNIGHT_DEFAULT_MAX_PRS = 4;
+const OVERNIGHT_DEFAULT_MAX_FAILURES = 3;
+const OVERNIGHT_DEFAULT_MAX_RECOVERY_ATTEMPTS = 2;
+const OVERNIGHT_DEFAULT_MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
 let lastAutoRunAt: number | null = null;
 
@@ -175,6 +180,101 @@ function isAutoRunSuccessMode(mode?: string) {
   );
 }
 
+function getOvernightLimits(state: any) {
+  return {
+    maxTasks: state.overnightMaxTasks ?? OVERNIGHT_DEFAULT_MAX_TASKS,
+    maxPrs: state.overnightMaxPrs ?? OVERNIGHT_DEFAULT_MAX_PRS,
+    maxFailures: state.overnightMaxFailures ?? OVERNIGHT_DEFAULT_MAX_FAILURES,
+    maxRecoveryAttempts:
+      state.overnightMaxRecoveryAttempts ?? OVERNIGHT_DEFAULT_MAX_RECOVERY_ATTEMPTS,
+    maxDurationMs:
+      state.overnightMaxDurationMs ?? OVERNIGHT_DEFAULT_MAX_DURATION_MS,
+  };
+}
+
+function getOvernightCounts(state: any) {
+  return {
+    tasksCompleted: state.overnightTasksCompleted ?? 0,
+    prsCreated: state.overnightPrsCreated ?? 0,
+    failures: state.overnightFailures ?? 0,
+    recoveries: state.overnightRecoveries ?? 0,
+  };
+}
+
+function getOvernightStopReason(state: any) {
+  const limits = getOvernightLimits(state);
+  const counts = getOvernightCounts(state);
+
+  if (state.emergencyStop) return "emergency-stop";
+  if (state.paused) return "paused";
+  if (state.recoveryActive) return "recovery-active";
+  if (state.runnerHealthStatus === "blocked") return "runner-health-blocked";
+  if (state.deployStatus === "failed" || state.deployError) return "deploy-failed";
+
+  const runtimeBlockedUntilMs = state.runtimeBlockedUntil
+    ? new Date(state.runtimeBlockedUntil).getTime()
+    : 0;
+
+  if (runtimeBlockedUntilMs > Date.now()) return "runtime-blocked";
+  if ((state.consecutiveFailures ?? 0) >= RUNTIME_STOP_FAILURE_THRESHOLD) {
+    return "consecutive-failures";
+  }
+
+  if (state.overnightSessionStartedAt) {
+    const startedAtMs = new Date(state.overnightSessionStartedAt).getTime();
+
+    if (Date.now() - startedAtMs >= limits.maxDurationMs) {
+      return "duration-limit";
+    }
+  }
+
+  if (counts.tasksCompleted >= limits.maxTasks) return "task-limit";
+  if (counts.prsCreated >= limits.maxPrs) return "pr-limit";
+  if (counts.failures >= limits.maxFailures) return "failure-limit";
+  if (counts.recoveries >= limits.maxRecoveryAttempts) return "recovery-limit";
+
+  return null;
+}
+
+async function endOvernightSession(
+  req: NextRequest,
+  state: any,
+  reason: string,
+  completed: boolean
+) {
+  const endedAt = new Date().toISOString();
+  const nextState = await updateControlState(req, {
+    overnightModeActive: false,
+    overnightSessionCompletedAt: endedAt,
+    overnightSessionStopReason: reason,
+  });
+
+  await logActivity({
+    type: completed ? "overnight-session-completed" : "overnight-session-stopped",
+    reason,
+    overnightSessionStartedAt: state.overnightSessionStartedAt,
+    overnightSessionCompletedAt: endedAt,
+    overnightTasksCompleted: state.overnightTasksCompleted ?? 0,
+    overnightPrsCreated: state.overnightPrsCreated ?? 0,
+    overnightFailures: state.overnightFailures ?? 0,
+    overnightRecoveries: state.overnightRecoveries ?? 0,
+  }).catch(() => {});
+
+  return nextState;
+}
+
+async function updateControlState(req: NextRequest, patch: Record<string, unknown>) {
+  const { data } = await internalJsonFetch(req, "/api/control-state", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(patch),
+  });
+
+  return data?.state ?? null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -184,6 +284,55 @@ export async function POST(req: NextRequest) {
   "/api/control-state"
 );
     const state = stateData.state;
+    const overnightActive = state?.overnightModeActive === true;
+
+    if (overnightActive && !state.overnightSessionStartedAt) {
+      const overnightStartedAt = new Date().toISOString();
+      const updatedState = await updateControlState(req, {
+        overnightModeActive: true,
+        overnightSessionStartedAt: overnightStartedAt,
+        overnightSessionCompletedAt: null,
+        overnightSessionStopReason: null,
+        overnightTasksCompleted: 0,
+        overnightPrsCreated: 0,
+        overnightFailures: 0,
+        overnightRecoveries: 0,
+      });
+
+      if (updatedState) {
+        Object.assign(state, updatedState);
+      } else {
+        state.overnightModeActive = true;
+        state.overnightSessionStartedAt = overnightStartedAt;
+        state.overnightSessionCompletedAt = undefined;
+        state.overnightSessionStopReason = undefined;
+        state.overnightTasksCompleted = 0;
+        state.overnightPrsCreated = 0;
+        state.overnightFailures = 0;
+        state.overnightRecoveries = 0;
+      }
+
+      await logActivity({
+        type: "overnight-session-started",
+        reason: "Overnight mode session started",
+        overnightSessionStartedAt: state.overnightSessionStartedAt,
+        overnightLimits: getOvernightLimits(state),
+      }).catch(() => {});
+    }
+
+    const overnightStopReason = overnightActive
+      ? getOvernightStopReason(state)
+      : null;
+
+    if (overnightActive && overnightStopReason) {
+      await endOvernightSession(req, state, overnightStopReason, false);
+
+      return NextResponse.json({
+        ok: false,
+        mode: "overnight-session-stopped",
+        reason: overnightStopReason,
+      });
+    }
 
     if (!stateData.ok || !state) {
       return NextResponse.json({
@@ -324,6 +473,10 @@ if (false && state.autoMergeEnabled && pendingPrTask) {
       : null;
 
     if (!availableTask) {
+      if (overnightActive && state.overnightSessionStartedAt) {
+        await endOvernightSession(req, state, "no-work", true);
+      }
+
       return NextResponse.json({
         ok: true,
         mode: "no-work",
@@ -386,8 +539,19 @@ if (
     let runnerRes: Response | null = null;
     let iterations = 0;
     const seenTaskIds = new Set<string>();
+    const seenRecoveryIds = new Set<string>();
 
-    while (iterations < AUTO_RUN_MAX_ITERATIONS) {
+    const overnightIterationLimit = overnightActive
+      ? Math.max(
+          1,
+          Math.min(
+            getOvernightLimits(state).maxTasks,
+            getOvernightLimits(state).maxPrs + getOvernightLimits(state).maxFailures + 3,
+          )
+        )
+      : AUTO_RUN_MAX_ITERATIONS;
+
+    while (iterations < overnightIterationLimit) {
       const { res: nextRunnerRes, data: nextRunnerData } = await internalJsonFetch(
         req,
         "/api/agent-runner",
@@ -430,6 +594,42 @@ if (
           mode: nextRunnerData?.mode ?? "runner-failed",
           reason: "Runner returned a non-successful result.",
         }).catch(() => {});
+
+        if (overnightActive) {
+          const { data: latestControlData } = await internalJsonFetch(
+            req,
+            "/api/control-state"
+          );
+          const latestState = latestControlData?.state ?? state;
+          const latestTasks = await readTasks();
+          const recoveryTask = latestTasks.find(
+            (candidate: any) =>
+              candidate &&
+              candidate.agentRole === "senior-recovery" &&
+              candidate.recoveryOfTaskId === processedTaskId
+          );
+
+          const patch: Record<string, unknown> = {
+            overnightFailures: (latestState.overnightFailures ?? 0) + 1,
+          };
+
+          if (recoveryTask && !seenRecoveryIds.has(recoveryTask.id)) {
+            seenRecoveryIds.add(recoveryTask.id);
+            patch.overnightRecoveries = (latestState.overnightRecoveries ?? 0) + 1;
+          }
+
+          const updatedState = await updateControlState(req, patch);
+          if (updatedState) {
+            Object.assign(state, updatedState);
+          }
+
+          const stopReason = getOvernightStopReason(state);
+          if (stopReason) {
+            await endOvernightSession(req, state, stopReason, false);
+            break;
+          }
+        }
+
         break;
       }
 
@@ -465,9 +665,40 @@ if (
         mode: nextRunnerData.mode,
         nextTaskId: nextReadyTask.id,
       }).catch(() => {});
+
+      if (overnightActive) {
+        const { data: latestControlData } = await internalJsonFetch(
+          req,
+          "/api/control-state"
+        );
+        const latestState = latestControlData?.state ?? state;
+        const patch: Record<string, unknown> = {
+          overnightTasksCompleted: (latestState.overnightTasksCompleted ?? 0) + 1,
+        };
+
+        if (
+          nextRunnerData.mode === "pull-request-created" ||
+          nextRunnerData.mode === "pull-request-merged"
+        ) {
+          patch.overnightPrsCreated = (latestState.overnightPrsCreated ?? 0) + 1;
+        }
+
+        const updatedState = await updateControlState(req, patch);
+        if (updatedState) {
+          Object.assign(state, updatedState);
+        }
+
+        const stopReason = getOvernightStopReason(state);
+        if (stopReason) {
+          await endOvernightSession(req, state, stopReason, false);
+          break;
+        }
+      }
     }
 
-    if (iterations >= AUTO_RUN_MAX_ITERATIONS) {
+    if (overnightActive && iterations >= overnightIterationLimit) {
+      await endOvernightSession(req, state, "iteration-limit", false);
+    } else if (iterations >= AUTO_RUN_MAX_ITERATIONS) {
       await logActivity({
         type: "task-chain-stopped",
         iterations,

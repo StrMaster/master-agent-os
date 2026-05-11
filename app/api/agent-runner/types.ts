@@ -76,6 +76,19 @@ export type AgentState = {
   deployCompletedAt?: string;
   deployError?: string;
   lastDeployUrl?: string;
+  overnightModeActive?: boolean;
+  overnightSessionStartedAt?: string;
+  overnightSessionCompletedAt?: string;
+  overnightSessionStopReason?: string;
+  overnightTasksCompleted?: number;
+  overnightPrsCreated?: number;
+  overnightFailures?: number;
+  overnightRecoveries?: number;
+  overnightMaxTasks?: number;
+  overnightMaxPrs?: number;
+  overnightMaxFailures?: number;
+  overnightMaxRecoveryAttempts?: number;
+  overnightMaxDurationMs?: number;
 };
 
 export type GitHubFile = {
