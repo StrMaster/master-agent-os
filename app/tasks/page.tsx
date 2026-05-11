@@ -1,10 +1,10 @@
-import ControlCenterControls from "../components/ControlCenterControls";
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
 import ApprovalExecutionCenter from "../components/ApprovalExecutionCenter";
 import AgentsWorkspace from "../components/AgentsWorkspace";
 import ActivityFeed from "../components/ActivityFeed";
 import RecoveryControlCard from "../components/RecoveryControlCard";
+import RuntimeControlPanel from "../components/RuntimeControlPanel";
 import RuntimeDashboard from "../components/RuntimeDashboard";
 import { readActivityFile } from "../api/agent-runner/activity";
 
@@ -176,6 +176,8 @@ export default async function TasksPage() {
 
       <RuntimeDashboard tasks={tasks} activity={activity} />
 
+      <RuntimeControlPanel />
+
       <ApprovalExecutionCenter tasks={tasks} activity={activity} />
 
       <AgentsWorkspace initialActivity={activity} />
@@ -183,7 +185,6 @@ export default async function TasksPage() {
       <ActivityFeed initialActivity={activity} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ControlCenterControls />
         <RecoveryControlCard />
       </div>
 

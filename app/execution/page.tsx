@@ -1,6 +1,7 @@
 import ActivityFeed from "../components/ActivityFeed";
 import AgentsWorkspace from "../components/AgentsWorkspace";
 import ApprovalExecutionCenter from "../components/ApprovalExecutionCenter";
+import RuntimeControlPanel from "../components/RuntimeControlPanel";
 import PendingPRQueue from "../components/PendingPRQueue";
 import DeleteTaskButton from "../components/DeleteTaskButton";
 import RuntimeDashboard from "../components/RuntimeDashboard";
@@ -111,6 +112,8 @@ export default async function ExecutionPage() {
       </div>
 
       <RuntimeDashboard tasks={tasks} activity={activity} />
+
+      <RuntimeControlPanel />
 
       <ApprovalExecutionCenter tasks={tasks} activity={activity} />
 
