@@ -231,6 +231,24 @@ async function createRecoveryTask({
 }) {
   const { tasks, sha } = await readTasksFile();
 
+  const existingRecoveryTask = tasks.find(
+    (task) =>
+      task.recoveryOfTaskId === failedTask.id &&
+      ["todo", "running", "pending-pr"].includes(task.status)
+  );
+
+  if (existingRecoveryTask) {
+    await logActivity({
+      type: "recovery-task-duplicate-blocked",
+      runId: existingRecoveryTask.id,
+      taskId: failedTask.id,
+      agentName: "Senior Recovery Agent",
+      reason,
+    });
+
+    return existingRecoveryTask;
+  }
+
   const recoveryTask: AgentTask = {
     id: `recovery-${Date.now()}`,
     title: `Recovery: ${failedTask.title}`,
@@ -899,14 +917,6 @@ agentRole: task.agentRole,
 routingReason: task.routingReason,
     });
 
-    const review = reviewGeneratedPatch(currentContent, patchedContent);
-    
-if (!review.valid) {
-  const latest = await readTasksFile();
-  const latestTask = latest.tasks.find(
-    (candidate) => candidate.id === task.id
-  );
-
 const reviewerResult = reviewUiIntentPatch({
   prompt: `${task.title}\n${task.summary ?? ""}`,
   patchedContent,
@@ -937,6 +947,14 @@ await createRecoveryTask({
     reason: reviewerResult.reason,
   });
 }
+
+    const review = reviewGeneratedPatch(currentContent, patchedContent);
+    
+if (!review.valid) {
+  const latest = await readTasksFile();
+  const latestTask = latest.tasks.find(
+    (candidate) => candidate.id === task.id
+  );
 
   if (latestTask) {
     latestTask.status = "failed";
