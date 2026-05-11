@@ -1,6 +1,6 @@
 {
   "paused": false,
-  "runnerLocked": false,
+  "runnerLocked": true,
   "autoRunEnabled": true,
   "autoMergeEnabled": true,
   "emergencyStop": false,
@@ -12,7 +12,7 @@
   "lastDeploymentId": "dpl_HvYgGRSgVX2cCSA5phoUXC7mcgr3",
   "lastDeploymentState": "BUILDING",
   "lastDeployFailureId": null,
-  "lastRunAt": 1778448833571,
+  "lastRunAt": 1778519153415,
   "deployStatus": "pending",
   "deployStartedAt": "2026-05-11T13:22:32.208Z",
   "deployCompletedAt": "2026-05-11T14:48:35.442Z",
@@ -22,5 +22,6 @@
   "overnightTasksCompleted": 0,
   "overnightPrsCreated": 0,
   "overnightFailures": 0,
-  "overnightRecoveries": 0
+  "overnightRecoveries": 0,
+  "runnerLockStartedAt": 1778519153415
 }
