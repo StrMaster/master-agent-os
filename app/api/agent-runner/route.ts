@@ -13,6 +13,14 @@ import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
 import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
 import { logActivity, readActivityFile } from "./activity";
+import {
+  incrementStateCounter,
+  readStateFile,
+  releaseRunnerLock,
+  resetRuntimeFailureCounters,
+  updateStateWith,
+  writeStateFile,
+} from "./state";
 import type { AgentState, AgentTask, GitHubFile, Priority } from "./types";
 
 
@@ -25,7 +33,6 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 
 const TASKS_PATH = ".agent/tasks.json";
-const STATE_PATH = ".agent/state.json";
 const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
 const RUNNER_COOLDOWN_MS = 3_000;
@@ -218,80 +225,6 @@ async function createRecoveryTask({
   });
 
   return recoveryTask;
-}
-
-// STATE HELPERS
-async function readStateFile() {
-  const { json, sha } = await readGithubJson(STATE_PATH);
-
-  return {
-    state: (json || {}) as AgentState,
-    sha,
-  };
-}
-
-async function writeStateFile(
-  state: AgentState,
-  sha: string,
-  message: string
-) {
-  await writeGithubJson(STATE_PATH, state, sha, message);
-}
-
-async function updateStateWith(
-  mutator: (state: AgentState) => AgentState,
-  message: string
-) {
-  const { state, sha } = await readStateFile();
-  await writeStateFile(mutator(state), sha, message);
-}
-
-async function incrementStateCounter(
-  key:
-    | "recentFailedRuns"
-    | "recentValidationFailures"
-    | "recentMergeFailures"
-    | "recentDeployFailures",
-  message: string
-) {
-  await updateStateWith(
-    (state) => ({
-      ...state,
-      [key]: (state[key] ?? 0) + 1,
-    }),
-    message
-  );
-}
-
-async function resetRuntimeFailureCounters(message: string) {
-  await updateStateWith(
-    (state) => ({
-      ...state,
-      recentFailedRuns: 0,
-      recentValidationFailures: 0,
-      recentMergeFailures: 0,
-      recentDeployFailures: 0,
-    }),
-    message
-  );
-}
-
-async function releaseRunnerLock() {
-  try {
-    const { state, sha } = await readStateFile();
-
-    await writeStateFile(
-  {
-    ...state,
-    runnerLocked: false,
-    runnerLockStartedAt: undefined,
-  },
-  sha,
-  "Release agent runner lock"
-);
-  } catch {
-    // Do not throw from cleanup.
-  }
 }
 
 // RUNNER SAFETY
