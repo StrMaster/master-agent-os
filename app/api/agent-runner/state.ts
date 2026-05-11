@@ -131,6 +131,20 @@ export async function resetRuntimeFailureCounters(message: string) {
       recentValidationFailures: 0,
       recentMergeFailures: 0,
       recentDeployFailures: 0,
+      failedRuns: 0,
+      consecutiveFailures: 0,
+    }),
+    message
+  );
+}
+
+export async function trackRuntimeFailure(message: string) {
+  await updateStateWith(
+    (state) => ({
+      ...state,
+      failedRuns: (state.failedRuns ?? 0) + 1,
+      lastFailureAt: new Date().toISOString(),
+      consecutiveFailures: (state.consecutiveFailures ?? 0) + 1,
     }),
     message
   );

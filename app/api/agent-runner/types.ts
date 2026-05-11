@@ -52,6 +52,9 @@ export type AgentState = {
   recentValidationFailures?: number;
   recentMergeFailures?: number;
   recentDeployFailures?: number;
+  failedRuns?: number;
+  lastFailureAt?: string;
+  consecutiveFailures?: number;
   recoveryActive?: boolean;
 };
 

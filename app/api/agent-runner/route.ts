@@ -19,6 +19,7 @@ import {
   readStateFile,
   releaseRunnerLock,
   resetRuntimeFailureCounters,
+  trackRuntimeFailure,
   updateStateWith,
   writeStateFile,
 } from "./state";
@@ -1021,6 +1022,9 @@ agentRole: task.agentRole,
     await incrementStateCounter(
   "recentFailedRuns",
   "Track failed agent runner execution"
+).catch(() => {});
+    await trackRuntimeFailure(
+  "Track runtime failure metadata"
 ).catch(() => {});
 
 if (activeTask) {
