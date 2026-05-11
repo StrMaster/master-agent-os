@@ -17,6 +17,8 @@ export type AgentTask = {
   executionMode?: "single-file" | "multi-step";
   wave?: number;
   waveStatus?: "ready" | "blocked" | "completed";
+  previewOnly?: boolean;
+  requiresApproval?: boolean;
   parentTaskId?: string;
   plannerNotes?: string;
   retryCount?: number;

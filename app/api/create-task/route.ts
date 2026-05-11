@@ -36,8 +36,10 @@ type AgentTask = {
   summary?: string;
 intent?: string;
 riskLevel?: "low" | "medium" | "high";
-executionMode?: "single-file" | "multi-step";
-wave?: number;
+  executionMode?: "single-file" | "multi-step";
+  wave?: number;
+  previewOnly?: boolean;
+  requiresApproval?: boolean;
   parentTaskId?: string;
   plannerNotes?: string;
   dependsOn?: string[];
@@ -248,6 +250,8 @@ const plannerMetadata = {
     typeof body.wave === "number" && Number.isFinite(body.wave)
       ? body.wave
       : undefined,
+  previewOnly: body.previewOnly === true,
+  requiresApproval: body.requiresApproval === true,
   parentTaskId:
     typeof body.parentTaskId === "string" ? body.parentTaskId : undefined,
   plannerNotes:
@@ -270,6 +274,8 @@ let intent = "code-improvement";
 let riskLevel: "low" | "medium" | "high" = "low";
 let executionMode: "single-file" | "multi-step" = "single-file";
 let wave = 1;
+let previewOnly = false;
+let requiresApproval = false;
 let parentTaskId = plannerMetadata.parentTaskId;
 let plannerNotes = "Single safe execution task.";
 let dependsOn = plannerMetadata.dependsOn;
@@ -442,6 +448,8 @@ if (
     riskLevel = "high";
     executionMode = "multi-step";
     wave = 1;
+    previewOnly = true;
+    requiresApproval = true;
     plannerNotes =
       "High-risk multi-step task. Planner should split this into safe execution waves.";
   }
@@ -469,6 +477,11 @@ if (
     normalizedPrompt.includes("failure")
   ) {
     intent = "recovery";
+  }
+
+  if (executionMode === "multi-step") {
+    previewOnly = true;
+    requiresApproval = true;
   }
 }
 
@@ -548,6 +561,11 @@ if (
   ...agentMetadata,
   executionMode: plannerMetadata.executionMode ?? executionMode,
   wave: plannerMetadata.wave ?? wave,
+  previewOnly: plannerMetadata.previewOnly ?? previewOnly,
+  requiresApproval:
+    plannerMetadata.requiresApproval ??
+    (requiresApproval ||
+      (plannerMetadata.executionMode ?? executionMode) === "multi-step"),
   parentTaskId,
   plannerNotes: plannerMetadata.plannerNotes ?? plannerNotes,
   dependsOn,
@@ -575,9 +593,11 @@ if (
     queuedAt: new Date().toISOString(),
     ...agentMetadata,
     intent: "ui-polish",
-riskLevel: "low",
-executionMode: "single-file",
-wave: 1,
+    riskLevel: "low",
+    executionMode: "single-file",
+    wave: 1,
+    previewOnly: false,
+    requiresApproval: false,
     plannerNotes: "Safe UI polish task generated from dashboard/activity prompt.",
     dependsOn,
     dependsOnTaskIds,

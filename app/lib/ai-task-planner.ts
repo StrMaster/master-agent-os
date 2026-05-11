@@ -417,6 +417,7 @@ Rules:
 - Use parentTaskId and wave when returning planner-generated subtasks.
 - Prefer dependsOnTaskIds and blockedBy for explicit dependency ordering.
 - Use waveStatus to mark each step as ready, blocked, or completed.
+- Mark planner-generated multi-step work as previewOnly with requiresApproval.
 - Use only these target files:
 
 - app/page.tsx
@@ -450,6 +451,8 @@ Format:
     "wave": 1,
 
     "waveStatus": "ready|blocked|completed",
+    "previewOnly": true,
+    "requiresApproval": true,
 
     "parentTaskId": "optional-parent-task-id",
 

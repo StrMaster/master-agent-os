@@ -22,6 +22,8 @@ type AgentTask = {
   executionMode?: "single-file" | "multi-step";
   wave?: number;
   waveStatus?: "ready" | "blocked" | "completed";
+  previewOnly?: boolean;
+  requiresApproval?: boolean;
   plannerNotes?: string;
   parentTaskId?: string;
   dependsOnTaskIds?: string[];
@@ -153,6 +155,8 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 1,
       waveStatus: "ready",
+      previewOnly: true,
+      requiresApproval: true,
       parentTaskId: task.id,
       dependsOnTaskIds: [],
       blockedBy: [],
@@ -175,6 +179,8 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 2,
       waveStatus: "blocked",
+      previewOnly: true,
+      requiresApproval: true,
       parentTaskId: task.id,
       dependsOnTaskIds: [wave1Id],
       blockedBy: [wave1Id],
@@ -197,6 +203,8 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       executionMode: "single-file",
       wave: 3,
       waveStatus: "blocked",
+      previewOnly: true,
+      requiresApproval: true,
       parentTaskId: task.id,
       dependsOnTaskIds: [wave2Id],
       blockedBy: [wave2Id],
