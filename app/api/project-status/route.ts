@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateProjectStatusSummary } from "@/app/lib/ai-task-planner";
+import { buildControlSummary } from "@/agents/core/control-communication";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -54,11 +55,13 @@ export async function GET() {
         ? conversationMemory.slice(0, 15)
         : [],
     });
+    const controlSummary = await buildControlSummary();
 
     return NextResponse.json({
       ok: true,
       mode: "project-status",
       summary,
+      controlSummary,
     });
   } catch (error) {
     return NextResponse.json(

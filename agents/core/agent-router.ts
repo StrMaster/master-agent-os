@@ -126,6 +126,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isControlCommunication =
+    text.includes("control summary") ||
+    text.includes("runtime state") ||
+    text.includes("execution guidance") ||
+    text.includes("next actions") ||
+    text.includes("blocked reasons");
+
+  if (isControlCommunication) {
+    return {
+      role: "control-communication",
+      agent: getSmartAgent("control-communication"),
+      confidence: "high",
+      reason: "Prompt asks for runtime explanation or communication guidance.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||

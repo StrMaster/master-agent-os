@@ -9,7 +9,8 @@ export type SmartAgentRole =
   | "architecture-reviewer"
   | "code-reviewer"
   | "observability"
-  | "recovery-intelligence";
+  | "recovery-intelligence"
+  | "control-communication";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -192,6 +193,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Use deterministic recovery signals.",
       "Watch recovery loops, deploy failures and repeated risky targets.",
       "Prefer cooldown or retry-later guidance when failure patterns repeat.",
+    ],
+  },
+  {
+    id: "control-communication",
+    name: "Control / Communication Agent",
+    purpose:
+      "Explains runtime state, execution guidance, blockers, and suggested next actions in human-friendly structured form.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer concise structured summaries.",
+      "Explain blockers and next actions clearly.",
+      "Keep approval guidance short and direct.",
     ],
   },
 ];

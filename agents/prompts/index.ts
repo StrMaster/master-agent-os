@@ -10,6 +10,7 @@ import { ARCHITECTURE_REVIEWER_AGENT_PROMPT } from "./architecture-reviewer";
 import { CODE_REVIEWER_AGENT_PROMPT } from "./code-reviewer";
 import { OBSERVABILITY_AGENT_PROMPT } from "./observability";
 import { RECOVERY_INTELLIGENCE_AGENT_PROMPT } from "./recovery-intelligence";
+import { CONTROL_COMMUNICATION_AGENT_PROMPT } from "./control-communication";
 
 export function getAgentPrompt(role: SmartAgentRole) {
   switch (role) {
@@ -33,6 +34,8 @@ export function getAgentPrompt(role: SmartAgentRole) {
       return OBSERVABILITY_AGENT_PROMPT;
     case "recovery-intelligence":
       return RECOVERY_INTELLIGENCE_AGENT_PROMPT;
+    case "control-communication":
+      return CONTROL_COMMUNICATION_AGENT_PROMPT;
     case "senior-execution":
     default:
       return EXECUTION_AGENT_PROMPT;
