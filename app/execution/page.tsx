@@ -149,6 +149,12 @@ function TaskCard({ task }: { task: AgentTask }) {
       <div className="mt-3 space-y-1 text-xs text-white/45">
         <div>Status: {task.status ?? "unknown"}</div>
 
+        {task.agentName && (
+  <div className="text-cyan-300">
+    Agent: {task.agentName}
+  </div>
+)}
+
         {task.priority && <div>Priority: {task.priority}</div>}
 
         {task.targetFile && <div>Target: {task.targetFile}</div>}
