@@ -7,6 +7,7 @@ export type AgentTaskStatus =
   | "done"
   | "failed"
   | "pending-pr";
+  | "planner-required"
 
 export type AgentTask = {
   id: string;
