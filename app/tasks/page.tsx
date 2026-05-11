@@ -1,12 +1,5 @@
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
-import ApprovalExecutionCenter from "../components/ApprovalExecutionCenter";
-import AgentsWorkspace from "../components/AgentsWorkspace";
-import ActivityFeed from "../components/ActivityFeed";
-import RecoveryControlCard from "../components/RecoveryControlCard";
-import RuntimeControlPanel from "../components/RuntimeControlPanel";
-import RuntimeDashboard from "../components/RuntimeDashboard";
-import { readActivityFile } from "../api/agent-runner/activity";
 
 
 export const dynamic = "force-dynamic";
@@ -125,14 +118,8 @@ async function syncMergedPrTasks(tasks: AgentTask[]) {
 }
 
 export default async function TasksPage() {
-  const [rawTasks, activityFile] = await Promise.all([
-    readTasks(),
-    readActivityFile(),
-  ]);
+  const rawTasks = await readTasks();
   const tasks = await syncMergedPrTasks(rawTasks);
-  const activity = Array.isArray(activityFile.activity)
-    ? activityFile.activity
-    : [];
 
   const plannerRequired = tasks.filter(
     (task) =>
@@ -172,20 +159,6 @@ export default async function TasksPage() {
         <p className="mt-2 text-sm text-white/60">
           Planner queue and orchestration board for Master Agent OS.
         </p>
-      </div>
-
-      <RuntimeDashboard tasks={tasks} activity={activity} />
-
-      <RuntimeControlPanel />
-
-      <ApprovalExecutionCenter tasks={tasks} activity={activity} />
-
-      <AgentsWorkspace initialActivity={activity} />
-
-      <ActivityFeed initialActivity={activity} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <RecoveryControlCard />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
