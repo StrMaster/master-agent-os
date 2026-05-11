@@ -1,5 +1,18 @@
 [
   {
+    "id": "effa5abf-8cde-4cdf-9bf7-68f984a65815",
+    "timestamp": "2026-05-11T17:10:02.910Z",
+    "type": "architecture-review-completed",
+    "taskId": "manual-task-1778519402554",
+    "targetFile": "app/page.tsx",
+    "recommendation": "approve",
+    "scopeSize": 3,
+    "previewOnly": false,
+    "requiresApproval": false,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"multi-step\",\"severity\":\"medium\",\"detail\":\"Task is marked multi-step.\"}]"
+  },
+  {
     "id": "1ba5b2dd-512c-4af4-b35c-682e74f166fa",
     "timestamp": "2026-05-11T17:07:12.199Z",
     "type": "task-chain-stopped",
