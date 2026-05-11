@@ -21,6 +21,7 @@ type AgentTask = {
   riskLevel?: "low" | "medium" | "high";
   executionMode?: "single-file" | "multi-step";
   wave?: number;
+  waveStatus?: "ready" | "blocked" | "completed";
   plannerNotes?: string;
   parentTaskId?: string;
   dependsOnTaskIds?: string[];
@@ -151,6 +152,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       riskLevel: "medium",
       executionMode: "single-file",
       wave: 1,
+      waveStatus: "ready",
       parentTaskId: task.id,
       dependsOnTaskIds: [],
       blockedBy: [],
@@ -172,6 +174,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       riskLevel: "medium",
       executionMode: "single-file",
       wave: 2,
+      waveStatus: "blocked",
       parentTaskId: task.id,
       dependsOnTaskIds: [wave1Id],
       blockedBy: [wave1Id],
@@ -193,6 +196,7 @@ function createWaveTasks(task: AgentTask): AgentTask[] {
       riskLevel: "low",
       executionMode: "single-file",
       wave: 3,
+      waveStatus: "blocked",
       parentTaskId: task.id,
       dependsOnTaskIds: [wave2Id],
       blockedBy: [wave2Id],
@@ -214,6 +218,24 @@ function validateDependencyOrder(tasks: AgentTask[]) {
       return dependencyIndex >= 0 && dependencyIndex < index;
     });
   });
+}
+
+function groupTasksByWave(tasks: AgentTask[]) {
+  const waveMap = new Map<number, AgentTask[]>();
+
+  for (const task of tasks) {
+    const wave = task.wave ?? 0;
+    const waveTasks = waveMap.get(wave) ?? [];
+    waveTasks.push(task);
+    waveMap.set(wave, waveTasks);
+  }
+
+  return Array.from(waveMap.entries())
+    .sort(([waveA], [waveB]) => waveA - waveB)
+    .map(([wave, waveTasks]) => ({
+      wave,
+      tasks: waveTasks,
+    }));
 }
 
 export async function POST(req: Request) {
@@ -313,6 +335,7 @@ export async function POST(req: Request) {
       mode: "planner-waves-created",
       parentTaskId: task.id,
       waves: waveTasks,
+      waveGroups: groupTasksByWave(waveTasks),
     });
   } catch (error) {
     return NextResponse.json(

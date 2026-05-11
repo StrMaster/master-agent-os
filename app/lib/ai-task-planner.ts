@@ -416,6 +416,7 @@ Rules:
 - Preserve dependency order with dependsOn.
 - Use parentTaskId and wave when returning planner-generated subtasks.
 - Prefer dependsOnTaskIds and blockedBy for explicit dependency ordering.
+- Use waveStatus to mark each step as ready, blocked, or completed.
 - Use only these target files:
 
 - app/page.tsx
@@ -447,6 +448,8 @@ Format:
     "executionMode": "single-file|multi-step",
 
     "wave": 1,
+
+    "waveStatus": "ready|blocked|completed",
 
     "parentTaskId": "optional-parent-task-id",
 

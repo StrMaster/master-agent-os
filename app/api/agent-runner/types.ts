@@ -16,6 +16,7 @@ export type AgentTask = {
   riskLevel?: "low" | "medium" | "high";
   executionMode?: "single-file" | "multi-step";
   wave?: number;
+  waveStatus?: "ready" | "blocked" | "completed";
   parentTaskId?: string;
   plannerNotes?: string;
   retryCount?: number;
