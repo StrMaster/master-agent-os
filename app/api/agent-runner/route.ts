@@ -1163,6 +1163,8 @@ agentRole: task.agentRole,
       });
     }
 
+    await internalJsonFetch(req, "/api/deploy-status").catch(() => null);
+
     await resetRuntimeFailureCounters(
   "Reset runtime failure counters after successful PR flow"
 ).catch(() => {});

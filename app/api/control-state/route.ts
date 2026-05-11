@@ -24,6 +24,11 @@ type ControlState = {
   runtimeBlockedUntil?: string;
   runnerHealthStatus?: "healthy" | "degraded" | "blocked";
   recoveryAutoRunResumeEligible?: boolean;
+  deployStatus?: "pending" | "success" | "failed";
+  deployStartedAt?: string;
+  deployCompletedAt?: string;
+  deployError?: string;
+  lastDeployUrl?: string;
 };
 
 type GitHubFile = {
@@ -121,16 +126,21 @@ recentValidationFailures:
   state.recentValidationFailures ?? 0,
 recentMergeFailures:
   state.recentMergeFailures ?? 0,
-recentDeployFailures:
-  state.recentDeployFailures ?? 0,
-consecutiveFailures:
-  state.consecutiveFailures ?? 0,
-runtimeBlockedUntil:
-  state.runtimeBlockedUntil,
-runnerHealthStatus:
-  state.runnerHealthStatus ?? "healthy",
-recoveryAutoRunResumeEligible:
-  state.recoveryAutoRunResumeEligible ?? false,
+        recentDeployFailures:
+          state.recentDeployFailures ?? 0,
+        consecutiveFailures:
+          state.consecutiveFailures ?? 0,
+        runtimeBlockedUntil:
+          state.runtimeBlockedUntil,
+        runnerHealthStatus:
+          state.runnerHealthStatus ?? "healthy",
+        recoveryAutoRunResumeEligible:
+          state.recoveryAutoRunResumeEligible ?? false,
+        deployStatus: state.deployStatus,
+        deployStartedAt: state.deployStartedAt,
+        deployCompletedAt: state.deployCompletedAt,
+        deployError: state.deployError,
+        lastDeployUrl: state.lastDeployUrl,
       },
     });
   } catch (error) {

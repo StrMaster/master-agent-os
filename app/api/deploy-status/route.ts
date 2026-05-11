@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createRecoveryTask, readTasksFile } from "../agent-runner/tasks";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -15,10 +16,14 @@ type GitHubFile = {
 
 type AgentState = {
   recentDeployFailures?: number;
-  lastDeploymentId?: string | null;
-  lastDeploymentState?: string | null;
-  lastDeployFailureId?: string | null;
+  deployStatus?: "pending" | "success" | "failed";
+  deployStartedAt?: string;
+  deployCompletedAt?: string;
+  deployError?: string;
+  lastDeployUrl?: string;
 };
+
+type DeployStatus = "pending" | "success" | "failed";
 
 async function readGithubJson(path: string, fallback: unknown) {
   const token = process.env.GITHUB_TOKEN;
@@ -113,6 +118,61 @@ async function logActivity(event: Record<string, unknown>) {
   await writeGithubJson(ACTIVITY_PATH, updatedActivity, sha, "Log deploy status activity");
 }
 
+function mapDeployStatus(state?: string | null): DeployStatus {
+  if (!state) {
+    return "pending";
+  }
+
+  if (state === "READY") {
+    return "success";
+  }
+
+  if (state === "ERROR" || state === "CANCELED") {
+    return "failed";
+  }
+
+  return "pending";
+}
+
+function shouldPersistDeployState(
+  current: AgentState,
+  next: {
+    deployStatus: DeployStatus;
+    deployStartedAt?: string;
+    deployCompletedAt?: string;
+    deployError?: string;
+    lastDeployUrl?: string;
+  },
+) {
+  return (
+    current.deployStatus !== next.deployStatus ||
+    current.deployStartedAt !== next.deployStartedAt ||
+    current.deployCompletedAt !== next.deployCompletedAt ||
+    current.deployError !== next.deployError ||
+    current.lastDeployUrl !== next.lastDeployUrl
+  );
+}
+
+async function createDeployRecoveryTask(reason: string) {
+  const { json } = await readGithubJson(".agent/tasks.json", []);
+  const tasks = Array.isArray(json) ? json : [];
+  const candidate = tasks.find(
+    (task) =>
+      task &&
+      !task.recoveryOfTaskId &&
+      (task.result?.pullRequestUrl || task.status === "pending-pr" || task.status === "done")
+  );
+
+  if (!candidate) {
+    return null;
+  }
+
+  return createRecoveryTask({
+    failedTask: candidate,
+    reason,
+  });
+}
+
 export async function GET() {
   try {
     const token = process.env.VERCEL_TOKEN;
@@ -145,6 +205,7 @@ export async function GET() {
         ok: true,
         deployment: null,
         deployFailed: false,
+        deployStatus: "pending",
       });
     }
 
@@ -155,12 +216,95 @@ export async function GET() {
       createdAt: deployment.createdAt,
     };
 
-    const deployFailed = deployment.state === "ERROR";
+    const deployStatus = mapDeployStatus(deployment.state);
+    const deployFailed = deployStatus === "failed";
+    const deploySucceeded = deployStatus === "success";
+    const deployStartedAt = new Date(
+      deployment.createdAt ?? Date.now()
+    ).toISOString();
+    const deployCompletedAt =
+      deployStatus === "pending"
+        ? undefined
+        : new Date().toISOString();
+    const deployError =
+      deployStatus === "failed"
+        ? `Deployment failed with Vercel state ${deployment.state}`
+        : undefined;
+
+    const { json: stateJson, sha: stateSha } = await readGithubJson(
+      STATE_PATH,
+      {}
+    );
+    const currentState = (stateJson || {}) as AgentState;
+    const nextState: AgentState = {
+      ...currentState,
+      deployStatus,
+      deployStartedAt: currentState.deployStartedAt ?? deployStartedAt,
+      deployCompletedAt:
+        deployStatus === "pending"
+          ? currentState.deployCompletedAt
+          : deployCompletedAt,
+      deployError,
+      lastDeployUrl: deployment.url,
+      recentDeployFailures: deployFailed
+        ? (currentState.recentDeployFailures ?? 0) + 1
+        : deploySucceeded
+          ? 0
+          : currentState.recentDeployFailures ?? 0,
+    };
+
+    if (deployFailed && !(currentState.deployStatus === "failed" && currentState.lastDeployUrl === deployment.url)) {
+      nextState.recentDeployFailures = 1;
+    }
+
+    if (shouldPersistDeployState(currentState, {
+      deployStatus,
+      deployStartedAt: nextState.deployStartedAt,
+      deployCompletedAt: nextState.deployCompletedAt,
+      deployError: nextState.deployError,
+      lastDeployUrl: nextState.lastDeployUrl,
+    })) {
+      await writeGithubJson(
+        STATE_PATH,
+        nextState,
+        stateSha as string,
+        deployFailed
+          ? "Record failed deploy status"
+          : deploySucceeded
+            ? "Record successful deploy status"
+            : "Record pending deploy status"
+      );
+    }
+
+    if (deployFailed && currentState.deployStatus !== "failed") {
+      await logActivity({
+        type: "deploy-failed",
+        deploymentId: deployment.uid,
+        deploymentUrl: deployment.url,
+        reason: deployError,
+      });
+
+      await createDeployRecoveryTask(deployError ?? "Deployment failed").catch(() => {});
+    }
+
+    if (deploySucceeded && currentState.deployStatus !== "success") {
+      await logActivity({
+        type: "deploy-succeeded",
+        deploymentId: deployment.uid,
+        deploymentUrl: deployment.url,
+        reason: "Latest deployment reached READY",
+      });
+    }
 
     return NextResponse.json({
       ok: true,
       deployment: deploymentStatus,
       deployFailed,
+      deployStatus,
+      deployStartedAt: nextState.deployStartedAt,
+      deployCompletedAt: nextState.deployCompletedAt,
+      deployError: nextState.deployError,
+      lastDeployUrl: nextState.lastDeployUrl,
     });
   } catch (error) {
     return NextResponse.json(

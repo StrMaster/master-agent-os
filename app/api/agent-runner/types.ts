@@ -69,6 +69,11 @@ export type AgentState = {
   runnerHealthStatus?: RunnerHealthStatus;
   recoveryAutoRunResumeEligible?: boolean;
   recoveryActive?: boolean;
+  deployStatus?: "pending" | "success" | "failed";
+  deployStartedAt?: string;
+  deployCompletedAt?: string;
+  deployError?: string;
+  lastDeployUrl?: string;
 };
 
 export type GitHubFile = {
