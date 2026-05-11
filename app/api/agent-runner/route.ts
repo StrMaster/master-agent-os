@@ -60,6 +60,14 @@ const SAFE_TARGET_FILES = [
   "app/execution/page.tsx",
 ];
 
+const RUNNABLE_TASK_STATUSES = ["todo", "queued"] as const;
+
+function isRunnableTaskStatus(status: AgentTask["status"]) {
+  return RUNNABLE_TASK_STATUSES.includes(
+    status as (typeof RUNNABLE_TASK_STATUSES)[number]
+  );
+}
+
 let lastExecutionAt = 0;
 
 async function internalJsonFetch(req: Request, path: string) {
@@ -334,7 +342,7 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
     // Ready gate: approval, waves, and dependency state must be clear before selection.
-    .filter(({ task }) => task.status === "todo")
+    .filter(({ task }) => isRunnableTaskStatus(task.status))
     .filter(({ task }) => !task.previewOnly && !task.requiresApproval)
     .filter(({ task }) => task.waveStatus !== "blocked")
     .filter(({ task }) => dependenciesCompleted(task, tasks))
@@ -446,13 +454,14 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       totalTasks: tasks.length,
-      todoCount: tasks.filter((task) => task.status === "todo").length,
+      todoCount: tasks.filter((task) =>
+  isRunnableTaskStatus(task.status)).length,
       runningCount: tasks.filter((task) => task.status === "running").length,
       pendingPrCount: tasks.filter((task) => task.status === "pending-pr")
         .length,
       doneCount: tasks.filter((task) => task.status === "done").length,
       failedCount: tasks.filter((task) => task.status === "failed").length,
-      nextTodoTask: tasks.find((task) => task.status === "todo") ?? null,
+      nextTodoTask: tasks.find((task) => isRunnableTaskStatus(task.status)) ?? null,
     });
   } catch (error) {
     return NextResponse.json(
@@ -634,7 +643,7 @@ if (stopCheck.stop) {
       return NextResponse.json({
         ok: true,
         mode: "idle",
-        message: "No runnable todo tasks",
+        message: "No runnable queued or todo tasks",
       });
     }
 
@@ -733,11 +742,18 @@ agentRole: task.agentRole,
       "High-risk multi-step task blocked from direct execution. Planner waves required.",
   });
 
-  task.retryCount = (task.retryCount ?? 0) + 1;
-task.lastRetryAt = new Date().toISOString();
-  task.completedAt = new Date().toISOString();
+  task.status = "planner-required";
+task.updatedAt = new Date().toISOString();
+task.completedAt = undefined;
+tasks[taskIndex] = task;
 
-  updateTaskStatus(task.id, "failed");
+updateTaskStatus(task.id, "planner-required");
+
+await writeTasksFile(
+  tasks,
+  sha,
+  `Mark task ${task.id} as planner required`
+);
 
 try {
   const baseUrl =
