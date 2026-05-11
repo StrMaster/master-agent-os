@@ -40,6 +40,7 @@ export type AgentTask = {
   completedAt?: string;
   updatedAt?: string;
   error?: string;
+  runtimeOnly?: boolean;
   result?: {
     branchName?: string;
     pullRequestUrl?: string;
