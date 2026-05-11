@@ -503,6 +503,7 @@ if (stopCheck.stop) {
         if (task.result?.pullRequestUrl) {
       task.status = "pending-pr";
       task.updatedAt = new Date().toISOString();
+      task.completedAt = task.completedAt ?? new Date().toISOString();
       tasks[taskIndex] = task;
 
       await writeTasksFile(
@@ -550,6 +551,8 @@ if (stopCheck.stop) {
     }
 
     task.status = "running";
+    task.startedAt = task.startedAt ?? new Date().toISOString();
+    task.completedAt = undefined;
     task.updatedAt = new Date().toISOString();
     tasks[taskIndex] = task;
 
@@ -590,6 +593,7 @@ agentRole: task.agentRole,
 
   task.retryCount = (task.retryCount ?? 0) + 1;
 task.lastRetryAt = new Date().toISOString();
+  task.completedAt = new Date().toISOString();
 
   updateTaskStatus(task.id, "failed");
 
@@ -698,6 +702,7 @@ if (!review.valid) {
 
   if (latestTask) {
     latestTask.status = "failed";
+    latestTask.completedAt = new Date().toISOString();
     latestTask.updatedAt = new Date().toISOString();
     latestTask.error = `Review failed: ${review.reason}`;
   }
@@ -743,6 +748,7 @@ if (!review.valid) {
 
       if (latestTask) {
         latestTask.status = "failed";
+        latestTask.completedAt = new Date().toISOString();
         latestTask.updatedAt = new Date().toISOString();
         latestTask.error = `Patch validation failed: ${validation.issues.join(
           ", "
@@ -791,6 +797,7 @@ if (!review.valid) {
 
       if (latestTask) {
         latestTask.status = "pending-pr";
+        latestTask.completedAt = new Date().toISOString();
         latestTask.updatedAt = new Date().toISOString();
         latestTask.result = {
           branchName,
@@ -973,6 +980,7 @@ agentRole: task.agentRole,
 
     if (latestTask) {
       latestTask.status = "pending-pr";
+      latestTask.completedAt = new Date().toISOString();
       latestTask.updatedAt = new Date().toISOString();
       latestTask.result = {
   branchName,

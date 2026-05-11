@@ -29,6 +29,9 @@ type AgentTask = {
   status: "todo";
   priority: Priority;
   createdAt: string;
+  queuedAt?: string;
+  startedAt?: string;
+  completedAt?: string;
   source: "manual";
   summary?: string;
 intent?: string;
@@ -496,6 +499,7 @@ if (
   priority,
   source: "manual",
   createdAt: new Date().toISOString(),
+  queuedAt: new Date().toISOString(),
   ...agentMetadata,
 };
 
@@ -516,6 +520,7 @@ if (
     priority,
     source: "manual",
     createdAt: new Date().toISOString(),
+    queuedAt: new Date().toISOString(),
     ...agentMetadata,
     intent: "ui-polish",
 riskLevel: "low",
