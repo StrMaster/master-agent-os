@@ -763,6 +763,8 @@ if (stopCheck.stop) {
   wave: task.wave,
   parentTaskId: task.parentTaskId,
   plannerNotes: task.plannerNotes,
+  agentName: task.agentName,
+agentRole: task.agentRole,
 });
 
     if (task.executionMode === "multi-step" && task.riskLevel === "high") {
@@ -868,6 +870,8 @@ if (!reviewerResult.passed) {
   reason:
     reviewerResult.reason ??
     "Reviewer Agent blocked unsafe UI implementation.",
+  agentName: task.agentName,
+agentRole: task.agentRole,
 });
 
   return NextResponse.json({
@@ -1049,6 +1053,8 @@ Generated automatically by Master Agent OS.
       pullRequestUrl: pr.html_url,
       branch: branchName,
       reason: `PR created for ${task.title}`,
+      agentName: task.agentName,
+agentRole: task.agentRole,
     });
 
     let prValidation = null;
@@ -1105,6 +1111,8 @@ if (state.autoMergeEnabled && typeof pr.number === "number") {
         pullRequestUrl: pr.html_url,
         reason: "Auto-merge completed successfully",
         details: JSON.stringify(mergeResult),
+        agentName: task.agentName,
+agentRole: task.agentRole,
       });
     } catch (error) {
       await logActivity({
