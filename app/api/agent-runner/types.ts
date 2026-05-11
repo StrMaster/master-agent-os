@@ -47,6 +47,7 @@ export type AgentTask = {
   routingReason?: string;
   recoveryOfTaskId?: string;
   recoveryReason?: string;
+  recoverySignature?: string;
 };
 
 export type AgentState = {

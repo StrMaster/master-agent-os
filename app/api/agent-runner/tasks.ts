@@ -3,6 +3,11 @@ import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
 
 const TASKS_PATH = ".agent/tasks.json";
+const MAX_RECOVERY_RETRIES = 3;
+
+function normalizeRecoverySignature(reason: string) {
+  return reason.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 160);
+}
 
 export async function readTasksFile() {
   const { json, sha } = await readGithubJson(TASKS_PATH);
@@ -29,18 +34,66 @@ export async function createRecoveryTask({
   reason: string;
 }) {
   const { tasks, sha } = await readTasksFile();
+  const recoveryOfTaskId = failedTask.recoveryOfTaskId ?? failedTask.id;
+  const recoverySignature = normalizeRecoverySignature(reason);
 
   const existingRecoveryTask = tasks.find(
     (task) =>
-      task.recoveryOfTaskId === failedTask.id &&
-      ["todo", "running", "pending-pr"].includes(task.status)
+      task.recoveryOfTaskId === recoveryOfTaskId &&
+      task.recoverySignature === recoverySignature
   );
 
   if (existingRecoveryTask) {
+    if (existingRecoveryTask.status === "failed") {
+      const retryCount = existingRecoveryTask.retryCount ?? 0;
+
+      if (retryCount >= MAX_RECOVERY_RETRIES) {
+        await logActivity({
+          type: "recovery-retry-blocked",
+          runId: existingRecoveryTask.id,
+          taskId: recoveryOfTaskId,
+          agentName: "Senior Recovery Agent",
+          reason: "Recovery retry limit reached",
+          details: reason,
+        });
+
+        return existingRecoveryTask;
+      }
+
+      existingRecoveryTask.status = "todo";
+      existingRecoveryTask.retryCount = retryCount + 1;
+      existingRecoveryTask.lastRetryAt = new Date().toISOString();
+      existingRecoveryTask.previewOnly = true;
+      existingRecoveryTask.requiresApproval = true;
+      existingRecoveryTask.completedAt = undefined;
+      existingRecoveryTask.updatedAt = new Date().toISOString();
+      existingRecoveryTask.error = undefined;
+
+      await writeTasksFile(
+        tasks,
+        sha,
+        `Retry recovery task for ${recoveryOfTaskId}`
+      );
+
+      await logActivity({
+        type: "recovery-retry-started",
+        runId: existingRecoveryTask.id,
+        taskId: recoveryOfTaskId,
+        agentName: "Senior Recovery Agent",
+        reason,
+        details: JSON.stringify({
+          retryCount: existingRecoveryTask.retryCount,
+          recoveryOfTaskId,
+        }),
+      });
+
+      return existingRecoveryTask;
+    }
+
     await logActivity({
       type: "recovery-task-duplicate-blocked",
       runId: existingRecoveryTask.id,
-      taskId: failedTask.id,
+      taskId: recoveryOfTaskId,
       agentName: "Senior Recovery Agent",
       reason,
     });
@@ -56,10 +109,15 @@ export async function createRecoveryTask({
     status: "todo",
     priority: "high",
     createdAt: new Date().toISOString(),
+    previewOnly: true,
+    requiresApproval: true,
+    retryCount: 0,
+    lastRetryAt: new Date().toISOString(),
     agentRole: "senior-recovery",
     agentName: "Senior Recovery Agent",
-    recoveryOfTaskId: failedTask.id,
+    recoveryOfTaskId,
     recoveryReason: reason,
+    recoverySignature,
     plannerNotes:
       "Automatically generated recovery task after reviewer/execution failure.",
   };
@@ -69,11 +127,15 @@ export async function createRecoveryTask({
   await writeTasksFile(tasks, sha, `Create recovery task for ${failedTask.id}`);
 
   await logActivity({
-    type: "recovery-task-created",
+    type: "recovery-retry-started",
     runId: recoveryTask.id,
-    taskId: failedTask.id,
+    taskId: recoveryOfTaskId,
     agentName: "Senior Recovery Agent",
     reason,
+    details: JSON.stringify({
+      retryCount: recoveryTask.retryCount,
+      recoveryOfTaskId,
+    }),
   });
 
   return recoveryTask;

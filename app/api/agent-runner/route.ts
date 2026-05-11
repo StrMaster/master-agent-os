@@ -208,6 +208,40 @@ function isRecoveryTask(task: AgentTask) {
   return task.agentRole === "senior-recovery" || Boolean(task.recoveryOfTaskId);
 }
 
+function finalizeRecoverySuccess(
+  latestTasks: AgentTask[],
+  task: AgentTask,
+  completedAt: string,
+  result: {
+    branchName: string;
+    pullRequestUrl: string;
+    pullRequestNumber?: number;
+    merged: boolean;
+  }
+) {
+  if (!isRecoveryTask(task) || !task.recoveryOfTaskId) {
+    return null;
+  }
+
+  const originalFailedTask = latestTasks.find(
+    (candidate) => candidate.id === task.recoveryOfTaskId
+  );
+
+  if (!originalFailedTask) {
+    return null;
+  }
+
+  originalFailedTask.status = "pending-pr";
+  originalFailedTask.completedAt = completedAt;
+  originalFailedTask.updatedAt = completedAt;
+  originalFailedTask.error = undefined;
+  originalFailedTask.result = result;
+
+  updateTaskStatus(originalFailedTask.id, "pending-pr");
+
+  return originalFailedTask;
+}
+
 function buildExecutionContext(
   task: AgentTask,
   tasks: AgentTask[]
@@ -881,6 +915,17 @@ if (!review.valid) {
       }
 
       updateTaskStatus(task.id, "pending-pr");
+      finalizeRecoverySuccess(
+        latest.tasks,
+        task,
+        new Date().toISOString(),
+        {
+          branchName,
+          pullRequestUrl: existingPr.html_url,
+          pullRequestNumber: existingPr.number,
+          merged: false,
+        }
+      );
 
       await writeTasksFile(
         latest.tasks,
@@ -896,6 +941,19 @@ if (!review.valid) {
         pullRequestUrl: existingPr.html_url,
         reason: "Open pull request already exists for this task branch",
       });
+
+      if (isRecoveryTask(task)) {
+        await logActivity({
+          type: "recovery-retry-completed",
+          runId,
+          taskId: task.id,
+          reason: "Recovery task completed against an existing pull request.",
+          details: JSON.stringify({
+            recoveryOfTaskId: task.recoveryOfTaskId,
+            pullRequestUrl: existingPr.html_url,
+          }),
+        });
+      }
 
       return NextResponse.json({
         ok: true,
@@ -1059,9 +1117,21 @@ agentRole: task.agentRole,
   branchName,
   pullRequestUrl: pr.html_url,
   pullRequestNumber: pr.number,
-  merged: Boolean(mergeResult),
-};
+        merged: Boolean(mergeResult),
+      };
     }
+
+    const recoveryCompletedTask = finalizeRecoverySuccess(
+      latest.tasks,
+      task,
+      new Date().toISOString(),
+      {
+        branchName,
+        pullRequestUrl: pr.html_url,
+        pullRequestNumber: pr.number,
+        merged: Boolean(mergeResult),
+      }
+    );
 
     updateTaskStatus(task.id, "pending-pr");
 
@@ -1079,6 +1149,19 @@ agentRole: task.agentRole,
       pullRequestUrl: pr.html_url,
       reason: "Pull request created and task is waiting for review",
     });
+
+    if (recoveryCompletedTask) {
+      await logActivity({
+        type: "recovery-retry-completed",
+        runId,
+        taskId: task.id,
+        reason: "Recovery task completed successfully.",
+        details: JSON.stringify({
+          recoveryOfTaskId: task.recoveryOfTaskId,
+          pullRequestUrl: pr.html_url,
+        }),
+      });
+    }
 
     await resetRuntimeFailureCounters(
   "Reset runtime failure counters after successful PR flow"
@@ -1109,53 +1192,106 @@ agentRole: task.agentRole,
     await trackRuntimeFailure(
   "Track runtime failure metadata"
 ).catch(() => {});
+    if (activeTask) {
+      const failedTaskId = activeTask.id;
+      const latest = await readTasksFile().catch(() => null);
+      const latestTask = latest?.tasks.find(
+        (candidate) => candidate.id === failedTaskId
+      );
+
+      if (latest && latestTask) {
+        const failedAt = new Date().toISOString();
+
+        latestTask.status = "failed";
+        latestTask.completedAt = failedAt;
+        latestTask.updatedAt = failedAt;
+        latestTask.error =
+          error instanceof Error ? error.message : "Unknown execution failure";
+
+        updateTaskStatus(failedTaskId, "failed");
+
+        await writeTasksFile(
+          latest.tasks,
+          latest.sha,
+          `Mark task ${failedTaskId} as failed after execution failure`
+        ).catch(() => {});
+      }
+    }
+
     const { state: latestState } = await readStateFile().catch(() => ({
-  state: null,
-  sha: "",
-}));
+      state: null,
+      sha: "",
+    }));
+    const runtimeBlockedUntilTime = latestState?.runtimeBlockedUntil
+      ? new Date(latestState.runtimeBlockedUntil).getTime()
+      : 0;
+    const recoveryRetryBlocked =
+      !latestState ||
+      latestState.recoveryActive === true ||
+      latestState.runnerHealthStatus === "blocked" ||
+      runtimeBlockedUntilTime > Date.now() ||
+      (latestState.consecutiveFailures ?? 0) >= RUNTIME_STOP_FAILURE_THRESHOLD;
 
-if (
-  latestState &&
-  (latestState.consecutiveFailures ?? 0) >= RUNTIME_STOP_FAILURE_THRESHOLD
-) {
-  const blockedUntilTime = latestState.runtimeBlockedUntil
-    ? new Date(latestState.runtimeBlockedUntil).getTime()
-    : 0;
-  const hasActiveRuntimeBlock = blockedUntilTime > Date.now();
+    if (
+      latestState &&
+      (latestState.consecutiveFailures ?? 0) >= RUNTIME_STOP_FAILURE_THRESHOLD
+    ) {
+      const blockedUntilTime = latestState.runtimeBlockedUntil
+        ? new Date(latestState.runtimeBlockedUntil).getTime()
+        : 0;
+      const hasActiveRuntimeBlock = blockedUntilTime > Date.now();
 
-  if (!hasActiveRuntimeBlock) {
-    const runtimeBlockedUntil = new Date(
-      Date.now() + RUNTIME_STOP_BLOCK_MS
-    ).toISOString();
+      if (!hasActiveRuntimeBlock) {
+        const runtimeBlockedUntil = new Date(
+          Date.now() + RUNTIME_STOP_BLOCK_MS
+        ).toISOString();
 
-    await updateStateWith(
-      (currentState) => ({
-        ...currentState,
-        runtimeBlockedUntil,
-      }),
-      "Set temporary runtime block after repeated failures"
-    ).catch(() => {});
+        await updateStateWith(
+          (currentState) => ({
+            ...currentState,
+            runtimeBlockedUntil,
+          }),
+          "Set temporary runtime block after repeated failures"
+        ).catch(() => {});
 
-    await logActivity({
-      type: "runtime-stop-triggered",
-      runId,
-      taskId: activeTask?.id,
-      reason: "Temporary automatic execution block enabled after repeated runtime failures.",
-      runtimeBlockedUntil,
-      consecutiveFailures: latestState.consecutiveFailures,
-    }).catch(() => {});
-  }
-}
+        await logActivity({
+          type: "runtime-stop-triggered",
+          runId,
+          taskId: activeTask?.id,
+          reason:
+            "Temporary automatic execution block enabled after repeated runtime failures.",
+          runtimeBlockedUntil,
+          consecutiveFailures: latestState.consecutiveFailures,
+        }).catch(() => {});
+      }
+    }
 
-if (activeTask) {
-  await createRecoveryTask({
-    failedTask: activeTask,
-    reason:
-      error instanceof Error
-        ? error.message
-        : "Unknown execution failure",
-  });
-}
+    if (activeTask) {
+      if (recoveryRetryBlocked) {
+        await logActivity({
+          type: "recovery-retry-blocked",
+          runId,
+          taskId: activeTask.id,
+          agentName: activeTask.agentName,
+          reason:
+            error instanceof Error ? error.message : "Unknown execution failure",
+          details: JSON.stringify({
+            recoveryActive: latestState?.recoveryActive ?? false,
+            runnerHealthStatus: latestState?.runnerHealthStatus ?? "healthy",
+            runtimeBlockedUntil: latestState?.runtimeBlockedUntil ?? null,
+            consecutiveFailures: latestState?.consecutiveFailures ?? 0,
+          }),
+        }).catch(() => {});
+      } else {
+        await createRecoveryTask({
+          failedTask: activeTask,
+          reason:
+            error instanceof Error
+              ? error.message
+              : "Unknown execution failure",
+        });
+      }
+    }
 
     return NextResponse.json(
       {
