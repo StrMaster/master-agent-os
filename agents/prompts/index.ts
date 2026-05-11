@@ -13,6 +13,7 @@ import { FRONTEND_SPECIALIST_AGENT_PROMPT } from "./frontend-specialist";
 import { BACKEND_SPECIALIST_AGENT_PROMPT } from "./backend-specialist";
 import { TESTING_SPECIALIST_AGENT_PROMPT } from "./testing-specialist";
 import { SECURITY_SPECIALIST_AGENT_PROMPT } from "./security-specialist";
+import { PERFORMANCE_SPECIALIST_AGENT_PROMPT } from "./performance-specialist";
 import { OBSERVABILITY_AGENT_PROMPT } from "./observability";
 import { RECOVERY_INTELLIGENCE_AGENT_PROMPT } from "./recovery-intelligence";
 import { CONTROL_COMMUNICATION_AGENT_PROMPT } from "./control-communication";
@@ -45,6 +46,8 @@ export function getAgentPrompt(role: SmartAgentRole) {
       return TESTING_SPECIALIST_AGENT_PROMPT;
     case "security-specialist":
       return SECURITY_SPECIALIST_AGENT_PROMPT;
+    case "performance-specialist":
+      return PERFORMANCE_SPECIALIST_AGENT_PROMPT;
     case "observability":
       return OBSERVABILITY_AGENT_PROMPT;
     case "recovery-intelligence":

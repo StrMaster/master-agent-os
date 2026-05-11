@@ -13,6 +13,7 @@ export type SmartAgentRole =
   | "backend-specialist"
   | "testing-specialist"
   | "security-specialist"
+  | "performance-specialist"
   | "observability"
   | "recovery-intelligence"
   | "control-communication";
@@ -246,6 +247,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic security signals.",
       "Treat env, token, secret, and permission handling as sensitive.",
       "Recommend approval or caution when runtime or external request risk is elevated.",
+    ],
+  },
+  {
+    id: "performance-specialist",
+    name: "Performance Specialist Agent",
+    purpose:
+      "Evaluates performance risks, expensive runtime loops, frontend rendering cost, and orchestration bottlenecks.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic performance signals.",
+      "Watch for oversized chains, polling loops, repeated recovery overhead, and hot runtime paths.",
+      "Recommend split or cooldown when work looks expensive or repetitive.",
     ],
   },
   {

@@ -120,6 +120,29 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isPerformanceSpecialist =
+    text.includes("performance specialist") ||
+    text.includes("performance review") ||
+    text.includes("slow") ||
+    text.includes("bottleneck") ||
+    text.includes("polling") ||
+    text.includes("hot path") ||
+    text.includes("rendering cost") ||
+    text.includes("expensive loop") ||
+    text.includes("throughput") ||
+    text.includes("latency") ||
+    text.includes("optimization") ||
+    text.includes("cooldown increase");
+
+  if (isPerformanceSpecialist) {
+    return {
+      role: "performance-specialist",
+      agent: getSmartAgent("performance-specialist"),
+      confidence: "high",
+      reason: "Prompt asks for performance or bottleneck guidance.",
+    };
+  }
+
   const isUi =
     text.includes("ui") ||
     text.includes("layout") ||
