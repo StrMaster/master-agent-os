@@ -13,6 +13,7 @@ import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
 import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
 import { logActivity, readActivityFile } from "./activity";
+import { readGithubJson, writeGithubJson } from "./github";
 import {
   incrementStateCounter,
   readStateFile,
@@ -51,77 +52,6 @@ const SAFE_TARGET_FILES = [
 let lastExecutionAt = 0;
 
 // GITHUB JSON HELPERS
-async function readGithubJson(path: string) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to read ${path}: ${res.status}`);
-  }
-
-  const file = (await res.json()) as GitHubFile;
-  const content = Buffer.from(file.content, "base64").toString("utf-8");
-
-  return {
-    json: JSON.parse(content),
-    sha: file.sha,
-  };
-}
-
-async function writeGithubJson(
-  path: string,
-  json: unknown,
-  sha: string,
-  message: string
-) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const content = Buffer.from(JSON.stringify(json, null, 2) + "\n").toString(
-    "base64"
-  );
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message,
-        content,
-        sha,
-        branch: BRANCH,
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to write ${path}: ${res.status} ${text}`);
-  }
-}
-
 async function readProjectState() {
   const token = process.env.GITHUB_TOKEN;
 
