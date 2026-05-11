@@ -159,8 +159,20 @@ function isReadyForAutoRun(task: any, tasks: any[]) {
   return dependenciesSatisfied(task, tasks) && previousWaveSatisfied(task, tasks);
 }
 
-function findReadyTask(tasks: any[]) {
-  return tasks.find((task) => isReadyForAutoRun(task, tasks)) ?? null;
+function findReadyTask(tasks: any[], excludedTaskIds: Set<string> = new Set()) {
+  return (
+    tasks.find(
+      (task) => isReadyForAutoRun(task, tasks) && !excludedTaskIds.has(task.id),
+    ) ?? null
+  );
+}
+
+function isAutoRunSuccessMode(mode?: string) {
+  return (
+    mode === "pull-request-created" ||
+    mode === "pull-request-merged" ||
+    mode === "existing-pr"
+  );
 }
 
 export async function POST(req: NextRequest) {
@@ -411,18 +423,38 @@ if (
       }
 
       if (!nextRunnerRes.ok || nextRunnerData.ok === false) {
+        await logActivity({
+          type: "task-chain-stopped",
+          iterations,
+          taskId: processedTaskId,
+          mode: nextRunnerData?.mode ?? "runner-failed",
+          reason: "Runner returned a non-successful result.",
+        }).catch(() => {});
         break;
       }
 
-      if (
-        !["pull-request-created", "pull-request-merged", "existing-pr"].includes(
-          nextRunnerData.mode,
-        )
-      ) {
+      if (!isAutoRunSuccessMode(nextRunnerData.mode)) {
+        await logActivity({
+          type: "task-chain-stopped",
+          iterations,
+          taskId: processedTaskId,
+          mode: nextRunnerData.mode,
+          reason: "Runner finished without a chain-safe completion mode.",
+        }).catch(() => {});
         break;
       }
 
-      if (iterations >= AUTO_RUN_MAX_ITERATIONS) {
+      const latestTasks = await readTasks();
+      const nextReadyTask = findReadyTask(latestTasks, seenTaskIds);
+
+      if (!nextReadyTask) {
+        await logActivity({
+          type: "task-chain-stopped",
+          iterations,
+          taskId: processedTaskId,
+          mode: nextRunnerData.mode,
+          reason: "No additional approved ready tasks were available.",
+        }).catch(() => {});
         break;
       }
 
@@ -431,6 +463,17 @@ if (
         iterations,
         taskId: processedTaskId,
         mode: nextRunnerData.mode,
+        nextTaskId: nextReadyTask.id,
+      }).catch(() => {});
+    }
+
+    if (iterations >= AUTO_RUN_MAX_ITERATIONS) {
+      await logActivity({
+        type: "task-chain-stopped",
+        iterations,
+        taskId: runnerData?.taskId ?? runnerData?.task?.id ?? availableTask.id,
+        mode: runnerData?.mode,
+        reason: "Auto-run continuation iteration cap reached.",
       }).catch(() => {});
     }
 
