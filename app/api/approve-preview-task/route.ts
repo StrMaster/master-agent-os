@@ -16,6 +16,7 @@ type AgentTask = {
   requiresApproval?: boolean;
   approvedAt?: string;
   approvedBy?: string;
+  updatedAt?: string;
 };
 
 type GitHubFile = {
@@ -160,13 +161,16 @@ export async function POST(req: Request) {
       });
     }
 
+    const approvedAt = new Date().toISOString();
+
     const approvedTask: AgentTask = {
       ...task,
       previewOnly: false,
       requiresApproval: false,
-      approvedAt: new Date().toISOString(),
+      approvedAt,
       approvedBy,
-      status: task.status ?? "todo",
+      updatedAt: approvedAt,
+      status: "queued",
     };
 
     const nextTasks = tasks.map((candidate, index) =>
@@ -186,6 +190,7 @@ export async function POST(req: Request) {
       approvedBy,
       previewOnly: false,
       requiresApproval: false,
+      status: "queued",
     });
 
     return NextResponse.json({
