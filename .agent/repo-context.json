@@ -1,0 +1,51 @@
+{
+  "activeRuntimeAreas": [
+    "app/api/agent-runner/route.ts",
+    "app/api/agent-runner/state.ts",
+    "app/api/agent-runner/tasks.ts",
+    "app/api/agent-runner/memory.ts",
+    "app/api/auto-run/route.ts",
+    "app/api/control-state/route.ts",
+    "app/api/create-task/route.ts",
+    "app/api/deploy-status/route.ts",
+    "app/api/planner-waves/route.ts",
+    "app/page.tsx"
+  ],
+  "legacyZones": [
+    "app/agents/page.tsx",
+    "/api/agent-delegate",
+    "apply-changes",
+    "propose-changes"
+  ],
+  "frontendFiles": [
+    "app/page.tsx",
+    "app/components/ActivityFeed.tsx",
+    "app/components/RunAgentButton.tsx",
+    "app/execution/page.tsx",
+    "app/tasks/page.tsx"
+  ],
+  "backendFiles": [
+    "app/api/agent-runner/route.ts",
+    "app/api/agent-runner/state.ts",
+    "app/api/agent-runner/tasks.ts",
+    "app/api/agent-runner/memory.ts",
+    "app/api/auto-run/route.ts",
+    "app/api/control-state/route.ts",
+    "app/api/create-task/route.ts",
+    "app/api/deploy-status/route.ts",
+    "app/api/planner-waves/route.ts",
+    "app/api/approve-preview-task/route.ts",
+    "app/api/approve-planner-wave/route.ts"
+  ],
+  "orchestrationFiles": [
+    "app/api/agent-runner/route.ts",
+    "app/api/agent-runner/state.ts",
+    "app/api/agent-runner/tasks.ts",
+    "app/api/agent-runner/memory.ts",
+    "app/api/auto-run/route.ts",
+    "app/api/control-state/route.ts",
+    "app/api/deploy-status/route.ts"
+  ],
+  "riskyFiles": [],
+  "updatedAt": "2026-05-11T17:03:16.884Z"
+}
