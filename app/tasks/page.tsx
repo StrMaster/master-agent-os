@@ -1,5 +1,6 @@
 import ControlCenterControls from "../components/ControlCenterControls";
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
+import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
 import RecoveryControlCard from "../components/RecoveryControlCard";
 
 
@@ -26,6 +27,7 @@ type AgentTask = {
   requiresApproval?: boolean;
   approvedAt?: string;
   approvedBy?: string;
+  waveStatus?: "ready" | "blocked" | "completed";
   parentTaskId?: string;
   plannerNotes?: string;
   retryCount?: number;
@@ -285,6 +287,7 @@ function TaskCard({ task }: { task: AgentTask }) {
           {task.executionMode && <Badge>{task.executionMode}</Badge>}
 
           {typeof task.wave === "number" && <Badge>Wave {task.wave}</Badge>}
+          {task.waveStatus && <Badge>{task.waveStatus}</Badge>}
 
           {task.previewOnly && <Badge>Preview</Badge>}
 
@@ -300,6 +303,7 @@ function TaskCard({ task }: { task: AgentTask }) {
         <Meta label="Parent" value={task.parentTaskId} />
         <Meta label="Approved by" value={task.approvedBy} />
         <Meta label="Approved at" value={task.approvedAt} />
+        <Meta label="Wave status" value={task.waveStatus} />
         <Meta
           label="Retries"
           value={
@@ -336,6 +340,12 @@ function TaskCard({ task }: { task: AgentTask }) {
       {needsApproval && (
         <ApprovePreviewTaskButton taskId={task.id} />
       )}
+
+      {typeof task.wave === "number" &&
+        task.parentTaskId &&
+        (task.previewOnly || task.requiresApproval) && (
+          <ApprovePlannerWaveButton taskId={task.id} />
+        )}
     </div>
   );
 }
