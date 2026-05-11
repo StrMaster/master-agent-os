@@ -17,6 +17,7 @@ import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
 
 export const runtime = "nodejs";
 
+// CONFIG
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
@@ -41,6 +42,7 @@ const SAFE_TARGET_FILES = [
 
 let lastExecutionAt = 0;
 
+// TYPES
 type Priority = "low" | "medium" | "high";
 
 type AgentTaskStatus =
@@ -103,6 +105,7 @@ type GitHubFile = {
   content: string;
 };
 
+// GITHUB JSON HELPERS
 async function readGithubJson(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -200,6 +203,7 @@ async function readProjectState() {
   return Buffer.from(file.content, "base64").toString("utf-8");
 }
 
+// TASK HELPERS
 async function readTasksFile() {
   const { json, sha } = await readGithubJson(TASKS_PATH);
 
@@ -287,6 +291,7 @@ async function createRecoveryTask({
   return recoveryTask;
 }
 
+// ACTIVITY HELPERS
 async function logActivity(event: Record<string, unknown>) {
   const { activity, sha } = await readActivityFile();
 
@@ -307,6 +312,7 @@ async function logActivity(event: Record<string, unknown>) {
   );
 }
 
+// STATE HELPERS
 async function readStateFile() {
   const { json, sha } = await readGithubJson(STATE_PATH);
 
@@ -380,6 +386,7 @@ async function releaseRunnerLock() {
   }
 }
 
+// RUNNER SAFETY
 async function readTargetFile(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -407,6 +414,7 @@ async function readTargetFile(path: string) {
   return Buffer.from(file.content, "base64").toString("utf-8");
 }
 
+// TASK SELECTION
 function priorityScore(priority?: Priority) {
   if (priority === "high") return 3;
   if (priority === "medium") return 2;
@@ -463,6 +471,7 @@ function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
   );
 }
 
+// PATCH REVIEW
 function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
   const currentLength = currentContent.trim().length;
   const patchedLength = patchedContent.trim().length;
@@ -563,6 +572,7 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
   return candidates[0] ?? null;
 }
 
+// ROUTE HANDLERS
 export async function GET() {
   try {
     const { tasks } = await readTasksFile();
