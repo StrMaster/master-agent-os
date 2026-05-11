@@ -168,39 +168,54 @@ function getSafetyReviews(task: AgentTask): SafetyReview[] {
   ].filter((review) => notes.includes(review.label.toLowerCase()));
 }
 
+function uniqueById(tasks: AgentTask[]) {
+  return [...new Map(tasks.map((task) => [task.id, task])).values()];
+}
+
 export default async function TasksPage() {
   const rawTasks = await readTasks();
   const tasks = await syncMergedPrTasks(rawTasks);
 
-  const plannerRequired = tasks.filter(
+  const plannerRequired = uniqueById(tasks.filter(
     (task) =>
       task.status === "planner-required" ||
       (task.executionMode === "multi-step" && task.riskLevel === "high")
-  );
+  ));
+  const plannerRequiredIds = new Set(plannerRequired.map((task) => task.id));
 
-  const plannerSplit = tasks.filter((task) => task.status === "planner-split");
+  const plannerSplit = uniqueById(tasks.filter(
+    (task) => task.status === "planner-split" && !plannerRequiredIds.has(task.id)
+  ));
+  const plannerSplitIds = new Set(plannerSplit.map((task) => task.id));
 
-  const waveTasks = tasks.filter(
-  (task) =>
-    (typeof task.wave === "number" || task.parentTaskId) &&
-    task.status !== "done" &&
-    task.status !== "completed" &&
-    task.result?.merged !== true
-);
+  const waveTasks = uniqueById(tasks.filter(
+    (task) =>
+      (typeof task.wave === "number" || task.parentTaskId) &&
+      task.status !== "done" &&
+      task.status !== "completed" &&
+      task.result?.merged !== true &&
+      !plannerRequiredIds.has(task.id) &&
+      !plannerSplitIds.has(task.id)
+  ));
+  const waveTaskIds = new Set(waveTasks.map((task) => task.id));
 
-  const todoTasks = tasks.filter(
-    (task) => task.status === "todo" || task.status === "queued"
-  );
+  const todoTasks = uniqueById(tasks.filter(
+    (task) =>
+      (task.status === "todo" || task.status === "queued") &&
+      !plannerRequiredIds.has(task.id) &&
+      !plannerSplitIds.has(task.id) &&
+      !waveTaskIds.has(task.id)
+  ));
 
-  const failedTasks = tasks.filter((task) => task.status === "failed");
+  const failedTasks = uniqueById(tasks.filter((task) => task.status === "failed"));
 
-  const completedTasks = tasks
+  const completedTasks = uniqueById(tasks
   .filter(
     (task) =>
       task.status === "done" ||
       task.status === "completed" ||
       task.result?.merged === true
-  )
+  ))
   .slice(0, 2);
 
   return (
@@ -321,6 +336,7 @@ function TaskCard({ task }: { task: AgentTask }) {
   const safetyReviews = getSafetyReviews(task);
   const passedReviews = safetyReviews.filter((review) => review.passed);
   const needsAttention = safetyReviews.some((review) => !review.passed);
+  const readyForRun = !needsAttention && passedReviews.length > 0 && !task.result?.pullRequestUrl;
 
   return (
     <div data-task-id={task.id} className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
@@ -404,6 +420,12 @@ function TaskCard({ task }: { task: AgentTask }) {
         </div>
       )}
 
+      {readyForRun && (
+        <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-blue-100/90">
+          Ready for manual run. Auto-run is off, so approve or run this task from the operator controls when you are ready.
+        </div>
+      )}
+
       {task.plannerNotes && (
         <div className="mt-4 rounded-lg border border-purple-500/20 bg-purple-500/10 p-3 text-xs text-purple-100/80">
           {task.plannerNotes}
@@ -428,7 +450,7 @@ function TaskCard({ task }: { task: AgentTask }) {
       )}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        {needsApproval && (
+        {(needsApproval || readyForRun) && (
           <ApprovePreviewTaskButton taskId={task.id} />
         )}
 
