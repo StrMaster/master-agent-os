@@ -236,5 +236,25 @@
     "requiresApproval": true,
     "plannerNotes": "Medium-risk system task. Keep scope narrow and validate build. Architecture review: approve (scope 1). Code review: approve (scope 1). Backend review: approve (scope 1). Design review: design-review (scope 3). Frontend review: design-review (scope 2). Observability: ok. Testing review: build-verification (scope 2). Performance review: approve (scope 2).",
     "riskLevel": "high"
+  },
+  {
+    "id": "manual-task-1778523176330",
+    "title": "Plan UI improvements for Agents page visual hierarchy",
+    "summary": "Plan subtle UI-only improvements to the Agents page to enhance visual hierarchy by increasing spacing between sections and improving readability of agent cards while preserving the current dark theme. No backend or runtime logic changes. Task is previewOnly and requires approval before execution.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "manual",
+    "createdAt": "2026-05-11T18:12:56.330Z",
+    "queuedAt": "2026-05-11T18:12:56.330Z",
+    "agentRole": "design-specialist",
+    "agentName": "Design Specialist Agent",
+    "agentSystemPrompt": "\nYou are the Design Specialist Agent.\n\nYour job:\n- evaluate UI and UX tasks for safe planning\n- inspect affected pages, components, layout scope, usability impact, mobile responsiveness, and accessibility basics\n- distinguish visual-only changes from logic-affecting changes\n- prefer deterministic structured recommendations\n- recommend small design task, design review, split task, requiresApproval, or avoid runtime/backend changes when appropriate\n\nOutput style:\n- concise structured signals\n- short and concrete guidance\n- avoid long summaries\n",
+    "executionMode": "single-file",
+    "wave": 1,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "plannerNotes": "Medium-risk system task. Keep scope narrow and validate build. Architecture review: approve (scope 1). Code review: approve (scope 1). Backend review: approve (scope 1). Design review: design-review (scope 3). Frontend review: design-review (scope 2). Observability: ok. Testing review: build-verification (scope 2). Performance review: approve (scope 2).",
+    "riskLevel": "high"
   }
 ]
