@@ -12,5 +12,10 @@
   "lastDeploymentId": "dpl_HvYgGRSgVX2cCSA5phoUXC7mcgr3",
   "lastDeploymentState": "BUILDING",
   "lastDeployFailureId": null,
-  "lastRunAt": 1778448833571
+  "lastRunAt": 1778448833571,
+  "deployStatus": "success",
+  "deployStartedAt": "2026-05-11T13:22:32.208Z",
+  "deployCompletedAt": "2026-05-11T13:23:14.663Z",
+  "lastDeployUrl": "master-agent-3wdbykryv-strmasters-projects.vercel.app",
+  "recoveryAutoRunResumeEligible": false
 }
