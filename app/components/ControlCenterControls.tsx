@@ -34,6 +34,17 @@ export default function ControlCenterControls() {
     try {
       setLoading(true);
 
+      const optimisticState = state
+        ? {
+            ...state,
+            ...patch,
+          }
+        : state;
+
+      if (optimisticState) {
+        setState(optimisticState);
+      }
+
       const res = await fetch('/api/control-state', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,10 +57,14 @@ export default function ControlCenterControls() {
         throw new Error(data.error ?? 'Failed to update control state');
       }
 
-      setState(data.state);
+      setState((current) => ({
+        ...(current ?? data.state),
+        ...patch,
+      }));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update state');
+      await loadState();
     } finally {
       setLoading(false);
     }
@@ -77,7 +92,7 @@ export default function ControlCenterControls() {
           Autonomous Controls
         </h2>
         <p className="mt-2 text-sm text-white/60">
-          Control auto-run, auto-merge, pause mode, and emergency stop.
+          Control auto-run, auto-merge, pause mode, and emergency stop. Turning Auto-run ON only enables the mode; it does not start execution automatically.
         </p>
       </div>
 
@@ -92,19 +107,7 @@ export default function ControlCenterControls() {
           label="Auto-run"
           active={state.autoRunEnabled}
           disabled={loading || state.emergencyStop}
-          onClick={async () => {
-  const nextAutoRun = !state.autoRunEnabled;
-
-  await updateState({ autoRunEnabled: nextAutoRun });
-
-  if (nextAutoRun) {
-    await fetch("/api/auto-run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ forceRunOnce: true }),
-    });
-  }
-}}
+          onClick={() => updateState({ autoRunEnabled: !state.autoRunEnabled })}
         />
 
         <ControlToggle
