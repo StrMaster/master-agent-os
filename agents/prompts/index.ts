@@ -6,6 +6,7 @@ import { UI_AGENT_PROMPT } from "./ui";
 import { DEPLOY_AGENT_PROMPT } from "./deploy";
 import { RECOVERY_AGENT_PROMPT } from "./recovery";
 import { REPO_CONTEXT_AGENT_PROMPT } from "./repo-context";
+import { ARCHITECTURE_REVIEWER_AGENT_PROMPT } from "./architecture-reviewer";
 
 export function getAgentPrompt(role: SmartAgentRole) {
   switch (role) {
@@ -21,6 +22,8 @@ export function getAgentPrompt(role: SmartAgentRole) {
       return RECOVERY_AGENT_PROMPT;
     case "repo-context":
       return REPO_CONTEXT_AGENT_PROMPT;
+    case "architecture-reviewer":
+      return ARCHITECTURE_REVIEWER_AGENT_PROMPT;
     case "senior-execution":
     default:
       return EXECUTION_AGENT_PROMPT;

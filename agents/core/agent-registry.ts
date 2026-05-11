@@ -5,7 +5,8 @@ export type SmartAgentRole =
   | "senior-ui"
   | "senior-deploy"
   | "senior-recovery"
-  | "repo-context";
+  | "repo-context"
+  | "architecture-reviewer";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -124,6 +125,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic file lists over prose.",
       "Track active and legacy architecture zones separately.",
       "Keep context lightweight and structured.",
+    ],
+  },
+  {
+    id: "architecture-reviewer",
+    name: "Architecture Reviewer Agent",
+    purpose:
+      "Evaluates planner-generated tasks for scope size, risky files, runtime/core changes and legacy usage.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic safety signals.",
+      "Recommend approval, previewOnly, requiresApproval, or split.",
+      "Flag runtime/core and legacy areas carefully.",
     ],
   },
 ];

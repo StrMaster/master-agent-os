@@ -7,6 +7,11 @@ import {
   readRepoContext,
   updateRepoContext,
 } from "@/agents/core/repo-context";
+import {
+  applyArchitectureReview,
+  reviewArchitectureTask,
+} from "@/agents/core/architecture-reviewer";
+import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -707,50 +712,63 @@ if (
 }
 
     const repoContext = await readRepoContext();
+    const runtimeMemory = await readRuntimeMemoryFile();
     const finalizedGeneratedTasks = plannerDriven
       ? generatedTasks.map((task) =>
           hardenPlannerGeneratedTask(task, prompt, repoContext)
         )
       : generatedTasks;
+    const reviewedGeneratedTasks = plannerDriven
+      ? await Promise.all(
+          finalizedGeneratedTasks.map(async (task) => {
+            const review = await reviewArchitectureTask(task, {
+              repoContext,
+              runtimeMemory: runtimeMemory.memory,
+            });
 
-    const updatedTasks = [...tasks, ...finalizedGeneratedTasks];
+            return applyArchitectureReview(task, review);
+          })
+        )
+      : finalizedGeneratedTasks;
+
+    const updatedTasks = [...tasks, ...reviewedGeneratedTasks];
 
     await writeGithubJson(
       TASKS_PATH,
       updatedTasks,
       sha,
-      `Create manual agent task: ${finalizedGeneratedTasks[0].id}`
+      `Create manual agent task: ${reviewedGeneratedTasks[0].id}`
     );
 
     await logActivity({
-  type: "manual-task-created",
-  taskId: finalizedGeneratedTasks[0].id,
-  summary: finalizedGeneratedTasks[0].title,
-  targetFile: finalizedGeneratedTasks[0].targetFile,
-  priority: finalizedGeneratedTasks[0].priority,
-  reasoning: reasoningHint,
-});
+      type: "manual-task-created",
+      taskId: reviewedGeneratedTasks[0].id,
+      summary: reviewedGeneratedTasks[0].title,
+      targetFile: reviewedGeneratedTasks[0].targetFile,
+      priority: reviewedGeneratedTasks[0].priority,
+      reasoning: reasoningHint,
+    });
 
     await updateRepoContext(
       (context) => ({
         ...context,
         activeRuntimeAreas: [
           ...(context.activeRuntimeAreas ?? []),
-          ...finalizedGeneratedTasks.map((task) => task.targetFile),
+          ...reviewedGeneratedTasks.map((task) => task.targetFile),
         ],
       }),
-      `Record repo context for task ${finalizedGeneratedTasks[0].id}`,
+      `Record repo context for task ${reviewedGeneratedTasks[0].id}`,
       {
-        taskId: finalizedGeneratedTasks[0].id,
-        targetFile: finalizedGeneratedTasks[0].targetFile,
+        taskId: reviewedGeneratedTasks[0].id,
+        targetFile: reviewedGeneratedTasks[0].targetFile,
       }
     ).catch(() => {});
 
-await updateConversationMemory({
-  prompt,
-  summary,
-  targetFile,
-});
+    await updateConversationMemory({
+      prompt,
+      summary,
+      targetFile,
+    });
 
 let conversationalPrefix = "Understood.";
 
@@ -778,7 +796,7 @@ if (
     "Continuing activity feed improvements.";
 }
 
-    const primaryTask = finalizedGeneratedTasks[0];
+    const primaryTask = reviewedGeneratedTasks[0];
 
 const taskWord = generatedTasks.length === 1 ? "task" : "tasks";
 
@@ -789,20 +807,20 @@ const followUp = reasoningHint
   ? `${reasoningHint} You can monitor execution progress in the Activity Feed.`
   : "You can monitor execution progress in the Activity Feed.";
 
-for (const task of finalizedGeneratedTasks) {
-  addRuntimeTask({
-    id: task.id,
-    title: task.title,
-    status: "queued",
-  });
-}
+    for (const task of reviewedGeneratedTasks) {
+      addRuntimeTask({
+        id: task.id,
+        title: task.title,
+        status: "queued",
+      });
+    }
 
 return NextResponse.json({
   ok: true,
   mode: "manual-task-created",
   message: conversationalMessage,
   followUp,
-  tasks: finalizedGeneratedTasks,
+      tasks: reviewedGeneratedTasks,
 });
   } catch (error) {
     return NextResponse.json(

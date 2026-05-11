@@ -62,6 +62,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isArchitectureReview =
+    text.includes("architecture") ||
+    text.includes("scope size") ||
+    text.includes("risky files") ||
+    text.includes("runtime core") ||
+    text.includes("split task");
+
+  if (isArchitectureReview) {
+    return {
+      role: "architecture-reviewer",
+      agent: getSmartAgent("architecture-reviewer"),
+      confidence: "high",
+      reason: "Prompt asks for architecture review or structural safety guidance.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||
