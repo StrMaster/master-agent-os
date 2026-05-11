@@ -140,6 +140,20 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const runtimeBlockedUntilMs = state.runtimeBlockedUntil
+      ? new Date(state.runtimeBlockedUntil).getTime()
+      : 0;
+
+    if (!forceRunOnce && runtimeBlockedUntilMs > Date.now()) {
+      return NextResponse.json({
+        ok: false,
+        mode: "runtime-blocked",
+        message: "Automatic execution is temporarily blocked after repeated runtime failures.",
+        runtimeBlockedUntil: state.runtimeBlockedUntil,
+        retryAfterMs: runtimeBlockedUntilMs - Date.now(),
+      });
+    }
+
     if (!state.autoRunEnabled && !forceRunOnce) {
       return NextResponse.json({
         ok: false,

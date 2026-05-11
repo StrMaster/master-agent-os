@@ -55,6 +55,7 @@ export type AgentState = {
   failedRuns?: number;
   lastFailureAt?: string;
   consecutiveFailures?: number;
+  runtimeBlockedUntil?: string;
   recoveryActive?: boolean;
 };
 

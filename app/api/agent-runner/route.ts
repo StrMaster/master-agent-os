@@ -40,6 +40,8 @@ const RUNNER_STALE_LOCK_MS = 5 * 60 * 1000;
 const MAX_TASK_RETRIES = 3;
 const RETRY_COOLDOWN_MS = 5 * 60 * 1000;
 const MIN_EXECUTION_SPACING_MS = 15 * 1000;
+const RUNTIME_STOP_FAILURE_THRESHOLD = 3;
+const RUNTIME_STOP_BLOCK_MS = 15 * 60 * 1000;
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -1026,6 +1028,43 @@ agentRole: task.agentRole,
     await trackRuntimeFailure(
   "Track runtime failure metadata"
 ).catch(() => {});
+    const { state: latestState } = await readStateFile().catch(() => ({
+  state: null,
+  sha: "",
+}));
+
+if (
+  latestState &&
+  (latestState.consecutiveFailures ?? 0) >= RUNTIME_STOP_FAILURE_THRESHOLD
+) {
+  const blockedUntilTime = latestState.runtimeBlockedUntil
+    ? new Date(latestState.runtimeBlockedUntil).getTime()
+    : 0;
+  const hasActiveRuntimeBlock = blockedUntilTime > Date.now();
+
+  if (!hasActiveRuntimeBlock) {
+    const runtimeBlockedUntil = new Date(
+      Date.now() + RUNTIME_STOP_BLOCK_MS
+    ).toISOString();
+
+    await updateStateWith(
+      (currentState) => ({
+        ...currentState,
+        runtimeBlockedUntil,
+      }),
+      "Set temporary runtime block after repeated failures"
+    ).catch(() => {});
+
+    await logActivity({
+      type: "runtime-stop-triggered",
+      runId,
+      taskId: activeTask?.id,
+      reason: "Temporary automatic execution block enabled after repeated runtime failures.",
+      runtimeBlockedUntil,
+      consecutiveFailures: latestState.consecutiveFailures,
+    }).catch(() => {});
+  }
+}
 
 if (activeTask) {
   await createRecoveryTask({

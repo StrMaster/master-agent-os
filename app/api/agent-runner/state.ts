@@ -133,6 +133,7 @@ export async function resetRuntimeFailureCounters(message: string) {
       recentDeployFailures: 0,
       failedRuns: 0,
       consecutiveFailures: 0,
+      runtimeBlockedUntil: undefined,
     }),
     message
   );
