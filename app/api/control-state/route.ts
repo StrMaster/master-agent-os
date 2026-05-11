@@ -23,6 +23,7 @@ type ControlState = {
   consecutiveFailures?: number;
   runtimeBlockedUntil?: string;
   runnerHealthStatus?: "healthy" | "degraded" | "blocked";
+  recoveryAutoRunResumeEligible?: boolean;
 };
 
 type GitHubFile = {
@@ -128,6 +129,8 @@ runtimeBlockedUntil:
   state.runtimeBlockedUntil,
 runnerHealthStatus:
   state.runnerHealthStatus ?? "healthy",
+recoveryAutoRunResumeEligible:
+  state.recoveryAutoRunResumeEligible ?? false,
       },
     });
   } catch (error) {
@@ -166,8 +169,27 @@ export async function POST(req: Request) {
       nextState.emergencyStop = body.emergencyStop;
     }
 
+    if (typeof body.recoveryActive === "boolean") {
+      nextState.recoveryActive = body.recoveryActive;
+    }
+
+    if (typeof body.recoveryAutoRunResumeEligible === "boolean") {
+      nextState.recoveryAutoRunResumeEligible =
+        body.recoveryAutoRunResumeEligible;
+    }
+
+    if (
+      typeof body.runtimeBlockedUntil === "string" ||
+      body.runtimeBlockedUntil === null
+    ) {
+      nextState.runtimeBlockedUntil =
+        body.runtimeBlockedUntil ?? undefined;
+    }
+
     if (body.clearRecovery === true) {
   nextState.recoveryActive = false;
+  nextState.recoveryAutoRunResumeEligible = false;
+  nextState.runtimeBlockedUntil = undefined;
   nextState.recentFailedRuns = 0;
   nextState.recentValidationFailures = 0;
   nextState.recentMergeFailures = 0;

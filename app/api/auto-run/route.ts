@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logActivity } from "../agent-runner/activity";
 
 export const runtime = "nodejs";
 
@@ -8,6 +9,7 @@ const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 
 const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
+const RUNTIME_STOP_FAILURE_THRESHOLD = 3;
 
 let lastAutoRunAt: number | null = null;
 
@@ -132,6 +134,56 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const runtimeBlockedUntilMs = state.runtimeBlockedUntil
+      ? new Date(state.runtimeBlockedUntil).getTime()
+      : 0;
+
+    if (
+      state.recoveryActive &&
+      runtimeBlockedUntilMs > 0 &&
+      runtimeBlockedUntilMs <= Date.now() &&
+      (state.consecutiveFailures ?? 0) < RUNTIME_STOP_FAILURE_THRESHOLD
+    ) {
+      const nextAutoRunEnabled =
+        state.recoveryAutoRunResumeEligible === true
+          ? true
+          : state.autoRunEnabled;
+
+      const { data: resumeStateData } = await internalJsonFetch(
+        req,
+        "/api/control-state",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            recoveryActive: false,
+            recoveryAutoRunResumeEligible: false,
+            runtimeBlockedUntil: null,
+            autoRunEnabled: nextAutoRunEnabled,
+          }),
+        }
+      );
+
+      await logActivity({
+        type: "recovery-mode-auto-resumed",
+        reason: "Recovery mode cleared after runtime block expired and health improved.",
+        runtimeBlockedUntil: state.runtimeBlockedUntil,
+        consecutiveFailures: state.consecutiveFailures ?? 0,
+        autoRunEnabled: resumeStateData?.state?.autoRunEnabled ?? nextAutoRunEnabled,
+      }).catch(() => {});
+
+      if (resumeStateData?.ok && resumeStateData.state) {
+        Object.assign(state, resumeStateData.state);
+      } else {
+        state.recoveryActive = false;
+        state.recoveryAutoRunResumeEligible = false;
+        state.runtimeBlockedUntil = undefined;
+        state.autoRunEnabled = nextAutoRunEnabled;
+      }
+    }
+
     if (state.recoveryActive) {
       return NextResponse.json({
         ok: false,
@@ -139,10 +191,6 @@ export async function POST(req: NextRequest) {
         message: "Recovery mode is active",
       });
     }
-
-    const runtimeBlockedUntilMs = state.runtimeBlockedUntil
-      ? new Date(state.runtimeBlockedUntil).getTime()
-      : 0;
 
     if (!forceRunOnce && runtimeBlockedUntilMs > Date.now()) {
       return NextResponse.json({

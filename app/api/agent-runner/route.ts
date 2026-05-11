@@ -436,6 +436,8 @@ if (stopCheck.stop) {
         recoveryActive: true,
         autoRunEnabled: false,
         autoMergeEnabled: false,
+        recoveryAutoRunResumeEligible:
+          currentState.autoRunEnabled === true,
       }),
       "Enable recovery mode after stop condition"
     ).catch(() => {});
