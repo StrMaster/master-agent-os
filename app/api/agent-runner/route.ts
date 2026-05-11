@@ -742,12 +742,12 @@ agentRole: task.agentRole,
       "High-risk multi-step task blocked from direct execution. Planner waves required.",
   });
 
-  task.status = "queued";
+  task.status = "todo";
 task.updatedAt = new Date().toISOString();
 task.completedAt = undefined;
 tasks[taskIndex] = task;
 
-updateTaskStatus(task.id, "queued");
+updateTaskStatus(task.id, "todo");
 
 await writeTasksFile(
   tasks,
