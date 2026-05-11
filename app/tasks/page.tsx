@@ -265,6 +265,7 @@ function TaskCard({ task }: { task: AgentTask }) {
     "planner-required",
     "planner-split",
     "failed",
+    "running",
   ].includes(task.status ?? "");
 
   return (
