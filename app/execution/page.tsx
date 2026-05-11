@@ -1,5 +1,4 @@
 import ActivityFeed from "../components/ActivityFeed";
-import AgentsWorkspace from "../components/AgentsWorkspace";
 import RuntimeControlPanel from "../components/RuntimeControlPanel";
 import PendingPRQueue from "../components/PendingPRQueue";
 import DeleteTaskButton from "../components/DeleteTaskButton";
@@ -113,8 +112,6 @@ export default async function ExecutionPage() {
       <RuntimeDashboard tasks={tasks} activity={activity} />
 
       <RuntimeControlPanel />
-
-      <AgentsWorkspace initialActivity={activity} />
 
       <ActivityFeed initialActivity={activity} />
 
