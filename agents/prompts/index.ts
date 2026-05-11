@@ -8,6 +8,7 @@ import { RECOVERY_AGENT_PROMPT } from "./recovery";
 import { REPO_CONTEXT_AGENT_PROMPT } from "./repo-context";
 import { ARCHITECTURE_REVIEWER_AGENT_PROMPT } from "./architecture-reviewer";
 import { CODE_REVIEWER_AGENT_PROMPT } from "./code-reviewer";
+import { DESIGN_SPECIALIST_AGENT_PROMPT } from "./design-specialist";
 import { FRONTEND_SPECIALIST_AGENT_PROMPT } from "./frontend-specialist";
 import { BACKEND_SPECIALIST_AGENT_PROMPT } from "./backend-specialist";
 import { OBSERVABILITY_AGENT_PROMPT } from "./observability";
@@ -32,6 +33,8 @@ export function getAgentPrompt(role: SmartAgentRole) {
       return ARCHITECTURE_REVIEWER_AGENT_PROMPT;
     case "code-reviewer":
       return CODE_REVIEWER_AGENT_PROMPT;
+    case "design-specialist":
+      return DESIGN_SPECIALIST_AGENT_PROMPT;
     case "frontend-specialist":
       return FRONTEND_SPECIALIST_AGENT_PROMPT;
     case "backend-specialist":

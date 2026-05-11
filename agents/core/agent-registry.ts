@@ -8,6 +8,7 @@ export type SmartAgentRole =
   | "repo-context"
   | "architecture-reviewer"
   | "code-reviewer"
+  | "design-specialist"
   | "frontend-specialist"
   | "backend-specialist"
   | "observability"
@@ -163,6 +164,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic review signals.",
       "Flag runtime/core edits and repeated risky files.",
       "Recommend merge caution or execution caution instead of noisy warnings.",
+    ],
+  },
+  {
+    id: "design-specialist",
+    name: "Design Specialist Agent",
+    purpose:
+      "Evaluates UI and UX tasks for visual scope, layout risk, mobile responsiveness, and accessibility basics.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic design safety signals.",
+      "Keep visual work separate from runtime and backend files.",
+      "Recommend split or approval when usability or accessibility risk is high.",
     ],
   },
   {
