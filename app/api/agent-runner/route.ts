@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { generateCodePatch } from "@/app/lib/code-patch-generator";
 import { updateGithubFile } from "@/app/lib/github-file-updater";
 import {
@@ -22,13 +23,11 @@ import {
   writeStateFile,
 } from "./state";
 import { createRecoveryTask, readTasksFile, writeTasksFile } from "./tasks";
-import type { AgentState, AgentTask, GitHubFile, Priority } from "./types";
+import type { AgentTask, GitHubFile, Priority } from "./types";
 
-
-
+// Flow: task -> validation -> branch -> PR -> optional merge -> recovery
 export const runtime = "nodejs";
 
-// CONFIG
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
@@ -50,7 +49,6 @@ const SAFE_TARGET_FILES = [
 
 let lastExecutionAt = 0;
 
-// GITHUB JSON HELPERS
 async function readProjectState() {
   const token = process.env.GITHUB_TOKEN;
 
@@ -77,7 +75,6 @@ async function readProjectState() {
   return Buffer.from(file.content, "base64").toString("utf-8");
 }
 
-// RUNNER SAFETY
 async function readTargetFile(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -105,7 +102,6 @@ async function readTargetFile(path: string) {
   return Buffer.from(file.content, "base64").toString("utf-8");
 }
 
-// TASK SELECTION
 function priorityScore(priority?: Priority) {
   if (priority === "high") return 3;
   if (priority === "medium") return 2;
@@ -162,7 +158,6 @@ function previousWaveCompleted(task: AgentTask, tasks: AgentTask[]) {
   );
 }
 
-// PATCH REVIEW
 function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
   const currentLength = currentContent.trim().length;
   const patchedLength = patchedContent.trim().length;
@@ -263,7 +258,6 @@ function selectNextTask(tasks: AgentTask[], activity: any[]) {
   return candidates[0] ?? null;
 }
 
-// ROUTE HANDLERS
 export async function GET() {
   try {
     const { tasks } = await readTasksFile();
