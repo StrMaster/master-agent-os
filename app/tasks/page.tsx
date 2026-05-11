@@ -1,5 +1,6 @@
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
+import RemoveTaskButton from "../components/RemoveTaskButton";
 
 
 export const dynamic = "force-dynamic";
@@ -258,6 +259,14 @@ function TaskSection({
 function TaskCard({ task }: { task: AgentTask }) {
   const needsApproval = task.previewOnly || task.requiresApproval;
 
+  const canDelete = [
+    "todo",
+    "queued",
+    "planner-required",
+    "planner-split",
+    "failed",
+  ].includes(task.status ?? "");
+
   return (
     <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -331,9 +340,13 @@ function TaskCard({ task }: { task: AgentTask }) {
         </a>
       )}
 
-      {needsApproval && (
-        <ApprovePreviewTaskButton taskId={task.id} />
-      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {needsApproval && (
+          <ApprovePreviewTaskButton taskId={task.id} />
+        )}
+
+        {canDelete && <RemoveTaskButton taskId={task.id} />}
+      </div>
 
       {typeof task.wave === "number" &&
         task.parentTaskId &&
