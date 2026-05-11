@@ -96,6 +96,30 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isSecuritySpecialist =
+    text.includes("security specialist") ||
+    text.includes("security review") ||
+    text.includes("secret") ||
+    text.includes("token") ||
+    text.includes("env") ||
+    text.includes("permission") ||
+    text.includes("authorization") ||
+    text.includes("auth") ||
+    text.includes("csrf") ||
+    text.includes("xss") ||
+    text.includes("unsafe external request") ||
+    text.includes("runtime exposure") ||
+    text.includes("deploy security");
+
+  if (isSecuritySpecialist) {
+    return {
+      role: "security-specialist",
+      agent: getSmartAgent("security-specialist"),
+      confidence: "high",
+      reason: "Prompt asks for security or runtime safety guidance.",
+    };
+  }
+
   const isUi =
     text.includes("ui") ||
     text.includes("layout") ||
