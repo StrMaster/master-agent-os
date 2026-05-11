@@ -24,6 +24,8 @@ type ActivityEvent = {
   priority?: string;
   reasoning?: string;
   wave?: number;
+  agentName?: string;
+agentRole?: string;
 };
 
 export default function ActivityFeed() {
