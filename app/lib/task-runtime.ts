@@ -3,7 +3,8 @@ export type RuntimeTaskStatus =
   | "running"
   | "pending-pr"
   | "completed"
-  | "failed";
+  | "failed"
+  | "planner-required";
 
 type RuntimeTask = {
   id: string;
