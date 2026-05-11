@@ -12,6 +12,7 @@ import { validatePatch } from "@/app/lib/patch-validator";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
 import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
+import { logActivity, readActivityFile } from "./activity";
 import type { AgentState, AgentTask, GitHubFile, Priority } from "./types";
 
 
@@ -24,7 +25,6 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 
 const TASKS_PATH = ".agent/tasks.json";
-const ACTIVITY_PATH = ".agent/activity.json";
 const STATE_PATH = ".agent/state.json";
 const PROJECT_STATE_PATH = ".agent/PROJECT_STATE.md";
 
@@ -155,15 +155,6 @@ async function writeTasksFile(tasks: AgentTask[], sha: string, message: string) 
   await writeGithubJson(TASKS_PATH, tasks, sha, message);
 }
 
-async function readActivityFile() {
-  const { json, sha } = await readGithubJson(ACTIVITY_PATH);
-
-  return {
-    activity: Array.isArray(json) ? json : [],
-    sha,
-  };
-}
-
 async function createRecoveryTask({
   failedTask,
   reason,
@@ -227,27 +218,6 @@ async function createRecoveryTask({
   });
 
   return recoveryTask;
-}
-
-// ACTIVITY HELPERS
-async function logActivity(event: Record<string, unknown>) {
-  const { activity, sha } = await readActivityFile();
-
-  const updatedActivity = [
-    {
-      id: crypto.randomUUID(),
-      timestamp: new Date().toISOString(),
-      ...event,
-    },
-    ...activity,
-  ].slice(0, 150);
-
-  await writeGithubJson(
-    ACTIVITY_PATH,
-    updatedActivity,
-    sha,
-    "Log agent activity"
-  );
 }
 
 // STATE HELPERS
