@@ -58,6 +58,29 @@ const SAFE_TARGET_FILES = [
 
 let lastExecutionAt = 0;
 
+async function internalJsonFetch(req: Request, path: string) {
+  const res = await fetch(new URL(path, req.url), {
+    headers: {
+      cookie: req.headers.get("cookie") ?? "",
+    },
+    cache: "no-store",
+  });
+
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    const text = await res.text();
+    throw new Error(
+      `${path} returned non-JSON response: ${res.status} ${text.slice(0, 80)}`
+    );
+  }
+
+  return {
+    res,
+    data: await res.json(),
+  };
+}
+
 async function readProjectState() {
   const token = process.env.GITHUB_TOKEN;
 
@@ -206,6 +229,14 @@ function reviewGeneratedPatch(currentContent: string, patchedContent: string) {
 
 function isRecoveryTask(task: AgentTask) {
   return task.agentRole === "senior-recovery" || Boolean(task.recoveryOfTaskId);
+}
+
+function isSafeRuntimeBlock(runtimeBlockedUntil?: string) {
+  if (!runtimeBlockedUntil) {
+    return true;
+  }
+
+  return new Date(runtimeBlockedUntil).getTime() <= Date.now();
 }
 
 function finalizeRecoverySuccess(
@@ -1041,14 +1072,29 @@ agentRole: task.agentRole,
     }
 
     let mergeResult = null;
+    const { data: mergeStateData } = await internalJsonFetch(req, "/api/control-state").catch(() => ({
+      data: null,
+    }));
+    const mergeState = mergeStateData?.state ?? state;
+    const taskWasApproved =
+      Boolean(task.approvedAt || task.approvedBy) ||
+      (!task.previewOnly && !task.requiresApproval);
+    const deploySafe = mergeState.deployStatus !== "failed" && !mergeState.deployError;
+    const runtimeSafe =
+      isSafeRuntimeBlock(mergeState.runtimeBlockedUntil) &&
+      mergeState.recoveryActive !== true &&
+      mergeState.runnerHealthStatus !== "blocked";
 
-if (state.autoMergeEnabled && typeof pr.number === "number") {
+if (mergeState.autoMergeEnabled && typeof pr.number === "number") {
   const canAutoMerge =
     prValidation &&
+    taskWasApproved &&
     prValidation.mergeable === true &&
     prValidation.draft !== true &&
     prValidation.merged !== true &&
     prValidation.state === "open" &&
+    deploySafe &&
+    runtimeSafe &&
     task.targetFile &&
     SAFE_TARGET_FILES.includes(task.targetFile);
 
@@ -1083,20 +1129,26 @@ agentRole: task.agentRole,
 );
     }
   } else {
-    await logActivity({
-      type: "auto-merge-blocked",
-      runId,
-      taskId: task.id,
-      branch: branchName,
+      await logActivity({
+        type: "auto-merge-blocked",
+        runId,
+        taskId: task.id,
+        branch: branchName,
       pullRequestUrl: pr.html_url,
       reason: "Auto-merge blocked by safety checks",
-      details: JSON.stringify({
-        autoMergeEnabled: state.autoMergeEnabled,
+        details: JSON.stringify({
+        autoMergeEnabled: mergeState.autoMergeEnabled,
         hasValidation: Boolean(prValidation),
         mergeable: prValidation?.mergeable,
         draft: prValidation?.draft,
         merged: prValidation?.merged,
         state: prValidation?.state,
+        deployStatus: mergeState.deployStatus,
+        deployError: mergeState.deployError,
+        runtimeBlockedUntil: mergeState.runtimeBlockedUntil,
+        recoveryActive: mergeState.recoveryActive,
+        runnerHealthStatus: mergeState.runnerHealthStatus,
+        taskWasApproved,
         safeTargetFile:
           Boolean(task.targetFile) && SAFE_TARGET_FILES.includes(task.targetFile),
       }),

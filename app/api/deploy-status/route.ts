@@ -21,6 +21,9 @@ type AgentState = {
   deployCompletedAt?: string;
   deployError?: string;
   lastDeployUrl?: string;
+  recoveryActive?: boolean;
+  autoRunEnabled?: boolean;
+  recoveryAutoRunResumeEligible?: boolean;
 };
 
 type DeployStatus = "pending" | "success" | "failed";
@@ -251,6 +254,17 @@ export async function GET() {
         : deploySucceeded
           ? 0
           : currentState.recentDeployFailures ?? 0,
+      recoveryActive: deployFailed ? true : deploySucceeded ? false : currentState.recoveryActive,
+      autoRunEnabled: deployFailed
+        ? false
+        : deploySucceeded && currentState.recoveryAutoRunResumeEligible
+          ? true
+          : currentState.autoRunEnabled,
+      recoveryAutoRunResumeEligible: deployFailed
+        ? currentState.autoRunEnabled === true
+        : deploySucceeded
+          ? false
+          : currentState.recoveryAutoRunResumeEligible,
     };
 
     if (deployFailed && !(currentState.deployStatus === "failed" && currentState.lastDeployUrl === deployment.url)) {

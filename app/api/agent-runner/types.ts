@@ -19,6 +19,8 @@ export type AgentTask = {
   waveStatus?: "ready" | "blocked" | "completed";
   previewOnly?: boolean;
   requiresApproval?: boolean;
+  approvedAt?: string;
+  approvedBy?: string;
   parentTaskId?: string;
   plannerNotes?: string;
   retryCount?: number;
