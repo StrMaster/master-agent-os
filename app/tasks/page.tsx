@@ -41,6 +41,11 @@ type AgentTask = {
   };
 };
 
+type SafetyReview = {
+  label: string;
+  passed: boolean;
+};
+
 async function readTasks(): Promise<AgentTask[]> {
   const token = process.env.GITHUB_TOKEN;
 
@@ -116,6 +121,51 @@ async function syncMergedPrTasks(tasks: AgentTask[]) {
       return task;
     })
   );
+}
+
+function getSafetyReviews(task: AgentTask): SafetyReview[] {
+  const notes = String(task.plannerNotes ?? "").toLowerCase();
+
+  return [
+    {
+      label: "Architecture",
+      passed: notes.includes("architecture review: approve"),
+    },
+    {
+      label: "Code",
+      passed: notes.includes("code review: approve"),
+    },
+    {
+      label: "Backend",
+      passed: notes.includes("backend review: approve"),
+    },
+    {
+      label: "Frontend",
+      passed:
+        notes.includes("frontend review: approve") ||
+        notes.includes("frontend review: design-review"),
+    },
+    {
+      label: "Design",
+      passed:
+        notes.includes("design review: approve") ||
+        notes.includes("design review: design-review"),
+    },
+    {
+      label: "Testing",
+      passed:
+        notes.includes("testing review: approve") ||
+        notes.includes("testing review: build-verification"),
+    },
+    {
+      label: "Performance",
+      passed: notes.includes("performance review: approve"),
+    },
+    {
+      label: "Observability",
+      passed: notes.includes("observability: ok"),
+    },
+  ].filter((review) => notes.includes(review.label.toLowerCase()));
 }
 
 export default async function TasksPage() {
@@ -268,8 +318,12 @@ function TaskCard({ task }: { task: AgentTask }) {
     "running",
   ].includes(task.status ?? "");
 
+  const safetyReviews = getSafetyReviews(task);
+  const passedReviews = safetyReviews.filter((review) => review.passed);
+  const needsAttention = safetyReviews.some((review) => !review.passed);
+
   return (
-    <div className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
+    <div data-task-id={task.id} className="rounded-xl border border-white/10 bg-neutral-950/60 p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="text-sm font-semibold text-white">
@@ -296,6 +350,12 @@ function TaskCard({ task }: { task: AgentTask }) {
           {task.previewOnly && <Badge>Preview</Badge>}
 
           {task.requiresApproval && <Badge>Approval required</Badge>}
+
+          {passedReviews.length > 0 && (
+            <SafeBadge>
+              Safe: {passedReviews.length}/{safetyReviews.length} passed
+            </SafeBadge>
+          )}
         </div>
       </div>
 
@@ -317,6 +377,32 @@ function TaskCard({ task }: { task: AgentTask }) {
           }
         />
       </div>
+
+      {safetyReviews.length > 0 && (
+        <div className={`mt-4 rounded-lg border p-3 text-xs ${
+          needsAttention
+            ? "border-yellow-500/20 bg-yellow-500/10 text-yellow-100/90"
+            : "border-emerald-500/20 bg-emerald-500/10 text-emerald-100/90"
+        }`}>
+          <div className="font-semibold">
+            {needsAttention ? "Safety review: needs attention" : "Safe code: passed review gates"}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {safetyReviews.map((review) => (
+              <span
+                key={review.label}
+                className={`rounded-md border px-2 py-1 ${
+                  review.passed
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+                    : "border-yellow-500/30 bg-yellow-500/10 text-yellow-100"
+                }`}
+              >
+                {review.label}: {review.passed ? "Passed" : "Review"}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {task.plannerNotes && (
         <div className="mt-4 rounded-lg border border-purple-500/20 bg-purple-500/10 p-3 text-xs text-purple-100/80">
@@ -361,6 +447,14 @@ function TaskCard({ task }: { task: AgentTask }) {
 function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white/60">
+      {children}
+    </span>
+  );
+}
+
+function SafeBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200">
       {children}
     </span>
   );
