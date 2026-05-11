@@ -75,11 +75,11 @@ lastRetryAt?: string;
     pullRequestUrl?: string;
     pullRequestNumber?: number;
     merged?: boolean;
+  };
   agentRole?: string;
 agentName?: string;
 agentSystemPrompt?: string;
 routingReason?: string;
-  };
 };
 
 type AgentState = {
