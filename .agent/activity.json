@@ -1,5 +1,18 @@
 [
   {
+    "id": "157ab2ae-6535-485f-93ef-f118d864f50e",
+    "timestamp": "2026-05-11T17:10:13.585Z",
+    "type": "performance-review-completed",
+    "taskId": "manual-task-1778519402554",
+    "targetFile": "app/page.tsx",
+    "recommendation": "approve",
+    "scopeSize": 4,
+    "previewOnly": true,
+    "requiresApproval": true,
+    "shouldSplit": false,
+    "signals": "[{\"code\":\"frontend-impact\",\"severity\":\"low\",\"detail\":\"Target is a frontend surface: app/page.tsx\"},{\"code\":\"multi-step\",\"severity\":\"medium\",\"detail\":\"Task is marked multi-step.\"}]"
+  },
+  {
     "id": "228e8b6f-b0a3-4acf-9140-cdf076bc18b3",
     "timestamp": "2026-05-11T17:10:12.668Z",
     "type": "testing-review-completed",
