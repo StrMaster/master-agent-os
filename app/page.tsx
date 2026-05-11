@@ -123,7 +123,7 @@ export default async function HomePage() {
       (task.status === "pending-pr" || task.status === "running")
   );
 
-  const llmUsageCount = 3; // Hardcoded count of LLMs used or supported
+  const llmUsageCount: number = 3; // Hardcoded count of LLMs used or supported
 
   const stats = [
     { label: "Active Goal", value: "1", subtext: activeGoal.title },
