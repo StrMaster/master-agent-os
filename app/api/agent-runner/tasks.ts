@@ -1,4 +1,5 @@
 import { logActivity } from "./activity";
+import { recordRuntimeRecoveryMemory } from "./state";
 import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
 
@@ -57,6 +58,13 @@ export async function createRecoveryTask({
           details: reason,
         });
 
+        await recordRuntimeRecoveryMemory({
+          taskId: recoveryOfTaskId,
+          recoveryTaskId: existingRecoveryTask.id,
+          reason,
+          status: "retry-blocked",
+        }).catch(() => {});
+
         return existingRecoveryTask;
       }
 
@@ -87,6 +95,13 @@ export async function createRecoveryTask({
         }),
       });
 
+      await recordRuntimeRecoveryMemory({
+        taskId: recoveryOfTaskId,
+        recoveryTaskId: existingRecoveryTask.id,
+        reason,
+        status: "retry-started",
+      }).catch(() => {});
+
       return existingRecoveryTask;
     }
 
@@ -97,6 +112,13 @@ export async function createRecoveryTask({
       agentName: "Senior Recovery Agent",
       reason,
     });
+
+    await recordRuntimeRecoveryMemory({
+      taskId: recoveryOfTaskId,
+      recoveryTaskId: existingRecoveryTask.id,
+      reason,
+      status: "duplicate-blocked",
+    }).catch(() => {});
 
     return existingRecoveryTask;
   }
@@ -137,6 +159,13 @@ export async function createRecoveryTask({
       recoveryOfTaskId,
     }),
   });
+
+  await recordRuntimeRecoveryMemory({
+    taskId: recoveryOfTaskId,
+    recoveryTaskId: recoveryTask.id,
+    reason,
+    status: "created",
+  }).catch(() => {});
 
   return recoveryTask;
 }

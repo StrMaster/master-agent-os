@@ -19,6 +19,8 @@ import {
   readStateFile,
   releaseRunnerLock,
   resetRuntimeFailureCounters,
+  recordRuntimeExecutionSummary,
+  recordRuntimeFailureMemory,
   summarizeRunnerHealth,
   trackRuntimeFailure,
   updateStateWith,
@@ -823,6 +825,13 @@ await createRecoveryTask({
     "Reviewer Agent blocked unsafe patch.",
 });
 
+      await recordRuntimeFailureMemory({
+        taskId: task.id,
+        title: task.title,
+        targetFile: task.targetFile,
+        reason: reviewerResult.reason ?? "Reviewer Agent blocked unsafe patch.",
+      }).catch(() => {});
+
   return NextResponse.json({
     ok: false,
     mode: "reviewer-agent-blocked",
@@ -860,6 +869,13 @@ if (!review.valid) {
     reason: review.reason ?? "Generated patch blocked by review",
     failureType: "review-blocked",
   });
+
+  await recordRuntimeFailureMemory({
+    taskId: task.id,
+    title: task.title,
+    targetFile: task.targetFile,
+    reason: review.reason ?? "Generated patch blocked by review",
+  }).catch(() => {});
 
   await incrementStateCounter(
     "recentValidationFailures",
@@ -907,6 +923,13 @@ if (!review.valid) {
         taskId: task.id,
         reason: validation.issues.join(", "),
       });
+
+      await recordRuntimeFailureMemory({
+        taskId: task.id,
+        title: task.title,
+        targetFile: task.targetFile,
+        reason: validation.issues.join(", "),
+      }).catch(() => {});
 
       await incrementStateCounter(
   "recentValidationFailures",
@@ -985,6 +1008,16 @@ if (!review.valid) {
           }),
         });
       }
+
+      await recordRuntimeExecutionSummary({
+        taskId: task.id,
+        title: task.title,
+        targetFile: task.targetFile,
+        status: "existing-pr",
+        branchName,
+        pullRequestUrl: existingPr.html_url,
+        completedAt: new Date().toISOString(),
+      }).catch(() => {});
 
       return NextResponse.json({
         ok: true,
@@ -1202,6 +1235,16 @@ agentRole: task.agentRole,
       reason: "Pull request created and task is waiting for review",
     });
 
+    await recordRuntimeExecutionSummary({
+      taskId: task.id,
+      title: task.title,
+      targetFile: task.targetFile,
+      status: mergeResult ? "pull-request-merged" : "pull-request-created",
+      branchName,
+      pullRequestUrl: pr.html_url,
+      completedAt: new Date().toISOString(),
+    }).catch(() => {});
+
     if (recoveryCompletedTask) {
       await logActivity({
         type: "recovery-retry-completed",
@@ -1248,6 +1291,20 @@ agentRole: task.agentRole,
 ).catch(() => {});
     if (activeTask) {
       const failedTaskId = activeTask.id;
+      await recordRuntimeFailureMemory({
+        taskId: failedTaskId,
+        title: activeTask.title,
+        targetFile: activeTask.targetFile,
+        reason: error instanceof Error ? error.message : "Unknown execution failure",
+        runId,
+      }).catch(() => {});
+      await recordRuntimeExecutionSummary({
+        taskId: failedTaskId,
+        title: activeTask.title,
+        targetFile: activeTask.targetFile,
+        status: "runner-failed",
+        completedAt: new Date().toISOString(),
+      }).catch(() => {});
       const latest = await readTasksFile().catch(() => null);
       const latestTask = latest?.tasks.find(
         (candidate) => candidate.id === failedTaskId

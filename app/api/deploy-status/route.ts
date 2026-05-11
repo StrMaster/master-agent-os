@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createRecoveryTask, readTasksFile } from "../agent-runner/tasks";
+import { recordRuntimeDeployMemory } from "../agent-runner/state";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
@@ -311,6 +312,13 @@ export async function GET() {
         reason: deployError,
       });
 
+      await recordRuntimeDeployMemory({
+        deploymentId: deployment.uid,
+        deploymentUrl: deployment.url,
+        reason: deployError,
+        status: "failed",
+      }).catch(() => {});
+
       await createDeployRecoveryTask(deployError ?? "Deployment failed").catch(() => {});
 
       if (currentState.overnightModeActive) {
@@ -336,6 +344,12 @@ export async function GET() {
         deploymentUrl: deployment.url,
         reason: "Latest deployment reached READY",
       });
+
+      await recordRuntimeDeployMemory({
+        deploymentId: deployment.uid,
+        deploymentUrl: deployment.url,
+        status: "success",
+      }).catch(() => {});
     }
 
     return NextResponse.json({
