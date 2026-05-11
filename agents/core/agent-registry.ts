@@ -6,7 +6,8 @@ export type SmartAgentRole =
   | "senior-deploy"
   | "senior-recovery"
   | "repo-context"
-  | "architecture-reviewer";
+  | "architecture-reviewer"
+  | "code-reviewer";
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -141,6 +142,22 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer deterministic safety signals.",
       "Recommend approval, previewOnly, requiresApproval, or split.",
       "Flag runtime/core and legacy areas carefully.",
+    ],
+  },
+  {
+    id: "code-reviewer",
+    name: "Code Reviewer Agent",
+    purpose:
+      "Evaluates generated changes for merge safety, execution caution, and repeated failure risk.",
+    canCreateTasks: false,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Prefer deterministic review signals.",
+      "Flag runtime/core edits and repeated risky files.",
+      "Recommend merge caution or execution caution instead of noisy warnings.",
     ],
   },
 ];

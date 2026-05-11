@@ -11,6 +11,7 @@ import {
   applyArchitectureReview,
   reviewArchitectureTask,
 } from "@/agents/core/architecture-reviewer";
+import { applyCodeReview, reviewCodeTask } from "@/agents/core/code-reviewer";
 import { readRuntimeMemoryFile } from "@/app/api/agent-runner/memory";
 
 const OWNER = "StrMaster";
@@ -718,7 +719,7 @@ if (
           hardenPlannerGeneratedTask(task, prompt, repoContext)
         )
       : generatedTasks;
-    const reviewedGeneratedTasks = plannerDriven
+    const architectureReviewedTasks = plannerDriven
       ? await Promise.all(
           finalizedGeneratedTasks.map(async (task) => {
             const review = await reviewArchitectureTask(task, {
@@ -730,6 +731,18 @@ if (
           })
         )
       : finalizedGeneratedTasks;
+    const reviewedGeneratedTasks = plannerDriven
+      ? await Promise.all(
+          architectureReviewedTasks.map(async (task) => {
+            const review = await reviewCodeTask(task, {
+              repoContext,
+              runtimeMemory: runtimeMemory.memory,
+            });
+
+            return applyCodeReview(task, review);
+          })
+        )
+      : architectureReviewedTasks;
 
     const updatedTasks = [...tasks, ...reviewedGeneratedTasks];
 

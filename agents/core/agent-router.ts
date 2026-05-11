@@ -78,6 +78,22 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     };
   }
 
+  const isCodeReview =
+    text.includes("code review") ||
+    text.includes("merge safety") ||
+    text.includes("pull request review") ||
+    text.includes("execution caution") ||
+    text.includes("review generated changes");
+
+  if (isCodeReview) {
+    return {
+      role: "code-reviewer",
+      agent: getSmartAgent("code-reviewer"),
+      confidence: "high",
+      reason: "Prompt asks for code review or merge/execution safety guidance.",
+    };
+  }
+
   const isRecovery =
     text.includes("recover") ||
     text.includes("recovery") ||
