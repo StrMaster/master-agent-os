@@ -230,7 +230,7 @@ async function createRecoveryTask({
   failedTask: AgentTask;
   reason: string;
 }) {
-  const tasks = await loadTasks();
+  const tasks = await readTasks();
 
   const recoveryTask: AgentTask = {
     id: `recovery-${Date.now()}`,
