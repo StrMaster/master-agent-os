@@ -83,6 +83,23 @@ async function readTasks(): Promise<AgentTask[]> {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+function getPullRequestNumber(task: AgentTask) {
+  if (task.result?.pullRequestNumber) {
+    return task.result.pullRequestNumber;
+  }
+
+  const pullRequestUrl = task.result?.pullRequestUrl;
+
+  if (!pullRequestUrl) {
+    return null;
+  }
+
+  const match = pullRequestUrl.match(/\/pull\/(\d+)/);
+  const parsed = match?.[1] ? Number(match[1]) : NaN;
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 async function syncMergedPrTasks(tasks: AgentTask[]) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -92,7 +109,7 @@ async function syncMergedPrTasks(tasks: AgentTask[]) {
 
   return Promise.all(
     tasks.map(async (task) => {
-      const prNumber = task.result?.pullRequestNumber;
+      const prNumber = getPullRequestNumber(task);
 
       if (!prNumber || task.result?.merged === true) {
         return task;
@@ -121,12 +138,19 @@ async function syncMergedPrTasks(tasks: AgentTask[]) {
           status: "done",
           result: {
             ...task.result,
+            pullRequestNumber: prNumber,
             merged: true,
           },
         };
       }
 
-      return task;
+      return {
+        ...task,
+        result: {
+          ...task.result,
+          pullRequestNumber: prNumber,
+        },
+      };
     })
   );
 }
@@ -180,8 +204,16 @@ function uniqueById(tasks: AgentTask[]) {
   return [...new Map(tasks.map((task) => [task.id, task])).values()];
 }
 
+function isCompletedTask(task: AgentTask) {
+  return (
+    task.status === "done" ||
+    task.status === "completed" ||
+    task.result?.merged === true
+  );
+}
+
 function isActiveTask(task: AgentTask) {
-  return ACTIVE_TASK_STATUSES.has(task.status ?? "");
+  return !isCompletedTask(task) && ACTIVE_TASK_STATUSES.has(task.status ?? "");
 }
 
 export default async function TasksPage() {
@@ -194,13 +226,14 @@ export default async function TasksPage() {
   const plannerRequired = uniqueById(tasks.filter(
     (task) =>
       !activeTaskIds.has(task.id) &&
+      !isCompletedTask(task) &&
       (task.status === "planner-required" ||
       (task.executionMode === "multi-step" && task.riskLevel === "high"))
   ));
   const plannerRequiredIds = new Set(plannerRequired.map((task) => task.id));
 
   const plannerSplit = uniqueById(tasks.filter(
-    (task) => task.status === "planner-split" && !plannerRequiredIds.has(task.id) && !activeTaskIds.has(task.id)
+    (task) => task.status === "planner-split" && !plannerRequiredIds.has(task.id) && !activeTaskIds.has(task.id) && !isCompletedTask(task)
   ));
   const plannerSplitIds = new Set(plannerSplit.map((task) => task.id));
 
@@ -208,9 +241,7 @@ export default async function TasksPage() {
     (task) =>
       (typeof task.wave === "number" || task.parentTaskId) &&
       !isActiveTask(task) &&
-      task.status !== "done" &&
-      task.status !== "completed" &&
-      task.result?.merged !== true &&
+      !isCompletedTask(task) &&
       !plannerRequiredIds.has(task.id) &&
       !plannerSplitIds.has(task.id)
   ));
@@ -220,6 +251,7 @@ export default async function TasksPage() {
     (task) =>
       (task.status === "todo" || task.status === "queued") &&
       !isActiveTask(task) &&
+      !isCompletedTask(task) &&
       !plannerRequiredIds.has(task.id) &&
       !plannerSplitIds.has(task.id) &&
       !waveTaskIds.has(task.id)
@@ -228,12 +260,7 @@ export default async function TasksPage() {
   const failedTasks = uniqueById(tasks.filter((task) => task.status === "failed"));
 
   const completedTasks = uniqueById(tasks
-  .filter(
-    (task) =>
-      task.status === "done" ||
-      task.status === "completed" ||
-      task.result?.merged === true
-  ))
+  .filter((task) => isCompletedTask(task)))
   .slice(0, 2);
 
   return (
