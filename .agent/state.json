@@ -4,7 +4,7 @@
   "autoRunEnabled": false,
   "autoMergeEnabled": true,
   "emergencyStop": false,
-  "recentFailedRuns": 0,
+  "recentFailedRuns": 1,
   "recentValidationFailures": 0,
   "recentMergeFailures": 0,
   "recentDeployFailures": 0,
