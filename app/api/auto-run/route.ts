@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logActivity } from "../agent-runner/activity";
+import { readTasksFile } from "../agent-runner/tasks";
 
 export const runtime = "nodejs";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
-const BRANCH = "main";
-const TASKS_PATH = ".agent/tasks.json";
 
 const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
 const AUTO_RUN_MAX_ITERATIONS = 3;
@@ -50,32 +49,9 @@ async function internalJsonFetch(req: NextRequest, path: string, init?: RequestI
 }
 
 async function readTasks() {
-  const token = process.env.GITHUB_TOKEN;
+  const { tasks } = await readTasksFile();
 
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    },
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to read ${TASKS_PATH}`);
-  }
-
-  const file = await res.json();
-
-  const content = Buffer.from(file.content, "base64").toString("utf-8");
-
-  return JSON.parse(content);
+  return tasks;
 }
 
 async function mergePullRequest(prNumber: number) {
@@ -176,7 +152,9 @@ function isAutoRunSuccessMode(mode?: string) {
   return (
     mode === "pull-request-created" ||
     mode === "pull-request-merged" ||
-    mode === "existing-pr"
+    mode === "existing-pr" ||
+    mode === "pending-pr" ||
+    mode === "merged"
   );
 }
 
@@ -678,7 +656,9 @@ if (
 
         if (
           nextRunnerData.mode === "pull-request-created" ||
-          nextRunnerData.mode === "pull-request-merged"
+          nextRunnerData.mode === "pull-request-merged" ||
+          nextRunnerData.mode === "pending-pr" ||
+          nextRunnerData.mode === "merged"
         ) {
           patch.overnightPrsCreated = (latestState.overnightPrsCreated ?? 0) + 1;
         }
