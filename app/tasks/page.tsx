@@ -11,6 +11,13 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 const TASKS_PATH = ".agent/tasks.json";
 
+const ACTIVE_TASK_STATUSES = new Set([
+  "in-progress",
+  "running",
+  "pending-pr",
+  "execution-started",
+]);
+
 type AgentTask = {
   id: string;
   title?: string;
@@ -173,25 +180,34 @@ function uniqueById(tasks: AgentTask[]) {
   return [...new Map(tasks.map((task) => [task.id, task])).values()];
 }
 
+function isActiveTask(task: AgentTask) {
+  return ACTIVE_TASK_STATUSES.has(task.status ?? "");
+}
+
 export default async function TasksPage() {
   const rawTasks = await readTasks();
   const tasks = await syncMergedPrTasks(rawTasks);
 
+  const activeTasks = uniqueById(tasks.filter((task) => isActiveTask(task)));
+  const activeTaskIds = new Set(activeTasks.map((task) => task.id));
+
   const plannerRequired = uniqueById(tasks.filter(
     (task) =>
-      task.status === "planner-required" ||
-      (task.executionMode === "multi-step" && task.riskLevel === "high")
+      !activeTaskIds.has(task.id) &&
+      (task.status === "planner-required" ||
+      (task.executionMode === "multi-step" && task.riskLevel === "high"))
   ));
   const plannerRequiredIds = new Set(plannerRequired.map((task) => task.id));
 
   const plannerSplit = uniqueById(tasks.filter(
-    (task) => task.status === "planner-split" && !plannerRequiredIds.has(task.id)
+    (task) => task.status === "planner-split" && !plannerRequiredIds.has(task.id) && !activeTaskIds.has(task.id)
   ));
   const plannerSplitIds = new Set(plannerSplit.map((task) => task.id));
 
   const waveTasks = uniqueById(tasks.filter(
     (task) =>
       (typeof task.wave === "number" || task.parentTaskId) &&
+      !isActiveTask(task) &&
       task.status !== "done" &&
       task.status !== "completed" &&
       task.result?.merged !== true &&
@@ -203,6 +219,7 @@ export default async function TasksPage() {
   const todoTasks = uniqueById(tasks.filter(
     (task) =>
       (task.status === "todo" || task.status === "queued") &&
+      !isActiveTask(task) &&
       !plannerRequiredIds.has(task.id) &&
       !plannerSplitIds.has(task.id) &&
       !waveTaskIds.has(task.id)
@@ -229,12 +246,20 @@ export default async function TasksPage() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label="Total" value={tasks.length} />
+        <StatCard label="Active" value={activeTasks.length} />
         <StatCard label="Todo" value={todoTasks.length} />
         <StatCard label="Waves" value={waveTasks.length} />
         <StatCard label="Failed" value={failedTasks.length} />
       </div>
+
+      <TaskSection
+        title="Running"
+        description="Tasks currently being executed or waiting in PR review."
+        tasks={activeTasks}
+        empty="No tasks are currently running."
+      />
 
       <TaskSection
         title="Planner Required"
