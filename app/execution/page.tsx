@@ -5,7 +5,6 @@ import DeleteTaskButton from "../components/DeleteTaskButton";
 import RuntimeDashboard from "../components/RuntimeDashboard";
 import { readActivityFile } from "../api/agent-runner/activity";
 
-
 export const dynamic = "force-dynamic";
 
 const OWNER = "StrMaster";
@@ -75,22 +74,30 @@ export default async function ExecutionPage() {
     ? activityFile.activity
     : [];
 
-  const runningTasks = tasks.filter((task) => task.status === "running");
+  // Filter out tasks that are likely to cause build spam by excluding low priority and previewOnly tasks from running and todo lists
+  const runningTasks = tasks.filter(
+    (task) =>
+      task.status === "running" &&
+      task.priority !== "low" &&
+      !task.previewOnly
+  );
 
   const todoTasks = tasks.filter(
     (task) =>
-      task.status === "todo" ||
-      task.status === "queued" ||
-      task.status === "planner-required" ||
-      task.status === "planner-split"
+      (task.status === "todo" ||
+        task.status === "queued" ||
+        task.status === "planner-required" ||
+        task.status === "planner-split") &&
+      task.priority !== "low" &&
+      !task.previewOnly
   );
 
   const pendingPrTasks = tasks.filter(
-  (task) =>
-    task.status === "pending-pr" &&
-    task.result?.merged !== true &&
-    !task.error
-);
+    (task) =>
+      task.status === "pending-pr" &&
+      task.result?.merged !== true &&
+      !task.error
+  );
 
   const failedTasks = tasks.filter((task) => task.status === "failed");
 
@@ -171,10 +178,10 @@ function TaskCard({ task }: { task: AgentTask }) {
         <div>Status: {task.status ?? "unknown"}</div>
 
         {task.agentName && (
-  <div className="text-cyan-300">
-    Agent: {task.agentName}
-  </div>
-)}
+          <div className="text-cyan-300">
+            Agent: {task.agentName}
+          </div>
+        )}
 
         {task.priority && <div>Priority: {task.priority}</div>}
 
@@ -217,7 +224,7 @@ function TaskCard({ task }: { task: AgentTask }) {
           Open pull request
         </a>
       )}
-        <DeleteTaskButton taskId={task.id} status={task.status} />
+      <DeleteTaskButton taskId={task.id} status={task.status} />
     </div>
   );
 }
