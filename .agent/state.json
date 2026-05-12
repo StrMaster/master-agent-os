@@ -25,5 +25,6 @@
   "overnightRecoveries": 0,
   "runnerLockStartedAt": 1778543071142,
   "failedRuns": 0,
-  "consecutiveFailures": 0
+  "consecutiveFailures": 0,
+  "runnerHealthStatus": "degraded"
 }
