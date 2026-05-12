@@ -296,26 +296,5 @@
       "pullRequestNumber": 186,
       "merged": true
     }
-  },
-  {
-    "id": "manual-task-1778519402554",
-    "title": "Enhance visual clarity of runtime sections on Execution page",
-    "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
-    "targetFile": "app/page.tsx",
-    "status": "planner-split",
-    "priority": "medium",
-    "source": "manual",
-    "createdAt": "2026-05-11T17:10:02.554Z",
-    "queuedAt": "2026-05-11T17:10:02.554Z",
-    "executionMode": "multi-step",
-    "wave": 1,
-    "previewOnly": false,
-    "requiresApproval": false,
-    "plannerNotes": "This task was split into planner waves and should not be executed directly.",
-    "riskLevel": "high",
-    "approvedAt": "2026-05-11T17:13:26.132Z",
-    "approvedBy": "system",
-    "startedAt": "2026-05-11T17:58:29.917Z",
-    "updatedAt": "2026-05-11T17:58:29.917Z"
   }
 ]
