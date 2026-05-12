@@ -1,6 +1,6 @@
 {
   "paused": false,
-  "runnerLocked": true,
+  "runnerLocked": false,
   "autoRunEnabled": false,
   "autoMergeEnabled": true,
   "emergencyStop": false,
@@ -25,6 +25,5 @@
   "overnightRecoveries": 0,
   "failedRuns": 0,
   "consecutiveFailures": 0,
-  "runnerHealthStatus": "healthy",
-  "runnerLockStartedAt": 1778570193291
+  "runnerHealthStatus": "healthy"
 }
