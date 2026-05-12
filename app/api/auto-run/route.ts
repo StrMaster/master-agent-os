@@ -4,9 +4,6 @@ import { readTasksFile } from "../agent-runner/tasks";
 
 export const runtime = "nodejs";
 
-const OWNER = "StrMaster";
-const REPO = "master-agent-os";
-
 const AUTO_RUN_COOLDOWN_MS = 2 * 60 * 1000;
 const AUTO_RUN_MAX_ITERATIONS = 3;
 const RUNTIME_STOP_FAILURE_THRESHOLD = 3;
@@ -52,34 +49,6 @@ async function readTasks() {
   const { tasks } = await readTasksFile();
 
   return tasks;
-}
-
-async function mergePullRequest(prNumber: number) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}/merge`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  const data = await res.json().catch(() => ({}));
-
-  return {
-    ok: res.ok,
-    status: res.status,
-    data,
-  };
 }
 
 function dependenciesSatisfied(task: any, tasks: any[]) {
@@ -421,30 +390,6 @@ export async function POST(req: NextRequest) {
     }
 
     const tasks = await readTasks();
-
-const pendingPrTask = Array.isArray(tasks)
-  ? tasks.find(
-      (task) =>
-        task &&
-        task.status === "pending-pr" &&
-        task.result?.pullRequestNumber &&
-        task.result?.merged !== true &&
-        !task.error
-    )
-  : null;
-
-if (false && state.autoMergeEnabled && pendingPrTask) {
-  const mergeResult = await mergePullRequest(
-    pendingPrTask.result.pullRequestNumber
-  );
-
-  return NextResponse.json({
-    ok: mergeResult.ok,
-    mode: mergeResult.ok ? "auto-merge" : "auto-merge-failed",
-    task: pendingPrTask,
-    merge: mergeResult,
-  });
-}
 
     const availableTask = Array.isArray(tasks)
       ? findReadyTask(tasks)
