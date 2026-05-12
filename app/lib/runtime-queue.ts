@@ -1,7 +1,5 @@
 import { Redis } from "@upstash/redis";
 
-const redis = Redis.fromEnv();
-
 const RUNTIME_QUEUE_KEY = "master-agent-os:runtime-queue";
 
 export type RuntimeQueueTask = {
@@ -20,6 +18,17 @@ export type RuntimeQueueTask = {
   queuedAt?: string;
   updatedAt?: string;
 };
+
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    throw new Error("Missing Upstash Redis environment variables");
+  }
+
+  return new Redis({ url, token });
+}
 
 function normalizeRuntimeQueueTask(item: unknown): RuntimeQueueTask | null {
   if (!item) {
@@ -55,7 +64,7 @@ function normalizeRuntimeQueueTask(item: unknown): RuntimeQueueTask | null {
 }
 
 export async function enqueueRuntimeTask(task: RuntimeQueueTask) {
-  await redis.lpush(
+  await getRedis().lpush(
     RUNTIME_QUEUE_KEY,
     JSON.stringify(
       normalizeRuntimeQueueTask({
@@ -67,7 +76,7 @@ export async function enqueueRuntimeTask(task: RuntimeQueueTask) {
 }
 
 export async function getRuntimeQueueTasks(): Promise<RuntimeQueueTask[]> {
-  const items = await redis.lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
+  const items = await getRedis().lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
 
   return items
     .map((item) => normalizeRuntimeQueueTask(item))
@@ -75,7 +84,7 @@ export async function getRuntimeQueueTasks(): Promise<RuntimeQueueTask[]> {
 }
 
 export async function removeRuntimeTask(taskId: string) {
-  const rawItems = await redis.lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
+  const rawItems = await getRedis().lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
 
   for (const rawItem of rawItems) {
     const task = normalizeRuntimeQueueTask(rawItem);
@@ -87,11 +96,11 @@ export async function removeRuntimeTask(taskId: string) {
     const itemToRemove =
       typeof rawItem === "string" ? rawItem : JSON.stringify(rawItem);
 
-    await redis.lrem(RUNTIME_QUEUE_KEY, 1, itemToRemove);
+    await getRedis().lrem(RUNTIME_QUEUE_KEY, 1, itemToRemove);
     return;
   }
 }
 
 export async function clearRuntimeQueue() {
-  await redis.del(RUNTIME_QUEUE_KEY);
+  await getRedis().del(RUNTIME_QUEUE_KEY);
 }
