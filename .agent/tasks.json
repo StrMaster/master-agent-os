@@ -1,5 +1,76 @@
 [
   {
+    "id": "wave-manual-task-1778519402554-1-1778571496546",
+    "title": "Wave 1: Scope and prepare — Enhance visual clarity of runtime sections on Execution page",
+    "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "planner-wave",
+    "createdAt": "2026-05-12T07:38:16.546Z",
+    "intent": "planning",
+    "riskLevel": "medium",
+    "executionMode": "single-file",
+    "wave": 1,
+    "waveStatus": "ready",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "parentTaskId": "manual-task-1778519402554",
+    "dependsOnTaskIds": [],
+    "blockedBy": [],
+    "plannerNotes": "Wave 1: inspect current architecture, keep scope minimal, avoid rewrites."
+  },
+  {
+    "id": "wave-manual-task-1778519402554-2-1778571496546",
+    "title": "Wave 2: Implement core change — Enhance visual clarity of runtime sections on Execution page",
+    "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "source": "planner-wave",
+    "createdAt": "2026-05-12T07:38:16.546Z",
+    "intent": "implementation",
+    "riskLevel": "medium",
+    "executionMode": "single-file",
+    "wave": 2,
+    "waveStatus": "blocked",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "parentTaskId": "manual-task-1778519402554",
+    "dependsOnTaskIds": [
+      "wave-manual-task-1778519402554-1-1778571496546"
+    ],
+    "blockedBy": [
+      "wave-manual-task-1778519402554-1-1778571496546"
+    ],
+    "plannerNotes": "Wave 2: implement the core change only after Wave 1 is safe."
+  },
+  {
+    "id": "wave-manual-task-1778519402554-3-1778571496546",
+    "title": "Wave 3: Polish and verify — Enhance visual clarity of runtime sections on Execution page",
+    "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "medium",
+    "source": "planner-wave",
+    "createdAt": "2026-05-12T07:38:16.546Z",
+    "intent": "verification",
+    "riskLevel": "low",
+    "executionMode": "single-file",
+    "wave": 3,
+    "waveStatus": "blocked",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "parentTaskId": "manual-task-1778519402554",
+    "dependsOnTaskIds": [
+      "wave-manual-task-1778519402554-2-1778571496546"
+    ],
+    "blockedBy": [
+      "wave-manual-task-1778519402554-2-1778571496546"
+    ],
+    "plannerNotes": "Wave 3: polish, verify UI/runtime state, and keep changes low-risk."
+  },
+  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
@@ -231,7 +302,7 @@
     "title": "Enhance visual clarity of runtime sections on Execution page",
     "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
     "targetFile": "app/page.tsx",
-    "status": "running",
+    "status": "planner-split",
     "priority": "medium",
     "source": "manual",
     "createdAt": "2026-05-11T17:10:02.554Z",
@@ -240,7 +311,7 @@
     "wave": 1,
     "previewOnly": false,
     "requiresApproval": false,
-    "plannerNotes": "High-risk multi-step task. Planner should split this into safe execution waves. Architecture review: approve (scope 3). Code review: execution-caution (scope 3). Backend review: approve (scope 3). Design review: split (scope 5). Frontend review: design-review (scope 4). Observability: ok. Testing review: execution-caution (scope 4). Performance review: approve (scope 4).",
+    "plannerNotes": "This task was split into planner waves and should not be executed directly.",
     "riskLevel": "high",
     "approvedAt": "2026-05-11T17:13:26.132Z",
     "approvedBy": "system",
