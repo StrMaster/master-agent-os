@@ -25,5 +25,5 @@
   "overnightRecoveries": 0,
   "failedRuns": 0,
   "consecutiveFailures": 0,
-  "runnerHealthStatus": "degraded"
+  "runnerHealthStatus": "healthy"
 }
