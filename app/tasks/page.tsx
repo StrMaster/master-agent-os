@@ -15,7 +15,7 @@ const ACTIVE_TASK_STATUSES = new Set([
   "in-progress",
   "running",
   "pending-pr",
-  "execution-started",
+  "execution-started", "queued",
 ]);
 
 type AgentTask = {
