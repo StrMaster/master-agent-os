@@ -10,6 +10,19 @@ type GitHubFile = {
   content: string;
 };
 
+declare global {
+  // eslint-disable-next-line no-var
+  var __MASTER_AGENT_RUNTIME_STATE__: AgentState | undefined;
+}
+
+function getRuntimeStateStore() {
+  if (!globalThis.__MASTER_AGENT_RUNTIME_STATE__) {
+    globalThis.__MASTER_AGENT_RUNTIME_STATE__ = {};
+  }
+
+  return globalThis.__MASTER_AGENT_RUNTIME_STATE__;
+}
+
 async function readGithubJson(path: string) {
   const token = process.env.GITHUB_TOKEN;
 
@@ -41,61 +54,36 @@ async function readGithubJson(path: string) {
   };
 }
 
-async function writeGithubJson(
-  path: string,
-  json: unknown,
-  sha: string,
-  message: string
-) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const content = Buffer.from(JSON.stringify(json, null, 2) + "\n").toString(
-    "base64"
-  );
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message,
-        content,
-        sha,
-        branch: BRANCH,
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to write ${path}: ${res.status} ${text}`);
-  }
-}
-
 export async function readStateFile() {
-  const { json, sha } = await readGithubJson(STATE_PATH);
+  const runtimeState = getRuntimeStateStore();
 
-  return {
-    state: (json || {}) as AgentState,
-    sha,
-  };
+  try {
+    const { json, sha } = await readGithubJson(STATE_PATH);
+
+    return {
+      state: {
+        ...((json || {}) as AgentState),
+        ...runtimeState,
+      },
+      sha,
+    };
+  } catch {
+    return {
+      state: runtimeState,
+      sha: "runtime-only",
+    };
+  }
 }
 
 export async function writeStateFile(
   state: AgentState,
-  sha: string,
-  message: string
+  _sha: string,
+  _message: string
 ) {
-  await writeGithubJson(STATE_PATH, state, sha, message);
+  globalThis.__MASTER_AGENT_RUNTIME_STATE__ = {
+    ...getRuntimeStateStore(),
+    ...state,
+  };
 }
 
 export async function updateStateWith(
