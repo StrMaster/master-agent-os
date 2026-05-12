@@ -1,5 +1,13 @@
 [
   {
+    "id": "07345703-b074-44a9-b613-9dbcfa3bc7a5",
+    "timestamp": "2026-05-12T07:38:17.365Z",
+    "type": "planner-waves-created",
+    "taskId": "manual-task-1778519402554",
+    "reason": "High-risk multi-step task split into planner waves",
+    "waveCount": 3
+  },
+  {
     "id": "c7514869-9ac1-4f99-a655-112b557641f6",
     "timestamp": "2026-05-11T18:15:07.961Z",
     "type": "planner-task-approved",
