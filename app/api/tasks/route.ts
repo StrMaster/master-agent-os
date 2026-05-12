@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getRuntimeQueueTasks } from '@/app/lib/runtime-queue';
+import {
+  getRuntimeQueueTasks,
+  type RuntimeQueueTask,
+} from '@/app/lib/runtime-queue';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN!;
 const OWNER = 'StrMaster';
@@ -26,7 +29,7 @@ export async function GET() {
 
   const githubTasks = JSON.parse(content);
 
-  let redisTasks = [];
+  let redisTasks: RuntimeQueueTask[] = [];
 
   try {
     redisTasks = await getRuntimeQueueTasks();
@@ -34,11 +37,11 @@ export async function GET() {
     console.warn('[tasks] failed to load Redis runtime tasks', error);
   }
 
-  const redisIds = new Set(redisTasks.map((task: any) => task.id));
+  const redisIds = new Set(redisTasks.map((task) => task.id));
 
   const merged = [
     ...redisTasks,
-    ...githubTasks.filter((task: any) => !redisIds.has(task.id)),
+    ...githubTasks.filter((task: { id?: string }) => !redisIds.has(task.id ?? '')),
   ];
 
   return NextResponse.json(merged);
