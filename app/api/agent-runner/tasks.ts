@@ -3,7 +3,7 @@ import { recordRuntimeRecoveryMemory } from "./memory";
 import { readGithubJson, writeGithubJson } from "./github";
 import type { AgentTask } from "./types";
 import { analyzeRecoveryIntelligence } from "@/agents/core/recovery-intelligence";
-import { getRuntimeTasks } from "@/app/lib/task-runtime";
+import { getRuntimeQueueTasks } from "@/app/lib/runtime-queue";
 
 const TASKS_PATH = ".agent/tasks.json";
 const MAX_RECOVERY_RETRIES = 3;
@@ -12,8 +12,8 @@ function normalizeRecoverySignature(reason: string) {
   return reason.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 160);
 }
 
-function mergeRuntimeTasks(githubTasks: AgentTask[]) {
-  const runtimeTasks = getRuntimeTasks() as AgentTask[];
+async function mergeRuntimeTasks(githubTasks: AgentTask[]) {
+  const runtimeTasks = (await getRuntimeQueueTasks()) as AgentTask[];
 
   const merged = [...githubTasks];
 
@@ -22,16 +22,22 @@ function mergeRuntimeTasks(githubTasks: AgentTask[]) {
       (task) => task.id === runtimeTask.id
     );
 
+    const normalizedRuntimeTask: AgentTask = {
+      ...runtimeTask,
+      runtimeOnly: true,
+      status: runtimeTask.status ?? "queued",
+    };
+
     if (existingIndex >= 0) {
       merged[existingIndex] = {
         ...merged[existingIndex],
-        ...runtimeTask,
+        ...normalizedRuntimeTask,
       };
 
       continue;
     }
 
-    merged.unshift(runtimeTask);
+    merged.unshift(normalizedRuntimeTask);
   }
 
   return merged;
@@ -45,7 +51,7 @@ export async function readTasksFile() {
     : [];
 
   return {
-    tasks: mergeRuntimeTasks(githubTasks),
+    tasks: await mergeRuntimeTasks(githubTasks),
     sha,
   };
 }
