@@ -12,6 +12,10 @@ function normalizeRecoverySignature(reason: string) {
   return reason.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 160);
 }
 
+function stableJson(value: unknown) {
+  return JSON.stringify(value, null, 2);
+}
+
 async function mergeRuntimeTasks(githubTasks: AgentTask[]) {
   const runtimeTasks = (await getRuntimeQueueTasks()) as AgentTask[];
 
@@ -64,6 +68,16 @@ export async function writeTasksFile(
   const persistentTasks = tasks.filter(
     (task) => task.runtimeOnly !== true
   );
+
+  const { json } = await readGithubJson(TASKS_PATH);
+  const currentPersistentTasks = Array.isArray(json)
+    ? (json as AgentTask[])
+    : [];
+
+  if (stableJson(currentPersistentTasks) === stableJson(persistentTasks)) {
+    console.log("[tasks] skipped GitHub write for runtime-only/no-op update", message);
+    return;
+  }
 
   await writeGithubJson(TASKS_PATH, persistentTasks, sha, message);
 }
