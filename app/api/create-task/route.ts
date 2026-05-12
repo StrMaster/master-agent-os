@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-
-const OWNER = "StrMaster";
-const REPO = "master-agent-os";
-const BRANCH = "main";
-const TASKS_PATH = ".agent/tasks.json";
+import { enqueueRuntimeTask } from "@/app/lib/runtime-queue";
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
@@ -38,78 +34,6 @@ type AgentTask = {
   agentSystemPrompt?: string;
   routingReason?: string;
 };
-
-type GitHubFile = {
-  sha: string;
-  content: string;
-};
-
-async function readTasksJson() {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Failed to read ${TASKS_PATH}: ${res.status}`);
-  }
-
-  const file = (await res.json()) as GitHubFile;
-  const content = Buffer.from(file.content, "base64").toString("utf-8");
-  const parsed = JSON.parse(content);
-
-  return {
-    tasks: Array.isArray(parsed) ? (parsed as AgentTask[]) : [],
-    sha: file.sha,
-  };
-}
-
-async function writeTasksJson(tasks: AgentTask[], sha: string, message: string) {
-  const token = process.env.GITHUB_TOKEN;
-
-  if (!token) {
-    throw new Error("Missing GITHUB_TOKEN");
-  }
-
-  const content = Buffer.from(JSON.stringify(tasks, null, 2) + "\n").toString(
-    "base64"
-  );
-
-  const res = await fetch(
-    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}`,
-    {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/vnd.github+json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message,
-        content,
-        sha,
-        branch: BRANCH,
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Failed to write ${TASKS_PATH}: ${res.status} ${text}`);
-  }
-}
 
 function normalizeTitle(value: unknown) {
   return String(value ?? "").trim();
@@ -246,7 +170,7 @@ function buildTask(body: Record<string, unknown>): AgentTask {
     requiresApproval: queueOnly,
     plannerNotes: queueOnly
       ? "Preview/planner task. Wait for approval before execution."
-      : "Manual task queued. Code execution should happen through protected PR flow.",
+      : "Manual task queued in Redis. Code execution should happen through protected PR flow.",
   };
 }
 
@@ -257,10 +181,7 @@ export async function POST(req: Request) {
     const task = buildTask(body);
     const queueOnly = shouldQueueOnly(prompt, body);
 
-    const { tasks, sha } = await readTasksJson();
-    const nextTasks = [task, ...tasks.filter((candidate) => candidate.id !== task.id)];
-
-    await writeTasksJson(nextTasks, sha, `Create manual task ${task.id}`);
+    await enqueueRuntimeTask(task);
 
     const taskWord = "task";
     const message = queueOnly
@@ -268,8 +189,8 @@ export async function POST(req: Request) {
       : `Created 1 queued ${taskWord}. Runner can execute through PR-only flow.`;
 
     const followUp = queueOnly
-      ? "This task was persisted to the planner queue and can be approved before execution."
-      : "Task was persisted to the GitHub-backed queue. This may trigger a Vercel build, but runner state will be stable.";
+      ? "This task was stored in Redis and can be approved before execution."
+      : "Task was stored in Redis runtime queue without a GitHub metadata commit, so it should not trigger a Vercel build.";
 
     return NextResponse.json({
       ok: true,
