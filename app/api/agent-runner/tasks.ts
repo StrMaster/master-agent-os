@@ -17,34 +17,39 @@ function stableJson(value: unknown) {
 }
 
 async function mergeRuntimeTasks(githubTasks: AgentTask[]) {
-  const runtimeTasks = (await getRuntimeQueueTasks()) as AgentTask[];
+  try {
+    const runtimeTasks = (await getRuntimeQueueTasks()) as AgentTask[];
 
-  const merged = [...githubTasks];
+    const merged = [...githubTasks];
 
-  for (const runtimeTask of runtimeTasks) {
-    const existingIndex = merged.findIndex(
-      (task) => task.id === runtimeTask.id
-    );
+    for (const runtimeTask of runtimeTasks) {
+      const existingIndex = merged.findIndex(
+        (task) => task.id === runtimeTask.id
+      );
 
-    const normalizedRuntimeTask: AgentTask = {
-      ...runtimeTask,
-      runtimeOnly: true,
-      status: runtimeTask.status ?? "queued",
-    };
-
-    if (existingIndex >= 0) {
-      merged[existingIndex] = {
-        ...merged[existingIndex],
-        ...normalizedRuntimeTask,
+      const normalizedRuntimeTask: AgentTask = {
+        ...runtimeTask,
+        runtimeOnly: true,
+        status: runtimeTask.status ?? "queued",
       };
 
-      continue;
+      if (existingIndex >= 0) {
+        merged[existingIndex] = {
+          ...merged[existingIndex],
+          ...normalizedRuntimeTask,
+        };
+
+        continue;
+      }
+
+      merged.unshift(normalizedRuntimeTask);
     }
 
-    merged.unshift(normalizedRuntimeTask);
+    return merged;
+  } catch (error) {
+    console.warn("[tasks] failed to merge Redis runtime tasks", error);
+    return githubTasks;
   }
-
-  return merged;
 }
 
 export async function readTasksFile() {
