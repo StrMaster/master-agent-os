@@ -12,7 +12,7 @@
   "lastDeploymentId": "dpl_HvYgGRSgVX2cCSA5phoUXC7mcgr3",
   "lastDeploymentState": "BUILDING",
   "lastDeployFailureId": null,
-  "lastRunAt": 1778543071142,
+  "lastRunAt": 1778570159478,
   "deployStatus": "success",
   "deployStartedAt": "2026-05-11T13:22:32.208Z",
   "deployCompletedAt": "2026-05-11T17:52:02.482Z",
@@ -23,7 +23,7 @@
   "overnightPrsCreated": 0,
   "overnightFailures": 0,
   "overnightRecoveries": 0,
-  "runnerLockStartedAt": 1778543071142,
+  "runnerLockStartedAt": 1778570159478,
   "failedRuns": 0,
   "consecutiveFailures": 0,
   "runnerHealthStatus": "degraded"
