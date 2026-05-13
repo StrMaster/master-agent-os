@@ -1,10 +1,13 @@
-import OpenAI from "openai";
-import { getAgentPrompt } from "@/agents/prompts";
+import Anthropic from "@anthropic-ai/sdk";
 
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
+
+export type PatchResult = {
+  find: string;
+  replace: string;
+};
 
 export async function generateCodePatch(context: {
   filePath: string;
@@ -16,67 +19,82 @@ export async function generateCodePatch(context: {
   agentName?: string;
   agentRole?: string;
   routingReason?: string;
-}) {
+}): Promise<string> {
   const delegatedSystemPrompt =
-  typeof context.agentSystemPrompt === "string" &&
-  context.agentSystemPrompt.trim().length > 0
-    ? context.agentSystemPrompt
-    : "You are the Senior Execution Agent for Master Agent OS.";
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.1,
-    messages: [
-      {
-        role: "system",
-        content: ` ${delegatedSystemPrompt}
+    typeof context.agentSystemPrompt === "string" &&
+    context.agentSystemPrompt.trim().length > 0
+      ? context.agentSystemPrompt
+      : "You are the Senior Execution Agent for Master Agent OS.";
+
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-5-20251001",
+    max_tokens: 1024,
+    system: `${delegatedSystemPrompt}
 
 Active agent: ${context.agentName ?? "Senior Execution Agent"}
 Agent role: ${context.agentRole ?? "senior-execution"}
 Routing reason: ${context.routingReason ?? "Default execution route."}
 
-Your job:
-- modify existing code safely
-- preserve working structure
-- avoid breaking syntax
-- follow the current project architecture
+CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
+- Return ONLY a JSON object with "find" and "replace" fields
+- "find" must be an EXACT string from the file that appears ONLY ONCE
+- "replace" is the replacement string
+- Change MINIMUM lines possible - ideally 1-5 lines
+- Never rewrite whole functions or components
+- Never change imports unless the task explicitly requires it
+- Never restructure the file
+- The change must be surgical and minimal
+- If you cannot find a unique string to change, use surrounding context to make it unique
 
-Rules:
-- Return ONLY raw code.
-- No markdown.
-- No explanations.
-- No code fences.
-- Follow the Project State rules when provided.
-- Do not rebuild the project from scratch.
-- Do not create a parallel execution system.
-- Do not reintroduce legacy propose/apply routes.
-- Do not use direct main apply flow.
-- Prefer small, scoped, build-safe edits.
-- Preserve imports unless necessary.
-- Keep edits minimal and safe.
-- Never respond in German.
-`,
-      },
+Response format (JSON only, no markdown):
+{"find": "exact string to find", "replace": "replacement string"}`,
+    messages: [
       {
         role: "user",
-        content: `
-Task:
-${context.taskTitle}
+        content: `Task: ${context.taskTitle}
 
-Summary:
-${context.taskSummary}
+Summary: ${context.taskSummary}
 
-Project State:
-${context.projectState ?? "No project state provided."}
-
-File:
-${context.filePath}
+File: ${context.filePath}
 
 Current content:
 ${context.currentContent}
-`,
+
+Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.`,
       },
     ],
   });
 
-  return response.choices[0]?.message?.content || "";
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+
+  try {
+    const clean = raw.replace(/```json|```/g, "").trim();
+    const patch: PatchResult = JSON.parse(clean);
+
+    if (!patch.find || patch.replace === undefined) {
+      throw new Error("Invalid patch format");
+    }
+
+    const occurrences = context.currentContent.split(patch.find).length - 1;
+
+    if (occurrences === 0) {
+      throw new Error(`Find block not found in file`);
+    }
+
+    if (occurrences > 1) {
+      throw new Error(`Find block must match exactly once. Found ${occurrences} matches.`);
+    }
+
+    const lineCount = Math.abs(
+      patch.replace.split("\n").length - patch.find.split("\n").length
+    );
+
+    if (lineCount > 30) {
+      throw new Error(`Too many lines changed (${lineCount}). Expected small patch.`);
+    }
+
+    return context.currentContent.replace(patch.find, patch.replace);
+  } catch (e) {
+    throw new Error(`Patch generation failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
