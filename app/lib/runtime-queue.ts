@@ -23,6 +23,11 @@ function getRedis() {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
+  console.log("[runtime-queue] getRedis", {
+    urlPrefix: url ? url.slice(0, 20) : null,
+    hasToken: Boolean(token),
+  });
+
   if (!url || !token) {
     throw new Error("Missing Upstash Redis environment variables");
   }
