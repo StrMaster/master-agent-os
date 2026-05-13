@@ -212,6 +212,12 @@ function isActiveTask(task: AgentTask) {
 
 export default async function TasksPage() {
   const rawTasks = await readTasks();
+
+  console.log("[tasks-page] readTasks result", {
+    total: rawTasks.length,
+    firstThreeStatuses: rawTasks.slice(0, 3).map((task) => task.status ?? null),
+  });
+
   const tasks = await syncMergedPrTasks(rawTasks);
 
   console.log("[tasks-page] received tasks", {
