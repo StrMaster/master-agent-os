@@ -57,31 +57,6 @@
     "plannerNotes": "Wave 2: implement the core change only after Wave 1 is safe."
   },
   {
-    "id": "wave-manual-task-1778519402554-3-1778571496546",
-    "title": "Wave 3: Polish and verify — Enhance visual clarity of runtime sections on Execution page",
-    "summary": "Improve the readability and scan-ability of the runtime sections on the Execution page by adding subtle UI and layout improvements such as spacing, section dividers, or font styling without altering any backend logic or runtime flow.",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "medium",
-    "source": "planner-wave",
-    "createdAt": "2026-05-12T07:38:16.546Z",
-    "intent": "verification",
-    "riskLevel": "low",
-    "executionMode": "single-file",
-    "wave": 3,
-    "waveStatus": "blocked",
-    "previewOnly": true,
-    "requiresApproval": true,
-    "parentTaskId": "manual-task-1778519402554",
-    "dependsOnTaskIds": [
-      "wave-manual-task-1778519402554-2-1778571496546"
-    ],
-    "blockedBy": [
-      "wave-manual-task-1778519402554-2-1778571496546"
-    ],
-    "plannerNotes": "Wave 3: polish, verify UI/runtime state, and keep changes low-risk."
-  },
-  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
