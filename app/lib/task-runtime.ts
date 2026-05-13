@@ -1,3 +1,5 @@
+import { updateRuntimeQueueTask } from "@/app/lib/runtime-queue";
+
 export type RuntimeTaskStatus =
   | "todo"
   | "queued"
@@ -38,54 +40,26 @@ export type RuntimeTask = {
   runtimeOnly?: true;
 };
 
-const runtimeTasks: RuntimeTask[] = [];
-
 export function addRuntimeTask(task: RuntimeTask) {
-  const existingIndex = runtimeTasks.findIndex(
-    (candidate) => candidate.id === task.id
-  );
-
-  const runtimeTask: RuntimeTask = {
-    ...task,
-    runtimeOnly: true,
-    updatedAt: task.updatedAt ?? new Date().toISOString(),
-  };
-
-  if (existingIndex >= 0) {
-    runtimeTasks[existingIndex] = runtimeTask;
-    return;
-  }
-
-  runtimeTasks.unshift(runtimeTask);
+  // Redis enqueue handled by enqueueRuntimeTask in runtime-queue.ts
 }
 
-export function getRuntimeTasks() {
-  return runtimeTasks;
+export function getRuntimeTasks(): RuntimeTask[] {
+  return [];
 }
 
-export function updateTaskStatus(id: string, status: RuntimeTaskStatus) {
-  const task = runtimeTasks.find((task) => task.id === id);
+export async function updateTaskStatus(id: string, status: RuntimeTaskStatus) {
+  const updatedAt = new Date().toISOString();
+  const update: Partial<RuntimeTask> = { status, updatedAt };
 
-  if (!task) {
-    return;
-  }
+  if (status === "running") update.startedAt = updatedAt;
+  if (status === "pending-pr") update.pendingPrAt = Date.now();
+  if (status === "completed" || status === "done") update.completedAt = updatedAt;
+  if (status === "failed") update.failedAt = Date.now();
 
-  task.status = status;
-  task.updatedAt = new Date().toISOString();
-
-  if (status === "running") {
-    task.startedAt = new Date().toISOString();
-  }
-
-  if (status === "pending-pr") {
-    task.pendingPrAt = Date.now();
-  }
-
-  if (status === "completed" || status === "done") {
-    task.completedAt = new Date().toISOString();
-  }
-
-  if (status === "failed") {
-    task.failedAt = Date.now();
+  try {
+    await updateRuntimeQueueTask(id, update);
+  } catch (e) {
+    console.warn("[task-runtime] failed to update task status in Redis", e);
   }
 }
