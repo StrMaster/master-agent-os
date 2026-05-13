@@ -1,51 +1,27 @@
 "use client";
-
 import { useState } from "react";
 
-const HIDDEN_TASKS_KEY = "master-agent-hidden-task-ids";
-
-function readHiddenTaskIds() {
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(HIDDEN_TASKS_KEY) ?? "[]"
-    );
-
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
-
-export default function RemoveTaskButton({
-  taskId,
-}: {
-  taskId: string;
-}) {
+export default function RemoveTaskButton({ taskId }: { taskId: string }) {
   const [isPending, setIsPending] = useState(false);
+  const [done, setDone] = useState(false);
 
-  function removeTask() {
+  async function removeTask() {
     const confirmed = window.confirm(
-      "Hide this task from this browser? This will not trigger a deploy."
+      "Remove this task permanently?"
     );
-
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setIsPending(true);
-
     try {
-      const hiddenTaskIds = new Set(readHiddenTaskIds());
-      hiddenTaskIds.add(taskId);
-
-      window.localStorage.setItem(
-        HIDDEN_TASKS_KEY,
-        JSON.stringify([...hiddenTaskIds])
-      );
-
-      document
-        .querySelector(`[data-task-id="${taskId}"]`)
-        ?.remove();
+      await fetch("/api/delete-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId }),
+      });
+      document.querySelector(`[data-task-id="${taskId}"]`)?.remove();
+      setDone(true);
+    } catch (e) {
+      console.error("Failed to remove task", e);
     } finally {
       setIsPending(false);
     }
@@ -55,10 +31,10 @@ export default function RemoveTaskButton({
     <button
       type="button"
       onClick={removeTask}
-      disabled={isPending}
+      disabled={isPending || done}
       className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {isPending ? "Removing..." : "Remove task"}
+      {done ? "Removed!" : isPending ? "Removing..." : "Remove task"}
     </button>
   );
 }
