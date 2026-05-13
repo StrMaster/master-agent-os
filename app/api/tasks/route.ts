@@ -44,6 +44,12 @@ export async function GET() {
     ...githubTasks.filter((task: { id?: string }) => !redisIds.has(task.id ?? '')),
   ];
 
+  console.log('[tasks] merged task counts', {
+    redis: redisTasks.length,
+    github: Array.isArray(githubTasks) ? githubTasks.length : 0,
+    merged: merged.length,
+  });
+
   return NextResponse.json(merged);
 }
 
