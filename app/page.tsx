@@ -199,14 +199,14 @@ export default async function HomePage() {
       </div>
       
       <div className="mt-4 space-y-4 md:space-y-0 md:flex md:gap-6">
-        <div className="my-2 w-full md:w-auto">
+        <div className="my-2 w-full md:w-auto border border-white/20 rounded-lg p-4 bg-zinc-900">
           <RuntimeOverview />
         </div>
-        <div className="my-2 w-full md:w-auto">
+        <div className="my-2 w-full md:w-auto border border-white/20 rounded-lg p-4 bg-zinc-900">
           <DeployStatusCard />
         </div>
       </div>
-      <div className="my-4">
+      <div className="my-4 border-t border-white/10 pt-4">
         <AutoRunTrigger />
       </div>
 
@@ -248,8 +248,8 @@ export default async function HomePage() {
       </div>
 
       <div className="mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
-          <div className="flex items-center justify-between">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-zinc-700 pb-3">
             <div>
               <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
                 Today Focus
@@ -261,7 +261,7 @@ export default async function HomePage() {
             <StatusBadge label="High Focus" />
           </div>
 
-          <div className="mt-5 space-y-6">
+          <div className="space-y-6">
             {focusItems.map((item, index) => (
               <div
                 key={item.id}
@@ -279,15 +279,17 @@ export default async function HomePage() {
           </div>
         </div>
         
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6">
-          <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
-            Recent Activity
-          </p>
-          <h3 className="mt-2 text-xl font-semibold text-white">
-            System Timeline
-          </h3>
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-900 p-5 sm:p-6 space-y-6">
+          <div className="border-b border-zinc-700 pb-3">
+            <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
+              Recent Activity
+            </p>
+            <h3 className="mt-2 text-xl font-semibold text-white">
+              System Timeline
+            </h3>
+          </div>
 
-          <div className="mt-5 space-y-8">
+          <div className="space-y-8">
             {recentActivity.map((item) => (
               <div key={item} className="flex gap-2">
                 <div className="mt-2 h-2.5 w-2.5 rounded-full bg-cyan-400" />
