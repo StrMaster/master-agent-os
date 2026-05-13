@@ -129,6 +129,8 @@ export default async function HomePage() {
 
   const llmUsageCount: number = 3; // Hardcoded count of LLMs used or supported
 
+  const activeTasksCount = openTasks.length;
+
   const stats = [
     { label: "Active Goal", value: "1", subtext: activeGoal.title },
     { label: "Active Agents", value: String(agents.length), subtext: "System registry loaded" },
