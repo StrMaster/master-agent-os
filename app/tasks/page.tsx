@@ -1,6 +1,8 @@
 import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
 import RemoveTaskButton from "../components/RemoveTaskButton";
+import RunNowButton from "../components/RunNowButton";
+import MergePrButton from "../components/MergePrButton";
 import HiddenTaskCleaner from "../components/HiddenTaskCleaner";
 import { getRuntimeQueueTasks } from "../lib/runtime-queue";
 
@@ -541,20 +543,32 @@ function TaskCard({ task }: { task: AgentTask }) {
         </div>
       )}
 
-      {task.result?.pullRequestUrl && (
-        <a
-          href={task.result.pullRequestUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-4 inline-block text-sm text-blue-300 underline underline-offset-4 hover:text-blue-200"
-        >
-          Open pull request
-        </a>
-      )}
-
       <div className="mt-4 flex flex-wrap gap-2">
-        {(needsApproval || readyForRun) && (
-          <ApprovePreviewTaskButton taskId={task.id} />
+        {(task.status === "queued" || task.status === "todo") && (
+          <RunNowButton taskId={task.id} />
+        )}
+
+        {(task.previewOnly || task.requiresApproval) &&
+          task.status !== "done" && (
+            <ApprovePreviewTaskButton taskId={task.id} />
+          )}
+
+        {task.result?.pullRequestUrl && (
+          <a
+            href={task.result.pullRequestUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-4 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
+          >
+            View PR
+          </a>
+        )}
+
+        {task.result?.pullRequestUrl && task.result.merged !== true && (
+          <MergePrButton
+            taskId={task.id}
+            pullRequestUrl={task.result.pullRequestUrl}
+          />
         )}
 
         {canDelete && <RemoveTaskButton taskId={task.id} />}
