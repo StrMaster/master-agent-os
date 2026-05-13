@@ -142,10 +142,18 @@ export async function POST(req: NextRequest) {
       `Delete task ${taskId}`
     );
 
-    return NextResponse.json({
-      ok: true,
-      deletedTaskId: taskId,
-    });
+    try {
+  const { removeRuntimeTask } = await import("@/app/lib/runtime-queue");
+  await removeRuntimeTask(taskId);
+} catch (e) {
+  console.warn("[delete-task] failed to remove from Redis", e);
+}
+
+return NextResponse.json({
+  ok: true,
+  deletedTaskId: taskId,
+});
+
   } catch (error) {
     return NextResponse.json(
       {
