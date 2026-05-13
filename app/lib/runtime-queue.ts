@@ -92,8 +92,12 @@ export async function updateRuntimeQueueTask(id: string, updatedTask: unknown) {
   const redis = getRedis();
   const tasks = await getRuntimeQueueTasks();
   const updated = tasks.map(t => t.id === id ? { ...t, ...(updatedTask as object) } : t);
-  await redis.set("master-agent-os:runtime-queue", JSON.stringify(updated));
+  await redis.del("master-agent-os:runtime-queue");
+  for (const task of updated) {
+    await redis.rpush("master-agent-os:runtime-queue", JSON.stringify(task));
+  }
 }
+
 
 
 export async function removeRuntimeTask(taskId: string) {
