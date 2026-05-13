@@ -214,6 +214,19 @@ export default async function TasksPage() {
   const rawTasks = await readTasks();
   const tasks = await syncMergedPrTasks(rawTasks);
 
+  console.log("[tasks-page] received tasks", {
+    total: tasks.length,
+    statuses: tasks.map((task) => ({
+      id: task.id,
+      status: task.status ?? null,
+      source: task.source ?? null,
+      previewOnly: task.previewOnly ?? false,
+      requiresApproval: task.requiresApproval ?? false,
+      wave: task.wave ?? null,
+      parentTaskId: task.parentTaskId ?? null,
+    })),
+  });
+
   const activeTasks = uniqueById(tasks.filter((task) => isActiveTask(task)));
   const activeTaskIds = new Set(activeTasks.map((task) => task.id));
 
@@ -256,6 +269,16 @@ export default async function TasksPage() {
   const completedTasks = uniqueById(tasks
   .filter((task) => isCompletedTask(task)))
   .slice(0, 2);
+
+  console.log("[tasks-page] section counts", {
+    active: activeTasks.length,
+    plannerRequired: plannerRequired.length,
+    plannerSplit: plannerSplit.length,
+    waves: waveTasks.length,
+    todo: todoTasks.length,
+    failed: failedTasks.length,
+    completed: completedTasks.length,
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
