@@ -201,6 +201,7 @@ export async function POST(req: Request) {
       tasks: [task],
     });
   } catch (error) {
+console.error("[create-task] error", error);
     return NextResponse.json(
       {
         ok: false,
