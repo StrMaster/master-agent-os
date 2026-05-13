@@ -88,6 +88,14 @@ export async function getRuntimeQueueTasks(): Promise<RuntimeQueueTask[]> {
     .filter(Boolean) as RuntimeQueueTask[];
 }
 
+export async function updateRuntimeQueueTask(id: string, updatedTask: unknown) {
+  const redis = getRedis();
+  const tasks = await getRuntimeQueueTasks();
+  const updated = tasks.map(t => t.id === id ? { ...t, ...(updatedTask as object) } : t);
+  await redis.set("master-agent-os:runtime-queue", JSON.stringify(updated));
+}
+
+
 export async function removeRuntimeTask(taskId: string) {
   const rawItems = await getRedis().lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
 
