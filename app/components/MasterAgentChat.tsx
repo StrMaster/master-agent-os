@@ -241,171 +241,21 @@ export default function MasterAgentChat() {
     const intent = classifyMasterAgentIntent(currentMessage);
     const queueOnly = shouldQueueWithoutAutoRun(currentMessage);
 
-    addMessage("user", currentMessage);
-    setMessage("");
-    setLoading(true);
+    const sessionId = localStorage.getItem("masterSessionId") ?? (() => {
+  const id = crypto.randomUUID();
+  localStorage.setItem("masterSessionId", id);
+  return id;
+})();
 
-    try {
-      if (intent === "conversation") {
-        addMessage("agent", getConversationReply(currentMessage));
-        return;
-      }
+const res = await fetch("/api/master-agent", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: currentMessage, sessionId }),
+});
 
-      if (intent === "status") {
-        const res = await fetch("/api/project-status", {
-          cache: "no-store",
-        });
+const data = await res.json();
+addMessage("agent", data.reply ?? "Klaida.");
 
-        const data = await res.json();
-
-        addMessage(
-          "agent",
-          data.summary || "I could not generate a project status summary."
-        );
-        return;
-      }
-
-      if (intent === "improvement") {
-        const res = await fetch("/api/generate-improvement-tasks", {
-          cache: "no-store",
-        });
-
-        const data = await res.json();
-
-        addMessage("agent", data.suggestions || "No suggestions available.");
-
-        if (Array.isArray(data.generatedTasks) && data.generatedTasks.length > 0) {
-          const formattedTasks = data.generatedTasks
-            .map(
-              (
-                task: {
-                  title: string;
-                  priority: string;
-                  targetFile: string;
-                },
-                index: number
-              ) =>
-                `${index + 1}. ${task.title}\nPriority: ${task.priority}\nTarget: ${task.targetFile}`
-            )
-            .join("\n\n");
-
-          addMessage(
-            "system",
-            `🛠️ Suggested execution tasks:\n\n${formattedTasks}`,
-            "success"
-          );
-        }
-
-        addMessage(
-          "system",
-          "Suggestions only. No tasks were queued from improvement mode.",
-          "info"
-        );
-        return;
-      }
-
-      if (intent === "recovery") {
-        const res = await fetch("/api/recovery-plan", {
-          cache: "no-store",
-        });
-
-        const data = await res.json();
-
-        if (!data.ok) {
-          addMessage("agent", data.message || "No recovery plan available.");
-          return;
-        }
-
-        addMessage(
-          "agent",
-          `Recovery plan created for failed task: ${data.failedTask.title}`
-        );
-
-        addMessage(
-          "system",
-          `🛠️ Recovery task suggestion:\n\n${data.recoveryTask.title}\nPriority: ${data.recoveryTask.priority}\nTarget: ${data.recoveryTask.targetFile}\nReasoning: ${data.recoveryTask.reasoning}`,
-          "warning"
-        );
-
-        addMessage(
-          "system",
-          "Recovery suggestion only. No task was queued automatically.",
-          "info"
-        );
-        return;
-      }
-
-      const delegatedTask = delegateTaskToAgent(currentMessage);
-      addMessage(
-        "system",
-        `Active agent: ${delegatedTask.agentName} — ${delegatedTask.routingReason}`,
-        "info"
-      );
-
-      addMessage(
-        "system",
-        queueOnly
-          ? "Creating task only. Auto-run is disabled for this request."
-          : "Creating task and starting protected agent flow..."
-      );
-
-      const res = await fetch("/api/create-task", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: currentMessage,
-          agentRole: delegatedTask.role,
-          agentName: delegatedTask.agentName,
-          agentSystemPrompt: delegatedTask.systemPrompt,
-          previewOnly: queueOnly,
-          requiresApproval: queueOnly,
-        }),
-      });
-
-      const data = await res.json();
-
-      const responseText = [data.message, data.followUp].filter(Boolean).join(" ");
-
-      addMessage("agent", responseText || "Task created and queued for execution.");
-
-      const taskIds =
-        data.tasks?.map((task: { id: string }) => task.id) ??
-        (data.task?.id ? [data.task.id] : []);
-
-      if (taskIds.length > 0) {
-        addMessage(
-          "system",
-          queueOnly
-            ? `Queued ${taskIds.length} task(s) for approval. Auto-run was not started.`
-            : `Monitoring execution for ${taskIds.length} task(s)...`
-        );
-
-        if (queueOnly) {
-          return;
-        }
-
-        pollExecution(taskIds);
-
-        const autoRunRes = await fetch("/api/auto-run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ forceRunOnce: true }),
-        });
-
-        const autoRunData = await autoRunRes.json();
-
-        addMessage(
-          "system",
-          autoRunData.mode === "auto-run"
-            ? "Protected auto-cycle started. Watch Activity Feed for PR progress."
-            : `Auto-cycle did not start: ${
-                autoRunData.message ?? autoRunData.error ?? autoRunData.mode
-              }`,
-          autoRunData.ok ? "success" : "warning"
-        );
-      }
     } catch (error) {
       addMessage(
         "agent",
