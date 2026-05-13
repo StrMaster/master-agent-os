@@ -1,12 +1,29 @@
 {
-  "lastRun": "2026-05-13T13:48:06.595Z",
-  "lastTaskId": "manual-task-1778679932595",
+  "lastRun": "2026-05-13T14:05:04.348Z",
+  "lastTaskId": "manual-task-1778681081841",
   "lastBranch": "agent-task-manual-task-1778679932595",
-  "lastFailure": null,
-  "failedTasks": [],
+  "lastFailure": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011CazhGdaEnraFS5XpzPrrz\"}",
+  "failedTasks": [
+    {
+      "taskId": "manual-task-1778681081841",
+      "title": "Pakeisti puslapio title į \"Master Agent OS\"",
+      "targetFile": "app/page.tsx",
+      "reason": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011CazhGdaEnraFS5XpzPrrz\"}",
+      "at": "2026-05-13T14:05:04.348Z",
+      "runId": "6040c507-feef-415d-bb8d-04224e179de9"
+    }
+  ],
   "recoveryHistory": [],
   "deployFailures": [],
-  "riskyFiles": [],
+  "riskyFiles": [
+    {
+      "targetFile": "app/page.tsx",
+      "hits": 1,
+      "lastSeenAt": "2026-05-13T14:05:04.348Z",
+      "lastTaskId": "manual-task-1778681081841",
+      "lastReason": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011CazhGdaEnraFS5XpzPrrz\"}"
+    }
+  ],
   "executionSummaries": [
     {
       "taskId": "manual-task-1778679932595",
@@ -171,5 +188,5 @@
       "completedAt": "2026-05-11T17:07:07.275Z"
     }
   ],
-  "updatedAt": "2026-05-13T13:48:06.691Z"
+  "updatedAt": "2026-05-13T14:05:04.465Z"
 }
