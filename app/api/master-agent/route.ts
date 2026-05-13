@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     });
 
     let response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 1024,
       system: MASTER_AGENT_SYSTEM_PROMPT,
       messages,
