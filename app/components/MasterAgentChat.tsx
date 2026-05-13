@@ -238,24 +238,27 @@ export default function MasterAgentChat() {
     }
 
     const currentMessage = message.trim();
-    const intent = classifyMasterAgentIntent(currentMessage);
-    const queueOnly = shouldQueueWithoutAutoRun(currentMessage);
+    setMessage("");
+    setLoading(true);
+    addMessage("user", currentMessage);
 
-    const sessionId = localStorage.getItem("masterSessionId") ?? (() => {
-  const id = crypto.randomUUID();
-  localStorage.setItem("masterSessionId", id);
-  return id;
-})();
+    try {
+      const sessionId =
+        localStorage.getItem("masterSessionId") ??
+        (() => {
+          const id = crypto.randomUUID();
+          localStorage.setItem("masterSessionId", id);
+          return id;
+        })();
 
-const res = await fetch("/api/master-agent", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message: currentMessage, sessionId }),
-});
+      const res = await fetch("/api/master-agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: currentMessage, sessionId }),
+      });
 
-const data = await res.json();
-addMessage("agent", data.reply ?? "Klaida.");
-
+      const data = await res.json();
+      addMessage("agent", data.reply ?? "Klaida.");
     } catch (error) {
       addMessage(
         "agent",
