@@ -179,25 +179,30 @@ export async function POST(req: Request) {
     });
 
     while (response.stop_reason === "tool_use") {
-      const toolUseBlock = response.content.find((b) => b.type === "tool_use");
-      if (!toolUseBlock || toolUseBlock.type !== "tool_use") break;
+      const toolUseBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+      );
+      if (toolUseBlocks.length === 0) break;
 
-      const toolResult = await handleTool(
-        toolUseBlock.name,
-        toolUseBlock.input as Record<string, unknown>,
-        baseUrl
+      const toolResults = await Promise.all(
+        toolUseBlocks.map(async (block) => {
+          const result = await handleTool(
+            block.name,
+            block.input as Record<string, unknown>,
+            baseUrl
+          );
+          return {
+            type: "tool_result" as const,
+            tool_use_id: block.id,
+            content: JSON.stringify(result),
+          };
+        })
       );
 
       messages.push({ role: "assistant", content: response.content });
       messages.push({
         role: "user",
-        content: [
-          {
-            type: "tool_result",
-            tool_use_id: toolUseBlock.id,
-            content: JSON.stringify(toolResult),
-          },
-        ],
+        content: toolResults,
       });
 
       response = await client.messages.create({
