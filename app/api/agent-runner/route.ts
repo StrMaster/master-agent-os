@@ -673,7 +673,7 @@ if (stopCheck.stop) {
         reason: "Task already has a pull request",
       });
 
-      updateTaskStatus(task.id, "pending-pr");
+      await updateTaskStatus(task.id, "pending-pr");
 
       return NextResponse.json({
         ok: true,
@@ -709,7 +709,7 @@ if (stopCheck.stop) {
     task.updatedAt = new Date().toISOString();
     tasks[taskIndex] = task;
 
-    updateTaskStatus(task.id, "running");
+    await updateTaskStatus(task.id, "running");
 
     await writeTasksFile(tasks, sha, `Mark task ${task.id} as running`);
 
@@ -749,7 +749,7 @@ task.updatedAt = new Date().toISOString();
 task.completedAt = undefined;
 tasks[taskIndex] = task;
 
-updateTaskStatus(task.id, "planner-required");
+await updateTaskStatus(task.id, "planner-required");
 
 await writeTasksFile(
   tasks,
@@ -876,7 +876,7 @@ if (!review.valid) {
     latestTask.error = `Review failed: ${review.reason}`;
   }
 
-  updateTaskStatus(task.id, "failed");
+  await updateTaskStatus(task.id, "failed");
 
   await writeTasksFile(
     latest.tasks,
@@ -931,7 +931,7 @@ if (!review.valid) {
         )}`;
       }
 
-      updateTaskStatus(task.id, "failed");
+      await updateTaskStatus(task.id, "failed");
 
       await writeTasksFile(
         latest.tasks,
@@ -990,7 +990,7 @@ if (!review.valid) {
         };
       }
 
-      updateTaskStatus(task.id, "pending-pr");
+      await updateTaskStatus(task.id, "pending-pr");
       finalizeRecoverySuccess(
         latest.tasks,
         task,
