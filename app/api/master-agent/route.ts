@@ -107,6 +107,8 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
   const headers = {
     "Content-Type": "application/json",
     "x-cron-secret": process.env.CRON_SECRET ?? "",
+    "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
+    "x-vercel-set-bypass-cookie": "samesitenone",
   };
   if (name === "create_task") {
     const res = await fetch(`${baseUrl}/api/create-task`, {

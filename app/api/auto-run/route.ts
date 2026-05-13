@@ -24,6 +24,8 @@ async function internalJsonFetch(req: NextRequest, path: string, init?: RequestI
     ...init,
     headers: {
       cookie: req.headers.get("cookie") ?? "",
+      "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
+      "x-vercel-set-bypass-cookie": "samesitenone",
       ...(init?.headers ?? {}),
     },
     cache: "no-store",

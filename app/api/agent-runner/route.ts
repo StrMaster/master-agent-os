@@ -74,6 +74,8 @@ async function internalJsonFetch(req: Request, path: string) {
   const res = await fetch(new URL(path, req.url), {
     headers: {
       cookie: req.headers.get("cookie") ?? "",
+      "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
+      "x-vercel-set-bypass-cookie": "samesitenone",
     },
     cache: "no-store",
   });
@@ -766,6 +768,8 @@ try {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
+      "x-vercel-set-bypass-cookie": "samesitenone",
     },
     body: JSON.stringify({
       taskId: task.id,
