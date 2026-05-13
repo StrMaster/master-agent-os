@@ -95,26 +95,33 @@ async function saveConversationMessage({
 }
 
 async function handleTool(name: string, input: Record<string, unknown>, baseUrl: string) {
+  const cronSecret = process.env.CRON_SECRET ?? "";
   if (name === "create_task") {
     const res = await fetch(`${baseUrl}/api/create-task`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
       body: JSON.stringify(input),
     });
     return await res.json();
   }
   if (name === "get_tasks") {
-    const res = await fetch(`${baseUrl}/api/tasks`, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/api/tasks`, {
+      cache: "no-store",
+      headers: { "x-cron-secret": cronSecret },
+    });
     return await res.json();
   }
   if (name === "get_system_status") {
-    const res = await fetch(`${baseUrl}/api/control-state`, { cache: "no-store" });
+    const res = await fetch(`${baseUrl}/api/control-state`, {
+      cache: "no-store",
+      headers: { "x-cron-secret": cronSecret },
+    });
     return await res.json();
   }
   if (name === "run_agent") {
     const res = await fetch(`${baseUrl}/api/auto-run`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-cron-secret": cronSecret },
       body: JSON.stringify({ forceRunOnce: true }),
     });
     return await res.json();
