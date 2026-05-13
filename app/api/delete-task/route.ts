@@ -10,10 +10,13 @@ const TASKS_PATH = ".agent/tasks.json";
 const DELETABLE_STATUSES = [
   "todo",
   "queued",
+  "running",
+  "pending-pr",
   "planner-required",
   "planner-split",
   "failed",
 ];
+
 
 async function readTasksFile() {
   const token = process.env.GITHUB_TOKEN;
