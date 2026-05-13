@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-
+import { readRepoContext, getActiveFileHints } from "@/agents/core/repo-context";
 import { generateCodePatch } from "@/app/lib/code-patch-generator";
 import { updateGithubFile } from "@/app/lib/github-file-updater";
 import {
@@ -809,7 +809,20 @@ try {
     const currentContent = await readTargetFile(task.targetFile);
 
     const projectState = await readProjectState();
+    const repoContext = await readRepoContext().catch(() => null);
     const executionContext = buildExecutionContext(task, tasks);
+
+    const repoContextSummary = repoContext
+      ? [
+          `Frontend files: ${(repoContext.frontendFiles ?? []).join(", ")}`,
+          `Backend files: ${(repoContext.backendFiles ?? []).join(", ")}`,
+          `Orchestration files: ${(repoContext.orchestrationFiles ?? []).join(", ")}`,
+          `Legacy zones (do not touch): ${(repoContext.legacyZones ?? []).join(", ")}`,
+          repoContext.riskyFiles?.length
+            ? `Risky files (extra caution): ${repoContext.riskyFiles.map(f => `${f.targetFile} (${f.hits} hits)`).join(", ")}`
+            : "",
+        ].filter(Boolean).join("\n")
+      : undefined;
 
     const patchedContent = await generateCodePatch({
       filePath: task.targetFile,
@@ -817,6 +830,7 @@ try {
       taskTitle: executionContext.taskTitle,
       taskSummary: executionContext.taskSummary,
       projectState,
+      repoContext: repoContextSummary,
       agentSystemPrompt: task.agentSystemPrompt,
 agentName: task.agentName,
 agentRole: task.agentRole,
