@@ -6,6 +6,13 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const MASTER_AGENT_SYSTEM_PROMPT = `Tu esi Master Agent — autonominės AI inžinerijos sistemos vadovas.
+Turi prieigą prie tools: sukurti taskus, peržiūrėti sistemos būseną, paleisti agentus.
+Kalbi lietuviškai. Esi konkretus ir veiksminis.
+Kai žmogus prašo kažką padaryti sistemoje — naudok tools.
+Kai klausia apie būseną — naudok get_system_status arba get_tasks.
+Jei žmogus tiesiog sveikinasi arba kalbasi, atsakyk normaliai pokalbio režimu ir nekurk tasko.`;
+
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "create_task",
@@ -35,6 +42,50 @@ const TOOLS: Anthropic.Tool[] = [
     input_schema: { type: "object" as const, properties: {} },
   },
 ];
+
+async function readConversationHistory(sessionId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("conversations")
+      .select("role, content")
+      .eq("session_id", sessionId)
+      .order("created_at");
+
+    if (error) {
+      console.warn("[master-agent] failed to read conversation history", error);
+      return [];
+    }
+
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[master-agent] failed to read conversation history", error);
+    return [];
+  }
+}
+
+async function saveConversationMessage({
+  sessionId,
+  role,
+  content,
+}: {
+  sessionId: string;
+  role: "user" | "assistant";
+  content: string;
+}) {
+  try {
+    const { error } = await supabase.from("conversations").insert({
+      session_id: sessionId,
+      role,
+      content,
+    });
+
+    if (error) {
+      console.warn("[master-agent] failed to save conversation message", error);
+    }
+  } catch (error) {
+    console.warn("[master-agent] failed to save conversation message", error);
+  }
+}
 
 async function handleTool(name: string, input: Record<string, unknown>, baseUrl: string) {
   if (name === "create_task") {
@@ -68,35 +119,33 @@ export async function POST(req: Request) {
   try {
     const { message, sessionId } = await req.json();
     const baseUrl = new URL(req.url).origin;
+    const safeSessionId = String(sessionId ?? "default-session");
+    const safeMessage = String(message ?? "").trim();
 
-    const { data: history } = await supabase
-      .from("conversations")
-      .select("role, content")
-      .eq("session_id", sessionId)
-      .order("created_at");
+    if (!safeMessage) {
+      return NextResponse.json({ reply: "Parašyk žinutę Master Agentui." });
+    }
+
+    const history = await readConversationHistory(safeSessionId);
 
     const messages: Anthropic.MessageParam[] = [
-      ...(history ?? []).map((h) => ({
+      ...history.map((h) => ({
         role: h.role as "user" | "assistant",
-        content: h.content,
+        content: String(h.content ?? ""),
       })),
-      { role: "user", content: message },
+      { role: "user", content: safeMessage },
     ];
 
-    await supabase.from("conversations").insert({
-      session_id: sessionId,
+    await saveConversationMessage({
+      sessionId: safeSessionId,
       role: "user",
-      content: message,
+      content: safeMessage,
     });
 
     let response = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
-      system: `Tu esi Master Agent — autonominės AI inžinerijos sistemos vadovas.
-Turi prieigą prie tools: sukurti taskus, peržiūrėti sistemos būseną, paleisti agentus.
-Kalbi lietuviškai. Esi konkretus ir veiksminis.
-Kai žmogus prašo kažką padaryti sistemoje — naudok tools.
-Kai klausia apie būseną — naudok get_system_status arba get_tasks.`,
+      system: MASTER_AGENT_SYSTEM_PROMPT,
       messages,
       tools: TOOLS,
     });
@@ -126,9 +175,7 @@ Kai klausia apie būseną — naudok get_system_status arba get_tasks.`,
       response = await client.messages.create({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
-        system: `Tu esi Master Agent — autonominės AI inžinerijos sistemos vadovas.
-Turi prieigą prie tools: sukurti taskus, peržiūrėti sistemos būseną, paleisti agentus.
-Kalbi lietuviškai. Esi konkretus ir veiksminis.`,
+        system: MASTER_AGENT_SYSTEM_PROMPT,
         messages,
         tools: TOOLS,
       });
@@ -137,16 +184,22 @@ Kalbi lietuviškai. Esi konkretus ir veiksminis.`,
     const reply = response.content.find((b) => b.type === "text");
     const replyText = reply?.type === "text" ? reply.text : "Nesupratau užklausos.";
 
-    await supabase.from("conversations").insert({
-      session_id: sessionId,
+    await saveConversationMessage({
+      sessionId: safeSessionId,
       role: "assistant",
       content: replyText,
     });
 
     return NextResponse.json({ reply: replyText });
   } catch (error) {
+    console.error("[master-agent] request failed", error);
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
+      {
+        reply:
+          "Master Agent route pasiekė klaidą. Patikrink ANTHROPIC_API_KEY, Supabase env ir Vercel build/runtime logs.",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
