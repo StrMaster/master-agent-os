@@ -15,6 +15,7 @@ export async function generateCodePatch(context: {
   taskTitle: string;
   taskSummary: string;
   projectState?: string;
+  repoContext?: string;
   agentSystemPrompt?: string;
   agentName?: string;
   agentRole?: string;
@@ -30,6 +31,8 @@ export async function generateCodePatch(context: {
    model: "claude-haiku-4-5-20251001",
     max_tokens: 1024,
     system: `${delegatedSystemPrompt}
+
+${context.repoContext ? `\nRepo architecture context:\n${context.repoContext}\n` : ""}
 
 Active agent: ${context.agentName ?? "Senior Execution Agent"}
 Agent role: ${context.agentRole ?? "senior-execution"}
