@@ -45,6 +45,10 @@ const TOOLS: Anthropic.Tool[] = [
 
 async function readConversationHistory(sessionId: string) {
   try {
+if (!supabase) {
+  return [];
+}
+
     const { data, error } = await supabase
       .from("conversations")
       .select("role, content")
@@ -73,6 +77,9 @@ async function saveConversationMessage({
   content: string;
 }) {
   try {
+    if (!supabase) {
+  return;
+}
     const { error } = await supabase.from("conversations").insert({
       session_id: sessionId,
       role,
