@@ -81,7 +81,20 @@ export async function writeTasksFile(
 
   if (stableJson(currentPersistentTasks) === stableJson(persistentTasks)) {
     console.log("[tasks] skipped GitHub write for runtime-only/no-op update", message);
-    return;
+// Update runtime-only tasks directly in Redis
+const runtimeOnlyUpdates = tasks.filter(t => t.runtimeOnly === true);
+if (runtimeOnlyUpdates.length > 0) {
+  try {
+    const { updateRuntimeQueueTask } = await import("@/app/lib/runtime-queue");
+    for (const task of runtimeOnlyUpdates) {
+      await updateRuntimeQueueTask(task.id, task);
+    }
+  } catch (e) {
+    console.warn("[tasks] failed to update runtime tasks in Redis", e);
+  }
+}
+return;
+
   }
 
   await writeGithubJson(TASKS_PATH, persistentTasks, sha, message);
