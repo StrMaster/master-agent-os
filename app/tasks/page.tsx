@@ -2,12 +2,15 @@ import ApprovePreviewTaskButton from "../components/ApprovePreviewTaskButton";
 import ApprovePlannerWaveButton from "../components/ApprovePlannerWaveButton";
 import RemoveTaskButton from "../components/RemoveTaskButton";
 import HiddenTaskCleaner from "../components/HiddenTaskCleaner";
+import { getRuntimeQueueTasks } from "../lib/runtime-queue";
 
 
 export const dynamic = "force-dynamic";
 
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
+const BRANCH = "main";
+const TASKS_PATH = ".agent/tasks.json";
 
 const ACTIVE_TASK_STATUSES = new Set([
   "in-progress",
@@ -52,29 +55,52 @@ type SafetyReview = {
   passed: boolean;
 };
 
-async function readTasks(): Promise<AgentTask[]> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}`
-      : "http://localhost:3000");
+async function readGithubTasks(): Promise<AgentTask[]> {
+  const token = process.env.GITHUB_TOKEN;
 
-  const res = await fetch(`${baseUrl}/api/tasks`, {
-    headers: {
-      "x-vercel-protection-bypass":
-        process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
-      "x-vercel-set-bypass-cookie": "samesitenone",
-    },
-    cache: "no-store",
-  });
+  if (!token) {
+    return [];
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TASKS_PATH}?ref=${BRANCH}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+      cache: "no-store",
+    }
+  );
 
   if (!res.ok) {
     return [];
   }
 
-  const parsed = await res.json();
+  const file = await res.json();
+  const content = Buffer.from(file.content, "base64").toString("utf-8");
+  const parsed = JSON.parse(content);
 
   return Array.isArray(parsed) ? parsed : [];
+}
+
+async function readTasks(): Promise<AgentTask[]> {
+  const githubTasks = await readGithubTasks();
+
+  let redisTasks: AgentTask[] = [];
+
+  try {
+    redisTasks = (await getRuntimeQueueTasks()) as unknown as AgentTask[];
+  } catch (error) {
+    console.warn("[tasks-page] failed to load Redis runtime tasks", error);
+  }
+
+  const redisIds = new Set(redisTasks.map((task) => task.id));
+
+  return [
+    ...redisTasks,
+    ...githubTasks.filter((task) => !redisIds.has(task.id ?? "")),
+  ];
 }
 
 function getPullRequestNumber(task: AgentTask) {
