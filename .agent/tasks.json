@@ -1,5 +1,24 @@
 [
   {
+    "id": "recovery-1778681108080",
+    "title": "Recovery: Pakeisti puslapio title į \"Master Agent OS\"",
+    "summary": "Recover failed task: manual-task-1778681081841",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "createdAt": "2026-05-13T14:05:08.080Z",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "retryCount": 0,
+    "lastRetryAt": "2026-05-13T14:05:08.080Z",
+    "agentRole": "senior-recovery",
+    "agentName": "Senior Recovery Agent",
+    "recoveryOfTaskId": "manual-task-1778681081841",
+    "recoveryReason": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011CazhGdaEnraFS5XpzPrrz\"}",
+    "recoverySignature": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011cazhgdaenrafs5xpzprrz\"}",
+    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: create-recovery-task."
+  },
+  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
