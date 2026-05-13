@@ -9,6 +9,10 @@ import AutoRunTrigger from "./components/AutoRunTrigger";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Master Agent OS",
+};
+
 const OWNER = "StrMaster";
 const REPO = "master-agent-os";
 const BRANCH = "main";
