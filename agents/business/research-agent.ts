@@ -203,3 +203,60 @@ Return ONLY JSON array of 8-10 specific niche ideas:
   const clean = raw.replace(/```json|```/g, "").trim();
   return JSON.parse(clean);
 }
+
+export type NicheOpportunity = {
+  niche: string;
+  score: number;
+  demand: "low" | "medium" | "high";
+  competition: "low" | "medium" | "high";
+  estimatedMonthlyRevenue: { min: number; max: number };
+  suggestedProductType: string;
+  reasoning: string;
+  source: string;
+};
+
+export async function detectNicheOpportunities(): Promise<NicheOpportunity[]> {
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const [t1, t2, t3] = await Promise.all([
+    tavilySearch("best selling digital products Etsy 2025 trending", { includeAnswer: true, maxResults: 5 }),
+    tavilySearch("most profitable Gumroad products niches 2025", { includeAnswer: true, maxResults: 5 }),
+    tavilySearch("underserved digital product niches low competition high demand 2025", { includeAnswer: true, maxResults: 5 }),
+  ]);
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 1024,
+    system: `You are a market opportunity analyst for digital products.
+Analyze research data and identify the top 6 niche opportunities.
+Score each niche 1-100 based on: demand, low competition, monetization potential.
+Respond ONLY valid JSON array, no markdown.`,
+    messages: [
+      {
+        role: "user",
+        content: `Research data:
+${t1.answer ?? ""}
+${t2.answer ?? ""}
+${t3.answer ?? ""}
+${[...t1.results, ...t2.results, ...t3.results].map(r => r.content).join("\n").slice(0, 2000)}
+
+Return ONLY JSON array of 6 opportunities:
+[{
+  "niche": "specific niche name",
+  "score": 85,
+  "demand": "high",
+  "competition": "low",
+  "estimatedMonthlyRevenue": {"min": 500, "max": 2000},
+  "suggestedProductType": "cv-template|planner-template|prompt-pack|mini-ebook|social-media-kit|seo-audit-report",
+  "reasoning": "why this is a good opportunity",
+  "source": "Etsy|Gumroad|Both"
+}]`,
+      },
+    ],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const clean = raw.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
