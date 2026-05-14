@@ -25,32 +25,6 @@ type ControlStatePatch = Partial<ControlState> & {
   clearRecovery?: boolean;
 };
 
-const CONTROL_STATE_STORAGE_KEY = "master-agent-control-state";
-
-function readLocalControlState(): Partial<ControlState> {
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(CONTROL_STATE_STORAGE_KEY) ?? "{}"
-    );
-
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeLocalControlState(patch: Partial<ControlState>) {
-  const current = readLocalControlState();
-
-  window.localStorage.setItem(
-    CONTROL_STATE_STORAGE_KEY,
-    JSON.stringify({
-      ...current,
-      ...patch,
-    })
-  );
-}
-
 export default function RuntimeControlPanel() {
   const [state, setState] = useState<ControlState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,62 +33,46 @@ export default function RuntimeControlPanel() {
 
   async function loadState() {
     try {
-      const res = await fetch("/api/control-state", { cache: "no-store" });
+      const res = await fetch('/api/control-state', { cache: 'no-store' });
       const data = await res.json();
 
-      if (data?.ok && data.state) {
-        const localState = readLocalControlState();
-
-        setState({
-          ...data.state,
-          ...localState,
-        });
-        setError(null);
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to load control state');
       }
-    } catch (err) {
-      const localState = readLocalControlState();
 
-      setState((current) => ({
-        ...(current ?? {}),
-        ...localState,
-      }));
-      setError(err instanceof Error ? err.message : "Failed to load control state");
-    } finally {
-      setLoading(false);
+      setState(data.state);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load state');
     }
   }
 
-  async function updateState(patch: ControlStatePatch) {
-    const localPatch: Partial<ControlState> = { ...patch };
-    delete (localPatch as ControlStatePatch).clearOvernightSession;
-    delete (localPatch as ControlStatePatch).clearRecovery;
-
+  async function updateState(patch: Partial<ControlState>) {
     try {
-      setWorking(true);
-      writeLocalControlState(localPatch);
+      setLoading(true);
 
-      setState((current) => ({
-        ...(current ?? {}),
-        ...localPatch,
-      }));
+      setState((current) =>
+        current ? { ...current, ...patch } : current
+      );
 
-      const res = await fetch("/api/control-state", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/control-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.ok) {
-        throw new Error(data.error ?? "Failed to update control state");
+        throw new Error(data.error ?? 'Failed to update control state');
       }
 
+      if (data.state) setState(data.state);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update control state");
+      setError(err instanceof Error ? err.message : 'Failed to update state');
     } finally {
-      setWorking(false);
+      setLoading(false);
     }
   }
 
