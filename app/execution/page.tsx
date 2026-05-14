@@ -4,6 +4,7 @@ import PendingPRQueue from "../components/PendingPRQueue";
 import DeleteTaskButton from "../components/DeleteTaskButton";
 import RuntimeDashboard from "../components/RuntimeDashboard";
 import { readActivityFile } from "../api/agent-runner/activity";
+import ObservabilityCard from "../components/ObservabilityCard";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +117,7 @@ export default async function ExecutionPage() {
           Manage and monitor task execution.
         </p>
       </div>
-
+      <ObservabilityCard />
       <RuntimeDashboard tasks={tasks} activity={activity} />
 
       <RuntimeControlPanel />
