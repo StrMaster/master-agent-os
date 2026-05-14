@@ -35,16 +35,10 @@ export async function POST(req: NextRequest) {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: true,
-      margin: {
-        top: "0",
-        right: "0",
-        bottom: "0",
-        left: "0",
-      },
-    });
+  format: "A4",
+  printBackground: true,
+  margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
+});
 
     return new NextResponse(Buffer.from(pdf), {
       status: 200,
