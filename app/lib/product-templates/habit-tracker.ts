@@ -170,19 +170,67 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
 }
 
 @page {
-  size: A4;
-  margin: 0;
-}
+    size: A4 portrait;
+    margin: 0 !important;
+  }
 
 @media print {
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { margin: 0; box-shadow: none; page-break-after: always; }
-  .page:last-child { page-break-after: avoid; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .card { break-inside: avoid; page-break-inside: avoid; }
-tr { break-inside: avoid; page-break-inside: avoid; }
+  /* 1. Panaikiname „Chrome“ margins, bet paliekame šablono proporcijas */
+  @page {
+    size: A4 portrait;
+    margin: 0 !important;
+  }
+  
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
+  body {
+    /* Svarbiausia dalis: priverčia išlaikyti DI sugeneruotą foną (šviesų arba tamsų) */
+    background-color: inherit !important; 
+    color: inherit !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Universali apsauga nuo puslapio išsiliejimo */
+  .page {
+    width: 210mm;
+    height: 297mm;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important; /* Paslepia perteklinį turinį, kad nesukurtų tuščio lapo */
+    box-sizing: border-box;
+    background-color: inherit !important; /* Puslapis paveldi bendrą temą */
+  }
+
+  /* 3. Dinamiškas Flex/Grid dekonstruktorius */
+  /* Jei DI sugeneruoja tinklelio elementus, šios taisyklės neleis „Chromium“ jų perkirpti */
+  .tracker-grid, .habit-container, .flex-row {
+    display: block !important;
+    float: none !important;
+  }
+
+  /* Užtikrina, kad elementai bloko viduje neišsibarstytų netvarkingai */
+  .tracker-grid > *, .flex-row > * {
+    display: inline-block !important;
+    vertical-align: top;
+    box-sizing: border-box;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 4. Universali tekstinių blokų ir kortelių apsauga */
+  /* Nesvarbu, ar tai šviesi, ar tamsi kortelė – ji niekada nebus perkirpta pusiau */
+  .card, .section, tr, td, .weekly-review-item {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
 }
+
 </style>
 </head>
 <body>
