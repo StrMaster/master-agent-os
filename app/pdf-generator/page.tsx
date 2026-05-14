@@ -16,6 +16,9 @@ export default function PdfGeneratorPage() {
   const validation = validateDocument(testPdfDocument);
 
   async function downloadPdf() {
+  try {
+    alert("Starting PDF export...");
+
     const html = renderPdfHtmlString(testPdfDocument, themeKey);
 
     const response = await fetch("/api/export-pdf", {
@@ -30,20 +33,25 @@ export default function PdfGeneratorPage() {
     });
 
     if (!response.ok) {
-      alert("PDF export failed");
+      const errorText = await response.text();
+      alert(`PDF export failed: ${response.status}`);
+      console.error(errorText);
       return;
     }
 
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `pdf-engine-${themeKey}.pdf`;
-    link.click();
+    window.open(url, "_blank");
 
-    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 30000);
+  } catch (error) {
+    console.error(error);
+    alert("PDF export crashed. Check console/logs.");
   }
+}
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 text-white sm:px-6">
