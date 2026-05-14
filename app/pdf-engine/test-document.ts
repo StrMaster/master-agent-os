@@ -38,7 +38,7 @@ export const testPdfDocument: PdfDocument = {
   type: "box",
   id: "hero-card",
   variant: "hero",
-  frame: { x: 20, y: 84, width: 170, height: 52 },
+  frame: { x: 20, y: 84, width: 170, height: 42 },
   label: "Hero Card",
   title: "Premium composition system",
   description:
@@ -49,7 +49,7 @@ export const testPdfDocument: PdfDocument = {
   type: "box",
   id: "left-card",
   variant: "info",
-  frame: { x: 20, y: 148, width: 82, height: 60 },
+   frame: { x: 20, y: 138, width: 82, height: 52 },
   label: "Soft Neutral",
   title: "Elegant balance",
   description:
@@ -60,7 +60,7 @@ export const testPdfDocument: PdfDocument = {
   type: "box",
   id: "right-card",
   variant: "info",
-  frame: { x: 108, y: 148, width: 82, height: 60 },
+  frame: { x: 108, y: 138, width: 82, height: 52 },
   label: "Minimal Luxury",
   title: "Premium hierarchy",
   description:
@@ -70,7 +70,7 @@ export const testPdfDocument: PdfDocument = {
         {
           type: "box",
           id: "quote-box",
-          frame: { x: 20, y: 220, width: 170, height: 42 },
+          frame: { x: 20, y: 202, width: 170, height: 34 },
           label: "Quote Block",
         },
       ],
