@@ -1,6 +1,8 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export type DigitalProductType =
   | "cv-template"
@@ -38,120 +40,93 @@ export type EtsyListing = {
   category: string;
 };
 
+// Design system tokens — consistent across all products
+const DESIGN_SYSTEM = `
+DESIGN SYSTEM (apply to ALL products):
+
+Typography:
+- Headings: 'Playfair Display', serif — for premium feel
+- Body: 'Inter', sans-serif — for readability
+- Accent: 'Poppins', sans-serif — for labels, badges
+
+Color Palettes (choose ONE based on product type):
+- Dark Premium: bg #0a0a0f, surface #13131a, accent #8b5cf6, text #f8fafc
+- Warm Minimal: bg #fafaf8, surface #ffffff, accent #d4a853, text #1a1a1a
+- Clean Professional: bg #f8fafc, surface #ffffff, accent #2563eb, text #0f172a
+- Rose Wellness: bg #fdf2f8, surface #ffffff, accent #ec4899, text #1f2937
+
+Spacing system: 8px base unit (8, 16, 24, 32, 48, 64px)
+Border radius: 4px small, 8px medium, 16px large, 24px card
+Shadows: 0 1px 3px rgba(0,0,0,0.1), 0 4px 16px rgba(0,0,0,0.08)
+
+Print rules:
+- @media print { body { -webkit-print-color-adjust: exact; } }
+- Page breaks: avoid inside cards and sections
+- A4: 210mm x 297mm, margin 15mm
+`;
+
+async function generateProductContent(context: {
+  type: DigitalProductType;
+  prompt: string;
+  style?: string;
+}): Promise<string> {
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 2048,
+    system: `You are a premium digital product content strategist.
+Your job: create detailed content structure and copy for digital products.
+
+Generate realistic, premium quality content that feels hand-crafted.
+Focus on: emotional resonance, practical value, premium positioning.
+
+Respond in structured format that will be used to build the HTML layout.`,
+    messages: [
+      {
+        role: "user",
+        content: `Product type: ${context.type}
+Style: ${context.style ?? "dark, premium, modern"}
+Requirements: ${context.prompt}
+
+Generate detailed content structure:
+1. Product title and tagline
+2. All section headings and subheadings
+3. Realistic placeholder content for each section
+4. Color palette recommendation (from: Dark Premium / Warm Minimal / Clean Professional / Rose Wellness)
+5. Key selling points (3-5 items)
+
+Be specific and premium — no generic placeholders.`,
+      },
+    ],
+  });
+
+  return response.content[0]?.type === "text" ? response.content[0].text : "";
+}
+
 export async function generateDigitalProductHTML(context: {
   type: DigitalProductType;
   prompt: string;
   style?: string;
 }): Promise<string> {
-  const response = await client.chat.completions.create({
+  const content = await generateProductContent(context);
+
+  const response = await openai.chat.completions.create({
     model: "gpt-5.4-mini",
     max_tokens: 8192,
     messages: [
       {
         role: "system",
-        content: `You are a world-class digital product designer who creates premium, sellable templates worth $10-30.
-Generate a complete, beautiful, print-ready HTML document.
+        content: `You are a world-class HTML/CSS engineer specializing in premium printable digital products.
+Build beautiful, print-ready HTML using the provided content and design system.
 
-Rules:
-- Use inline CSS only — no external dependencies except Google Fonts @import at top
-- Use Google Fonts: Inter, Playfair Display, or Poppins depending on style
-- Make it visually stunning — gradients, shadows, proper spacing, premium feel
-- Include realistic, detailed placeholder content (not generic Lorem ipsum)
-- Optimize for A4 paper size (210mm x 297mm) with @media print rules
-- Use sophisticated color schemes — not generic blue/white
-- Every section must be fully designed with real content
-- Return ONLY the complete HTML document, nothing else
+${DESIGN_SYSTEM}
 
-Product type guidelines:
-- cv-template: Clean, modern resume with experience, education, skills, photo placeholder, sidebar
-- invoice-template: Professional invoice with company logo area, itemized table, payment terms, totals
-- planner-template: Weekly/monthly planner with time blocks, priority matrix, habit tracker, notes
-- prompt-pack: Beautifully formatted collection of 20 AI prompts with categories, descriptions, examples
-- mini-ebook: 5-page guide with premium cover, table of contents, chapters, callout boxes, footer
-- social-media-kit: Instagram/TikTok post templates, caption frameworks, hashtag strategy, brand kit
-- bio-link-page: Premium link-in-bio with avatar, tagline, animated buttons, social icons, dark theme
-- seo-audit-report: Professional SEO report with scores, recommendations, charts, action items
-- budget-tracker: Monthly budget with income/expense categories, savings goals, visual progress bars
-- meal-planner: Weekly meal plan with breakfast/lunch/dinner, shopping list, macros, prep notes
-- habit-tracker: 30-day tracker with daily checkboxes, streaks counter, monthly stats, motivational quotes
-- business-plan: Executive summary, market analysis, competitor matrix, financial projections, timeline
-- social-media-calendar: Monthly content calendar grid with post ideas, captions, hashtags per day
-- wedding-checklist: Complete planning checklist with 12-month timeline, budget tracker, vendor contacts
-- study-guide: Study schedule, Cornell notes template, flashcard layout, progress tracker, mind map
-- notion-template: Notion-style dashboard with sidebar navigation, kanban board, linked database views`,
+Technical rules:
+- Google Fonts @import at very top (Inter, Playfair Display, Poppins)
+- Inline CSS only — no external stylesheets
+- Full A4 page (210mm x 297mm) with 15mm margins
+- @media print rules for perfect PDF export
+- Avoid overflow, text cutoff, broken layouts
+- Use CSS Grid and Flexbox for stable layouts
+- Every element must be visible and properly spaced
+- Return ONLY the complete HTML document — no explanation`,
       },
-      {
-        role: "user",
-        content: `Create a ${context.type} digital product.
-Style: ${context.style ?? "dark, premium, modern, professional"}
-Requirements: ${context.prompt}
-
-Return ONLY the complete HTML document.`,
-      },
-    ],
-  });
-
-  const text = response.choices[0]?.message?.content ?? "";
-  return text.trim();
-}
-
-export async function generateEtsyListing(context: {
-  type: DigitalProductType;
-  title: string;
-  description: string;
-}): Promise<EtsyListing> {
-  const response = await client.chat.completions.create({
-    model: "gpt-5.4-mini",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "system",
-        content: `You are an Etsy SEO expert who writes high-converting listings.
-Respond ONLY valid JSON, no markdown.`,
-      },
-      {
-        role: "user",
-        content: `Product type: ${context.type}
-Title hint: ${context.title}
-Description hint: ${context.description}
-
-Generate optimized listing. Respond ONLY JSON:
-{
-  "title": "SEO optimized title under 140 chars",
-  "description": "Compelling description 150-300 words with keywords",
-  "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13"],
-  "price": 9.99,
-  "category": "Templates"
-}`,
-      },
-    ],
-  });
-
-  const raw = response.choices[0]?.message?.content ?? "";
-  const clean = raw.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
-}
-
-export async function createDigitalProduct(context: {
-  type: DigitalProductType;
-  prompt: string;
-  style?: string;
-}): Promise<DigitalProduct> {
-  const htmlContent = await generateDigitalProductHTML(context);
-
-  const listing = await generateEtsyListing({
-    type: context.type,
-    title: context.prompt,
-    description: `Professional ${context.type} digital download`,
-  });
-
-  return {
-    id: `product-${Date.now()}`,
-    type: context.type,
-    title: listing.title,
-    description: listing.description,
-    htmlContent,
-    etysListing: listing,
-    createdAt: new Date().toISOString(),
-  };
-}
