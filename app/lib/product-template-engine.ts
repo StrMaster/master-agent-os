@@ -3,9 +3,6 @@ import { renderHabitTrackerTemplate, type HabitTrackerData } from "./product-tem
 import type { DigitalProductType } from "./digital-product-generator";
 import { detectPalette } from "./product-templates/design-system";
 
-// generateHabitTracker funkcijoje prieš API call:
-const detectedPalette = detectPalette(context.prompt, context.style);
-
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -28,6 +25,7 @@ async function generateHabitTracker(context: {
   prompt: string;
   style?: string;
 }): Promise<{ html: string; data: HabitTrackerData }> {
+  const detectedPalette = detectPalette(context.prompt, context.style);
   const response = await anthropic.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 1024,
