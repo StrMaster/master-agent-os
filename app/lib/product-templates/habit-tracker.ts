@@ -22,18 +22,18 @@ export function renderHabitTrackerTemplate(data: HabitTrackerData): string {
   const p = PALETTES[data.colorPalette];
 
   const reflectionBlock = `
-  <div class="card" style="margin-top: 16px; background: var(--surface); border: 1px solid var(--border);">
-    <div class="label" style="margin-bottom: 10px; color: var(--accent);">Weekly Energy Score</div>
-    <div style="display: flex; gap: 20px; margin-bottom: 18px; font-size: 11px; color: var(--text-muted);">
+  <div class="card" style="margin-top: 10px; background: var(--surface); border: 1px solid var(--border); padding: 14px;">
+    <div class="label" style="margin-bottom: 8px; color: var(--accent);">Weekly Energy Score</div>
+    <div style="display: flex; gap: 18px; margin-bottom: 12px; font-size: 11px; color: var(--text-muted);">
       <span>○ Low</span>
       <span>○ Medium</span>
       <span>○ High</span>
     </div>
 
-    <div class="label" style="margin-bottom: 8px;">Notes / Reflection</div>
-    <div class="write-box" style="height: 90px; margin-bottom: 12px;"></div>
+    <div class="label" style="margin-bottom: 6px;">Notes / Reflection</div>
+    <div class="write-box" style="height: 55px; margin-bottom: 8px;"></div>
 
-    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center;">
+    <div style="font-size: 10px; color: var(--text-dim); font-style: italic; text-align: center;">
       “Small rituals create lasting transformation.”
     </div>
   </div>`;
@@ -119,7 +119,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 .write-box {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  height: 85px;
+  height: 55px;
   background: var(--surface2);
 }
 </style>
@@ -139,11 +139,11 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
     <p style="font-size: 12px; color: var(--text-dim); line-height: 1.7;">${data.subtitle}</p>
   </div>
 
-  <div class="grid-2" style="margin-bottom: 24px;">
+  <div class="grid-2" style="margin-bottom: 20px;">
     <div class="card">
       <h3 style="margin-bottom: 12px;">Your Habits</h3>
       ${data.habits.map((h, i) => `
-      <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+      <div style="display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
         <span style="font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 600; color: var(--accent); min-width: 24px;">${String(i + 1).padStart(2, "0")}</span>
         <div>
           <div style="font-weight: 500; font-size: 12px; margin-bottom: 2px;">${h.label}</div>
@@ -161,19 +161,18 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
     </div>
   </div>
 
-  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 18px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 12px;">
     <span style="font-size: 11px; color: var(--text-muted);">Start Date</span>
-    <div style="width: 120px; border-bottom: 1px solid var(--border);"></div>
+    <div style="width: 110px; border-bottom: 1px solid var(--border);"></div>
     <span style="font-size: 11px; color: var(--text-muted);">End Date</span>
-    <div style="width: 120px; border-bottom: 1px solid var(--border);"></div>
+    <div style="width: 110px; border-bottom: 1px solid var(--border);"></div>
   </div>
 
-  <div class="card">
-    <div class="label" style="margin-bottom: 10px;">My 30-Day Commitment</div>
-    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 10px;"></div>
-    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 10px;"></div>
-    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 14px;"></div>
-    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center;">
+  <div class="card" style="padding: 14px;">
+    <div class="label" style="margin-bottom: 8px;">My 30-Day Commitment</div>
+    <div style="border-bottom: 1px solid var(--border); height: 20px; margin-bottom: 8px;"></div>
+    <div style="border-bottom: 1px solid var(--border); height: 20px; margin-bottom: 8px;"></div>
+    <div style="font-size: 10px; color: var(--text-dim); font-style: italic; text-align: center; margin-top: 8px;">
       “Consistency compounds into transformation.”
     </div>
   </div>
@@ -194,9 +193,9 @@ ${[1,16].map(start => `
   <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
     ${Array.from({ length: 15 }, (_, i) => i + start).map(day => `
       <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border};">
-        <div style="padding: 13px 10px; font-size: 10px; font-weight: 600;">D${String(day).padStart(2, '0')}</div>
+        <div style="padding: 11px 10px; font-size: 10px; font-weight: 600;">D${String(day).padStart(2, '0')}</div>
         ${data.habits.map(() => `
-          <div style="border-left: 1px solid ${p.border}; display:flex; align-items:center; justify-content:center; padding:7px;">
+          <div style="border-left: 1px solid ${p.border}; display:flex; align-items:center; justify-content:center; padding:6px;">
             <div style="width:14px; height:14px; border:1.5px solid ${p.textDim}; border-radius:3px;"></div>
           </div>
         `).join('')}
