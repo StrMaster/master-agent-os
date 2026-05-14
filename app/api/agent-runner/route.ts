@@ -35,6 +35,9 @@ import type {
   Priority,
   RunnerHealthStatus,
 } from "./types";
+import { addCoordinationEvent } from "@/app/lib/coordination-memory";
+
+
 
 // Flow: task -> validation -> branch -> PR -> optional merge -> recovery
 export const runtime = "nodejs";
@@ -854,6 +857,15 @@ if (!reviewerResult.passed) {
 agentRole: task.agentRole,
 });
 
+  await addCoordinationEvent({
+  timestamp: Date.now(),
+  agent: task.agentName ?? "senior-execution",
+  type: "reviewer-blocked",
+  summary: `Reviewer blocked task: ${reviewerResult.reason ?? "unknown reason"}`,
+  taskId: task.id,
+  targetFile: task.targetFile,
+}).catch(() => {});
+
 await createRecoveryTask({
   failedTask: task,
   reason:
@@ -1109,6 +1121,15 @@ Generated automatically by Master Agent OS.
       agentName: task.agentName,
 agentRole: task.agentRole,
     });
+
+  await addCoordinationEvent({
+  timestamp: Date.now(),
+  agent: task.agentName ?? "senior-execution",
+  type: "pull-request-created",
+  summary: `PR created for task: ${task.title}`,
+  taskId: task.id,
+  targetFile: task.targetFile,
+}).catch(() => {});
 
     let prValidation = null;
 
