@@ -108,7 +108,7 @@ export async function generateImprovementTasks(
     `You are the Improvement Task Generator for Master Agent OS.
 Generate small executable improvement tasks based on suggestions.
 Respond ONLY valid JSON array: [{"title":"...","summary":"...","targetFile":"...","priority":"low|medium|high"}]`,
-    JSON.stringify({ suggestions, context }),
+    JSON.stringify({ suggestions }),
     512
   );
   return JSON.parse(raw);
@@ -122,7 +122,7 @@ export async function determineAgentRole(
     `You are the Agent Role Selector for Master Agent OS.
 Given a task, pick the best agent role.
 Respond ONLY valid JSON: {"role":"...","reason":"..."}`,
-    JSON.stringify(context),
+    JSON.stringify({ prompt }),
     128
   );
   return JSON.parse(raw);
