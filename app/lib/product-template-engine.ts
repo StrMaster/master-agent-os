@@ -41,7 +41,7 @@ Respond ONLY JSON:
   "tagline": "One line tagline (max 80 chars)",
   "subtitle": "2-3 sentence description of the system",
   "brandName": "Brand name (2 words max, uppercase)",
-  "colorPalette": "dark-premium",
+  "colorPalette": "dark-premium|warm-minimal|clean-professional|rose-wellness (choose based on style preference)",
   "habits": [
     {"id": "h1", "label": "Habit name (2-3 words)", "description": "Short description (max 40 chars)"},
     {"id": "h2", "label": "Habit name", "description": "Short description"},
