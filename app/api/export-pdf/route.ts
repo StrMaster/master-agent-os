@@ -28,17 +28,18 @@ export async function POST(req: NextRequest) {
     const page = await browser.newPage();
 
     await page.setContent(html, {
-      waitUntil: "domcontentloaded",
-    });
+  waitUntil: "networkidle0",
+});
 
     await page.evaluateHandle("document.fonts.ready").catch(() => null);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
 
     const pdf = await page.pdf({
   format: "A4",
   printBackground: true,
   preferCSSPageSize: true,
-  margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
+  margin: { top: 0, right: 0, bottom: 0, left: 0 }, // Pakeista į grynus skaičius 0
 });
 
     return new NextResponse(Buffer.from(pdf), {
