@@ -80,6 +80,29 @@ export default function DigitalProductsPage() {
     loadProducts();
   }, []);
 
+  function openPrintablePdf(html: string) {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (!printWindow) {
+      alert("Popup blocked. Allow popups to print this product.");
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const cleanup = () => {
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+    };
+
+    printWindow.addEventListener("load", () => {
+      printWindow.document.title = "digital-product-print-ready";
+      printWindow.focus();
+      printWindow.print();
+      cleanup();
+    });
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
       <div>
@@ -222,12 +245,7 @@ export default function DigitalProductsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    const iframe = document.getElementById("preview-iframe") as HTMLIFrameElement;
-                    if (iframe?.contentWindow) {
-                      iframe.contentWindow.print();
-                    }
-                  }}
+                  onClick={() => openPrintablePdf(previewHtml)}
                   className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/20 transition"
                 >
                   🖨 Print / Save PDF
