@@ -27,6 +27,7 @@ const navItems = [
   { href: '/pipeline', label: 'Pipeline' },
   { href: '/niche-detector', label: 'Niches' },
   { href: '/portfolio', label: 'Portfolio' },
+  { href: '/pdf-generator', label: 'PDF Generator' },
 
 ];
 
