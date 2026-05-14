@@ -18,6 +18,7 @@ export async function POST(req: Request) {
     const type = String(body.type ?? "cv-template") as DigitalProductType;
     const prompt = String(body.prompt ?? "").trim();
     const style = body.style ? String(body.style) : undefined;
+    const action = String(body.action ?? "");
 
     if (action === "delete") {
   const id = String(body.id ?? "");
