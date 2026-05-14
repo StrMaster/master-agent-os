@@ -1,53 +1,65 @@
 import type { PdfDocument } from "./types";
 
 export const testPdfDocument: PdfDocument = {
-  title: "PDF Layout Test",
+  title: "Luxury Wellness Design Board",
   pages: [
     {
-      id: "page-1",
+      id: "design-board",
       widthMm: 210,
       heightMm: 297,
       paddingMm: 15,
-      background: "#f7f1e8",
+      background: "#f6efe6",
       components: [
         {
           type: "text",
           id: "eyebrow",
-          frame: { x: 15, y: 18, width: 160, height: 8 },
-          text: "A4 Preview Canvas",
+          frame: { x: 20, y: 22, width: 120, height: 8 },
+          text: "PREMIUM WELLNESS COLLECTION",
           variant: "eyebrow",
         },
+
         {
           type: "text",
           id: "title",
-          frame: { x: 15, y: 30, width: 160, height: 18 },
-          text: "PDF Layout Test",
+          frame: { x: 20, y: 34, width: 150, height: 18 },
+          text: "Luxury PDF Engine",
           variant: "title",
         },
+
         {
           type: "text",
           id: "body",
-          frame: { x: 15, y: 52, width: 120, height: 14 },
-          text: "This fixed A4 canvas is rendered from pdf-engine data.",
+          frame: { x: 20, y: 56, width: 120, height: 14 },
+          text: "Testing layered A4 composition before dynamic generation.",
           variant: "body",
         },
+
         {
           type: "box",
-          id: "zone-a",
-          frame: { x: 15, y: 82, width: 85, height: 42 },
-          label: "Zone A",
+          id: "hero-card",
+          frame: { x: 20, y: 84, width: 170, height: 52 },
+          label: "Hero Card",
         },
+
         {
           type: "box",
-          id: "zone-b",
-          frame: { x: 110, y: 82, width: 85, height: 42 },
-          label: "Zone B",
+          id: "left-card",
+          frame: { x: 20, y: 148, width: 82, height: 60 },
+          label: "Soft Neutral",
         },
+
         {
           type: "box",
-          id: "main-frame",
-          frame: { x: 15, y: 136, width: 180, height: 115 },
-          label: "Main Content Frame",
+          id: "right-card",
+          frame: { x: 108, y: 148, width: 82, height: 60 },
+          label: "Minimal Luxury",
+        },
+
+        {
+          type: "box",
+          id: "quote-box",
+          frame: { x: 20, y: 220, width: 170, height: 42 },
+          label: "Quote Block",
         },
       ],
     },
