@@ -63,9 +63,67 @@ export async function POST(req: Request) {
             targetMarket: pipeline.targetMarket,
             competitorPrices,
           });
-        } else {
-          result = { message: `Stage ${stage} not yet implemented` };
-        }
+        } else if (stage === "build") {
+  const pricingStage = pipeline.stages.find((s) => s.stage === "pricing");
+  const researchStage = pipeline.stages.find((s) => s.stage === "research");
+  const pricingData = pricingStage?.result as any;
+  const researchData = researchStage?.result as any;
+
+  const { createDigitalProduct } = await import("@/app/lib/digital-product-generator");
+
+  const productTypeMap: Record<string, string> = {
+    "saas-tool": "bio-link-page",
+    "chatbot": "bio-link-page",
+    "digital-template": "cv-template",
+    "automation": "planner-template",
+    "api-service": "seo-audit-report",
+  };
+
+  const digitalType = productTypeMap[pipeline.productType] ?? "cv-template";
+
+  result = await createDigitalProduct({
+    type: digitalType as any,
+    prompt: `${pipeline.name} for ${pipeline.targetMarket}. Niche: ${pipeline.niche}. ${researchData?.reasoning ?? ""}`,
+    style: "dark, premium, modern, professional",
+  });
+
+} else if (stage === "listing") {
+  const buildStage = pipeline.stages.find((s) => s.stage === "build");
+  const pricingStage = pipeline.stages.find((s) => s.stage === "pricing");
+  const buildData = buildStage?.result as any;
+  const pricingData = pricingStage?.result as any;
+
+  const { generateEtsyListing } = await import("@/app/lib/digital-product-generator");
+
+  const recommendedPrice = pricingData?.suggestedPrices?.recommended ?? 19.99;
+
+  const listings = await Promise.all([
+    generateEtsyListing({
+      type: (buildData?.type ?? "cv-template") as any,
+      title: pipeline.name,
+      description: `${pipeline.name} for ${pipeline.targetMarket}`,
+    }),
+    generateEtsyListing({
+      type: (buildData?.type ?? "cv-template") as any,
+      title: pipeline.name,
+      description: `${pipeline.name} for ${pipeline.targetMarket}`,
+    }),
+  ]);
+
+  result = {
+    platforms: {
+      etsy: { ...listings[0], price: Math.min(recommendedPrice, 25) },
+      gumroad: { ...listings[1], price: recommendedPrice },
+    },
+    downloadReady: true,
+    htmlContent: buildData?.htmlContent ?? null,
+  };
+
+} else if (stage === "outreach") {
+  result = { message: "Client outreach coming soon — focus on digital products first." };
+} else {
+  result = { message: `Stage ${stage} not yet implemented` };
+}
 
         await updatePipelineStage(pipelineId, stage, {
           status: "waiting-approval",
