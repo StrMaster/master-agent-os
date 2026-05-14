@@ -9,32 +9,6 @@ type ControlState = {
   emergencyStop: boolean;
 };
 
-const CONTROL_STATE_STORAGE_KEY = 'master-agent-control-state';
-
-function readLocalControlState(): Partial<ControlState> {
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(CONTROL_STATE_STORAGE_KEY) ?? '{}'
-    );
-
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeLocalControlState(patch: Partial<ControlState>) {
-  const current = readLocalControlState();
-
-  window.localStorage.setItem(
-    CONTROL_STATE_STORAGE_KEY,
-    JSON.stringify({
-      ...current,
-      ...patch,
-    })
-  );
-}
-
 export default function ControlCenterControls() {
   const [state, setState] = useState<ControlState | null>(null);
   const [loading, setLoading] = useState(false);
