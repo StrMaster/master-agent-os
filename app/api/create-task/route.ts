@@ -3,10 +3,33 @@ import { enqueueRuntimeTask } from "@/app/lib/runtime-queue";
 
 const SAFE_TARGET_FILES = [
   "app/page.tsx",
+  "app/layout.tsx",
   "app/execution/page.tsx",
   "app/agents/page.tsx",
-  "app/components/RunAgentButton.tsx",
+  "app/tasks/page.tsx",
+  "app/chat/page.tsx",
   "app/components/ActivityFeed.tsx",
+  "app/components/RunAgentButton.tsx",
+  "app/components/MasterAgentChat.tsx",
+  "app/components/RuntimeDashboard.tsx",
+  "app/components/RuntimeOverview.tsx",
+  "app/components/RecoveryControlCard.tsx",
+  "app/components/ObservabilityCard.tsx",
+  "app/components/ControlCenterControls.tsx",
+  "app/components/PendingPRQueue.tsx",
+  "app/components/DeployStatusCard.tsx",
+  "app/components/ApprovalExecutionCenter.tsx",
+  "app/api/agent-runner/route.ts",
+  "app/api/agent-runner/tasks.ts",
+  "app/api/agent-runner/memory.ts",
+  "app/api/create-task/route.ts",
+  "app/api/master-agent/route.ts",
+  "app/api/observability/route.ts",
+  "agents/core/agent-router.ts",
+  "agents/core/agent-registry.ts",
+  "app/lib/code-patch-generator.ts",
+  "app/tasks/task-utils.ts",
+  "app/tasks/task-data.ts",
 ];
 
 type Priority = "low" | "medium" | "high";
@@ -48,31 +71,30 @@ function normalizePriority(value: unknown): Priority {
 }
 
 function inferTargetFile(prompt: string) {
-  const normalized = prompt.toLowerCase();
+  const t = prompt.toLowerCase();
 
-  if (normalized.includes("agents page") || normalized.includes("agent cards")) {
-    return "app/agents/page.tsx";
-  }
-
-  if (
-    normalized.includes("activity") ||
-    normalized.includes("feed") ||
-    normalized.includes("timeline") ||
-    normalized.includes("logs")
-  ) {
-    return "app/components/ActivityFeed.tsx";
-  }
-
-  if (
-    normalized.includes("run button") ||
-    normalized.includes("runner") ||
-    normalized.includes("execution")
-  ) {
-    return "app/execution/page.tsx";
-  }
+  if (t.includes("layout") || t.includes("navigaci") || t.includes("nav ")) return "app/layout.tsx";
+  if (t.includes("tasks page") || t.includes("taskų puslap") || t.includes("task list")) return "app/tasks/page.tsx";
+  if (t.includes("chat") || t.includes("master chat") || t.includes("master agent chat")) return "app/components/MasterAgentChat.tsx";
+  if (t.includes("observability") || t.includes("stebėjim")) return "app/components/ObservabilityCard.tsx";
+  if (t.includes("recovery") || t.includes("atkūrim")) return "app/components/RecoveryControlCard.tsx";
+  if (t.includes("runtime dashboard") || t.includes("runtime overview")) return "app/components/RuntimeDashboard.tsx";
+  if (t.includes("control") || t.includes("valdymo")) return "app/components/ControlCenterControls.tsx";
+  if (t.includes("pending pr") || t.includes("pr queue")) return "app/components/PendingPRQueue.tsx";
+  if (t.includes("deploy status")) return "app/components/DeployStatusCard.tsx";
+  if (t.includes("approval") || t.includes("patvirtinimo")) return "app/components/ApprovalExecutionCenter.tsx";
+  if (t.includes("activity") || t.includes("feed") || t.includes("timeline") || t.includes("logs")) return "app/components/ActivityFeed.tsx";
+  if (t.includes("execution page") || t.includes("runner")) return "app/execution/page.tsx";
+  if (t.includes("agents page") || t.includes("agent cards")) return "app/agents/page.tsx";
+  if (t.includes("agent router") || t.includes("routing")) return "agents/core/agent-router.ts";
+  if (t.includes("patch generator") || t.includes("patch gen")) return "app/lib/code-patch-generator.ts";
+  if (t.includes("agent runner") || t.includes("runner route")) return "app/api/agent-runner/route.ts";
+  if (t.includes("memory") || t.includes("atmintis")) return "app/api/agent-runner/memory.ts";
+  if (t.includes("run button") || t.includes("run agent")) return "app/components/RunAgentButton.tsx";
 
   return "app/page.tsx";
 }
+
 
 function inferTitle(prompt: string) {
   const cleanPrompt = prompt
@@ -162,7 +184,14 @@ function buildTask(body: Record<string, unknown>): AgentTask {
         : undefined,
     routingReason:
       typeof body.routingReason === "string" ? body.routingReason : undefined,
-    intent: prompt.toLowerCase().includes("fix") ? "bugfix" : "ui-polish",
+    intent: (() => {
+  const t = prompt.toLowerCase();
+  if (t.includes("fix") || t.includes("bug") || t.includes("error") || t.includes("broken")) return "bugfix";
+  if (t.includes("refactor") || t.includes("clean") || t.includes("išvalyk") || t.includes("pertvarky")) return "refactor";
+  if (t.includes("api") || t.includes("route") || t.includes("backend") || t.includes("endpoint")) return "backend";
+  if (t.includes("memory") || t.includes("atmintis") || t.includes("supabase")) return "memory";
+  return "ui-polish";
+})(),
     riskLevel: queueOnly ? "medium" : "low",
     executionMode: "single-file",
     wave: 1,
