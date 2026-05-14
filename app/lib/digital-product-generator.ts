@@ -74,7 +74,7 @@ Product type guidelines:
 - social-media-calendar: Monthly content calendar with post ideas, captions, hashtags per day
 - wedding-checklist: Complete wedding planning checklist with timeline, budget, vendors
 - study-guide: Study system with schedule, notes template, flashcard layout, progress tracker
-- notion-template: Notion-style dashboard with sidebar, databases, linked views layout
+- notion-template: Notion-style dashboard with sidebar, databases, linked views layout,
     messages: [
       {
         role: "user",
