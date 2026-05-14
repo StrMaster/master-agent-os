@@ -853,7 +853,7 @@ for (const patch of patches) {
 }
 
       for (const patch of patches) {
-        await updateFileOnBranch(branchName, patch.filePath, patch.patchedContent);
+        await updateGithubFile(patch.filePath, patch.patchedContent, branchName);
       }
 
       const pr = await createPullRequest({
