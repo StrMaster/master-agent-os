@@ -114,8 +114,6 @@ export default async function DigitalProductsPage() {
   rel="noreferrer"
   className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
 >
-  Preview HTML
-</a>
                   Preview HTML
                 </a>
               </div>
