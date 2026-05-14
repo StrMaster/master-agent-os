@@ -109,11 +109,13 @@ export default async function DigitalProductsPage() {
               )}
 
               <div className="mt-4 flex gap-2">
-                
-                  href={`/api/digital-products/preview?id=${product.id}`}
-                  target="_blank"
-                  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
-                >
+                href={`/api/digital-products/preview?id=${product.id}`}
+  target="_blank"
+  rel="noreferrer"
+  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
+>
+  Preview HTML
+</a>
                   Preview HTML
                 </a>
               </div>
