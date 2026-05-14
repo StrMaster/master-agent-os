@@ -8,8 +8,18 @@ type RuntimeTask = {
   status: 'queued' | 'running' | 'pending-pr' | 'completed' | 'failed';
 };
 
+type RuntimeHealth = {
+  status: 'healthy' | 'degraded' | 'blocked';
+  consecutiveFailures: number;
+  runtimeBlockedUntil?: string;
+  runnerLocked: boolean;
+  recoveryActive: boolean;
+  lastRunAt?: number;
+};
+
 export default function RuntimeOverview() {
   const [tasks, setTasks] = useState<RuntimeTask[]>([]);
+  const [health, setHealth] = useState<RuntimeHealth | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function loadRuntimeState() {
@@ -25,6 +35,7 @@ export default function RuntimeOverview() {
       }
 
       setTasks(Array.isArray(data.tasks) ? data.tasks : []);
+      if (data.health) setHealth(data.health);
       setError(null);
     } catch (err) {
       setError(
@@ -54,11 +65,43 @@ export default function RuntimeOverview() {
 
   return (
     <div className="mt-6 rounded-3xl border border-zinc-800 bg-zinc-900 p-6">
+      {health && health.status !== 'healthy' && (
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+          health.status === 'blocked'
+            ? 'border-red-500/30 bg-red-500/10 text-red-200'
+            : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-200'
+        }`}>
+          <span className="font-semibold">
+            {health.status === 'blocked' ? '🔴 Runtime blocked' : '🟡 Runner degraded'}
+          </span>
+          {health.consecutiveFailures > 0 && (
+            <span className="ml-2 text-white/50">{health.consecutiveFailures} consecutive failures</span>
+          )}
+          {health.runtimeBlockedUntil && (
+            <span className="ml-2 text-white/50">
+              blocked until {new Date(health.runtimeBlockedUntil).toLocaleTimeString()}
+            </span>
+          )}
+          {health.recoveryActive && (
+            <span className="ml-2 text-white/50">· recovery mode active</span>
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.2em] text-zinc-500">
             Live Runtime
           </p>
+          <div className="flex items-center gap-2">
+            <span className={`inline-block h-2 w-2 rounded-full ${
+              !health ? 'bg-zinc-500' :
+              health.status === 'healthy' ? 'bg-emerald-400' :
+              health.status === 'degraded' ? 'bg-yellow-400' : 'bg-red-400'
+            }`} />
+            <span className="text-xs text-zinc-500">
+              {!health ? 'loading' : health.status}
+            </span>
+          </div>
           <h3 className="mt-2 text-xl font-semibold text-white">
             Runner State
           </h3>
