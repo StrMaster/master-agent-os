@@ -14,11 +14,15 @@ export type PdfComponent =
       variant?: "eyebrow" | "title" | "body";
     }
   | {
-      type: "box";
-      id: string;
-      frame: PdfFrame;
-      label?: string;
-    };
+    type: "box";
+    id: string;
+    frame: PdfFrame;
+    label?: string;
+    title?: string;
+    description?: string;
+    quote?: string;
+    variant?: "hero" | "info" | "quote";
+  };
 
 export type PdfTheme = {
   name: string;
