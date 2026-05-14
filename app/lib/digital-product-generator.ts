@@ -218,7 +218,6 @@ const thumbnailUrl = await generateEtsyThumbnail({
     htmlContent,
     thumbnailUrl,
     etysListing: listing,
-    templateData: productData,
     createdAt: new Date().toISOString(),
   };
 }
