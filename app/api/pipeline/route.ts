@@ -8,6 +8,7 @@ import {
 } from "@/app/lib/pipeline-store";
 import { analyzeNiche, analyzeCompetitors } from "@/agents/business/research-agent";
 import { calculateProductPricing } from "@/agents/business/pricing-engine";
+import { createDigitalProduct, generateEtsyListing } from "@/app/lib/digital-product-generator";
 
 export async function GET() {
   try {
