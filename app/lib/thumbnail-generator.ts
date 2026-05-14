@@ -43,5 +43,5 @@ Photorealistic product mockup style.
     quality: "hd",
   });
 
-  return response.data[0]?.url ?? "";
+  return response.data?.[0]?.url ?? "";
 }
