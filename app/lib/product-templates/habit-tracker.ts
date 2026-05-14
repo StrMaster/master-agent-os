@@ -201,7 +201,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 <body>
 
 <!-- PAGE 1: COVER + HABIT SETUP -->
-<div class="page" style="display: flex; flex-direction: column; justify-content: space-between;">
+<div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
     <span class="label">Premium Habit System</span>
@@ -267,13 +267,13 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 
   <div style="overflow: hidden; border-radius: var(--radius-md); border: 1px solid var(--border);">
     <!-- Header row -->
-    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); background: var(--surface2); border-bottom: 1px solid var(--border);">
+    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
       <div style="padding: 8px 12px; font-size: 10px; font-weight: 600; color: var(--text-dim);">DAY</div>
       ${data.habits.map(h => `<div style="padding: 8px 4px; font-size: 9px; font-weight: 600; color: var(--accent); text-align: center; letter-spacing: 0.05em; text-transform: uppercase; border-left: 1px solid var(--border);">${h.label.slice(0, 12)}</div>`).join("")}
     </div>
     <!-- Day rows -->
     ${days.map(day => `
-    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid var(--border); ${day % 7 === 0 ? `background: var(--surface2);` : ""}">
+    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid var(--border); $${day % 7 === 0 ? `background: rgba(139, 92, 246, 0.08);` : ""}">
       <div style="padding: 6px 12px; display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 10px; font-weight: 600; color: ${day % 7 === 0 ? "var(--accent)" : "var(--text-muted)"};">Day ${String(day).padStart(2, "0")}</span>
         ${day % 7 === 0 ? `<span style="font-size: 8px; color: var(--accent); font-family: 'Poppins', sans-serif; font-weight: 600;">REVIEW</span>` : ""}
