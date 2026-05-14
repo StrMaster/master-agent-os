@@ -6,6 +6,8 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  let browser: Awaited<ReturnType<typeof puppeteer.launch>> | null = null;
+
   try {
     const { html, title } = await req.json();
 
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const browser = await puppeteer.launch({
+    browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
@@ -26,8 +28,11 @@ export async function POST(req: NextRequest) {
     const page = await browser.newPage();
 
     await page.setContent(html, {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
     });
+
+    await page.evaluateHandle("document.fonts.ready").catch(() => null);
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     const pdf = await page.pdf({
       format: "A4",
@@ -40,8 +45,6 @@ export async function POST(req: NextRequest) {
         left: "0",
       },
     });
-
-    await browser.close();
 
     return new NextResponse(pdf, {
       status: 200,
@@ -61,5 +64,7 @@ export async function POST(req: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    await browser?.close().catch(() => null);
   }
 }
