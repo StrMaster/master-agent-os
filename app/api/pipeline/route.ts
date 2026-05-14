@@ -70,8 +70,6 @@ export async function POST(req: Request) {
   const pricingData = pricingStage?.result as any;
   const researchData = researchStage?.result as any;
 
-  const { createDigitalProduct } = await import("@/app/lib/digital-product-generator");
-
   const productTypeMap: Record<string, string> = {
     "saas-tool": "bio-link-page",
     "chatbot": "bio-link-page",
@@ -93,8 +91,6 @@ export async function POST(req: Request) {
   const pricingStage = pipeline.stages.find((s) => s.stage === "pricing");
   const buildData = buildStage?.result as any;
   const pricingData = pricingStage?.result as any;
-
-  const { generateEtsyListing } = await import("@/app/lib/digital-product-generator");
 
   const recommendedPrice = pricingData?.suggestedPrices?.recommended ?? 19.99;
 
