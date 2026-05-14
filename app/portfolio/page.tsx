@@ -237,7 +237,7 @@ export default function PortfolioPage() {
 
                 {product.listingUrl && (
                   
-                    href={product.listingUrl}
+                   <a href={product.listingUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs text-blue-200 hover:bg-blue-500/20 transition"
