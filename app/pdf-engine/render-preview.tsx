@@ -2,7 +2,6 @@ import type { PdfComponent, PdfDocument, PdfPage } from "./types";
 import { pdfThemes } from "./themes";
 import type { PdfValidationWarning } from "./validate-document";
 
-
 type PdfThemeKey = keyof typeof pdfThemes;
 type PdfThemeValue = (typeof pdfThemes)[PdfThemeKey];
 
@@ -24,6 +23,12 @@ function renderComponent(
   theme: PdfThemeValue,
   warnings: PdfValidationWarning[],
 ) {
+  const componentWarnings = warnings.filter(
+    (warning) => warning.componentId === component.id,
+  );
+
+  const hasWarnings = componentWarnings.length > 0;
+
   const baseStyle = {
     position: "absolute" as const,
     left: `${component.frame.x}mm`,
@@ -32,12 +37,6 @@ function renderComponent(
     height: `${component.frame.height}mm`,
   };
 
-  const componentWarnings = warnings.filter(
-  (warning) => warning.componentId === component.id,
-);
-
-const hasWarnings = componentWarnings.length > 0;
-
   if (component.type === "text") {
     const className =
       component.variant === "eyebrow"
@@ -45,22 +44,20 @@ const hasWarnings = componentWarnings.length > 0;
         : component.variant === "title"
           ? "font-serif text-4xl font-bold"
           : "text-sm";
-          outline: hasWarnings
-  ? "2px solid rgba(255,0,0,0.7)"
-  : undefined,
 
     return (
       <div
         key={component.id}
         style={{
-  ...baseStyle,
-  background: theme.cardBackground,
-  borderColor: theme.cardBorder,
-  color: theme.textPrimary,
-  outline: hasWarnings
-    ? "2px solid rgba(255,0,0,0.7)"
-    : undefined,
-}}
+          ...baseStyle,
+          color:
+            component.variant === "eyebrow"
+              ? theme.accent
+              : component.variant === "title"
+                ? theme.textPrimary
+                : theme.textMuted,
+          outline: hasWarnings ? "2px solid rgba(255,0,0,0.7)" : undefined,
+        }}
         className={className}
       >
         {component.text}
@@ -76,6 +73,7 @@ const hasWarnings = componentWarnings.length > 0;
         background: theme.cardBackground,
         borderColor: theme.cardBorder,
         color: theme.textPrimary,
+        outline: hasWarnings ? "2px solid rgba(255,0,0,0.7)" : undefined,
       }}
       className="rounded-2xl border p-5 shadow-2xl backdrop-blur-sm"
     >
@@ -156,8 +154,8 @@ function PdfPreviewPage({
 
       <div className="relative z-10">
         {page.components.map((component) =>
-  renderComponent(component, theme, warnings),
-)}
+          renderComponent(component, theme, warnings),
+        )}
       </div>
     </div>
   );
@@ -176,11 +174,11 @@ export function PdfDocumentPreview({
     <div className="space-y-8">
       {document.pages.map((page) => (
         <PdfPreviewPage
-  key={page.id}
-  page={page}
-  themeKey={themeKey}
-  warnings={warnings}
-/>
+          key={page.id}
+          page={page}
+          themeKey={themeKey}
+          warnings={warnings}
+        />
       ))}
     </div>
   );
