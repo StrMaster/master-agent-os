@@ -317,11 +317,11 @@ export default function PipelinePage() {
                     <div className="mt-2 text-xs text-red-300">{stageData.error}</div>
                   )}
 
-                  {expandedStage === stageKey && stageData.result && (
-                    <div className="mt-3 rounded-lg border border-white/10 bg-neutral-950/50 p-3 text-xs text-white/70 overflow-auto max-h-64">
-                      <pre>{JSON.stringify(stageData.result, null, 2)}</pre>
-                    </div>
-                  )}
+                  {expandedStage === stageKey && stageData.result !== undefined && (
+  <div className="mt-3 rounded-lg border border-white/10 bg-neutral-950/50 p-3 text-xs text-white/70 overflow-auto max-h-64">
+    <pre>{JSON.stringify(stageData.result as Record<string, unknown>, null, 2)}</pre>
+  </div>
+)}
                 </div>
               );
             })}
