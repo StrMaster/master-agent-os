@@ -100,6 +100,7 @@ Return ONLY a JSON object with "find" and "replace". Make the smallest possible 
   } catch (e) {
     throw new Error(`Patch generation failed: ${e instanceof Error ? e.message : String(e)}`);
   }
+  }
 
   export async function generateMultiFilePatch(context: {
   files: Array<{ filePath: string; currentContent: string }>;
