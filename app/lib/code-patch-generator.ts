@@ -100,4 +100,37 @@ Return ONLY a JSON object with "find" and "replace". Make the smallest possible 
   } catch (e) {
     throw new Error(`Patch generation failed: ${e instanceof Error ? e.message : String(e)}`);
   }
+
+  export async function generateMultiFilePatch(context: {
+  files: Array<{ filePath: string; currentContent: string }>;
+  taskTitle: string;
+  taskSummary: string;
+  projectState?: string;
+  repoContext?: string;
+  agentSystemPrompt?: string;
+  agentName?: string;
+  agentRole?: string;
+  routingReason?: string;
+}): Promise<Array<{ filePath: string; patchedContent: string }>> {
+  const results: Array<{ filePath: string; patchedContent: string }> = [];
+
+  for (const file of context.files) {
+    const patchedContent = await generateCodePatch({
+      filePath: file.filePath,
+      currentContent: file.currentContent,
+      taskTitle: context.taskTitle,
+      taskSummary: context.taskSummary,
+      projectState: context.projectState,
+      repoContext: context.repoContext,
+      agentSystemPrompt: context.agentSystemPrompt,
+      agentName: context.agentName,
+      agentRole: context.agentRole,
+      routingReason: context.routingReason,
+    });
+
+    results.push({ filePath: file.filePath, patchedContent });
+  }
+
+  return results;
+}
 }
