@@ -209,37 +209,59 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   </div>
 </div>
 
-<!-- PAGE 2: 30-DAY TRACKER GRID -->
+<!-- PAGE 2: TRACKER GRID DAYS 1-15 -->
 <div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
-    <span class="label">Daily Tracker</span>
+    <span class="label">Daily Tracker — Week 1-2</span>
   </div>
-
   <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
-  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">30 days. ${data.habits.length} habits. ${30 * data.habits.length} decisions that define who you become.</p>
-
+  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 1–15 · Mark each habit immediately upon completion.</p>
   <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
-    <!-- Header row -->
-    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
-      <div style="padding: 8px 12px; font-size: 10px; font-weight: 600; color: var(--text-dim);">DAY</div>
-      ${data.habits.map(h => `<div style="padding: 8px 4px; font-size: 9px; font-weight: 600; color: var(--accent); text-align: center; letter-spacing: 0.05em; text-transform: uppercase; border-left: 1px solid var(--border);">${h.label.slice(0, 12)}</div>`).join("")}
+    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
+      <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
+      ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
     </div>
-    <!-- Day rows -->
-    ${days.map(day => `
-    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid var(--border); ${day % 7 === 0 ? `background: rgba(139, 92, 246, 0.08);` : ""}">
-      <div style="padding: 6px 12px; display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 10px; font-weight: 600; color: ${day % 7 === 0 ? "var(--accent)" : "var(--text-muted)"};">Day ${String(day).padStart(2, "0")}</span>
-        ${day % 7 === 0 ? `<span style="font-size: 8px; color: var(--accent); font-family: 'Poppins', sans-serif; font-weight: 600;">REVIEW</span>` : ""}
+    ${Array.from({ length: 15 }, (_, i) => i + 1).map(day => `
+    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
+      <div style="padding: 7px 10px; display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
+        ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
       </div>
-      ${data.habits.map(() => `<div style="border-left: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: 6px;">
-        <div class="checkbox"></div>
+      ${data.habits.map(() => `<div style="border-left: 1px solid ${p.border}; display: flex; align-items: center; justify-content: center; padding: 5px;">
+        <div style="width: 14px; height: 14px; border: 1.5px solid ${p.textDim}; border-radius: 3px; flex-shrink: 0;"></div>
       </div>`).join("")}
     </div>`).join("")}
   </div>
 </div>
 
-<!-- PAGE 3: WEEKLY REVIEWS -->
+<!-- PAGE 3: TRACKER GRID DAYS 16-30 -->
+<div class="page">
+  <div class="header-bar">
+    <span class="brand">${data.brandName}</span>
+    <span class="label">Daily Tracker — Week 3-4</span>
+  </div>
+  <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
+  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 16–30 · Final stretch. Identity is being forged.</p>
+  <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
+    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
+      <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
+      ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
+    </div>
+    ${Array.from({ length: 15 }, (_, i) => i + 16).map(day => `
+    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
+      <div style="padding: 7px 10px; display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
+        ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
+      </div>
+      ${data.habits.map(() => `<div style="border-left: 1px solid ${p.border}; display: flex; align-items: center; justify-content: center; padding: 5px;">
+        <div style="width: 14px; height: 14px; border: 1.5px solid ${p.textDim}; border-radius: 3px; flex-shrink: 0;"></div>
+      </div>`).join("")}
+    </div>`).join("")}
+  </div>
+</div>
+
+<!-- PAGE 4: WEEKLY REVIEWS -->
 <div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
