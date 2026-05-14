@@ -172,9 +172,7 @@ intent: "recovery",
 riskLevel: "medium",
 executionMode: "single-file",
 wave: 1,
-plannerNotes:
-  "Recovery task should inspect the failure reason, keep scope narrow, and avoid broad rewrites.",
-createdAt: new Date().toISOString(),
+plannerNotes: `Recovery task for stopCode: ${stopCode}. Reason: ${reason}. Suggested action: ${suggestedAction}. Keep scope narrow, avoid broad rewrites.`,
     };
 
     const updatedTasks = [task, ...tasks];
