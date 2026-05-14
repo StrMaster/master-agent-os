@@ -47,7 +47,7 @@ export default function RuntimeControlPanel() {
     }
   }
 
-  async function updateState(patch: Partial<ControlState>) {
+  async function updateState(patch: ControlStatePatch) {
     try {
       setLoading(true);
 
