@@ -29,6 +29,7 @@ export type DigitalProduct = {
   title: string;
   description: string;
   htmlContent: string;
+  thumbnailUrl?: string;
   etysListing?: EtsyListing;
   createdAt: string;
 };
