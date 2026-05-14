@@ -20,6 +20,18 @@ export type PdfComponent =
       label?: string;
     };
 
+export type PdfTheme = {
+  name: string;
+  pageBackground: string;
+  safeBorder: string;
+  cardBackground: string;
+  cardBorder: string;
+  textPrimary: string;
+  textMuted: string;
+  accent: string;
+  overlay?: "none" | "tech-lines" | "soft-grain";
+};
+
 export type PdfPage = {
   id: string;
   widthMm: number;
