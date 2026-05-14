@@ -1,3 +1,5 @@
+import { PALETTES, type ColorPalette } from "./design-system";
+
 export type HabitTrackerData = {
   title: string;
   tagline: string;
@@ -14,53 +16,6 @@ export type HabitTrackerData = {
   }>;
   colorPalette: "dark-premium" | "warm-minimal" | "clean-professional" | "rose-wellness";
   brandName: string;
-};
-
-const PALETTES = {
-  "dark-premium": {
-    bg: "#0a0a0f",
-    surface: "#13131a",
-    surface2: "#1a1a24",
-    accent: "#8b5cf6",
-    accentLight: "#a78bfa",
-    text: "#f8fafc",
-    textMuted: "#94a3b8",
-    textDim: "#64748b",
-    border: "#1e1e2e",
-  },
-  "warm-minimal": {
-    bg: "#fafaf8",
-    surface: "#ffffff",
-    surface2: "#f5f5f0",
-    accent: "#d4a853",
-    accentLight: "#e8c87a",
-    text: "#1a1a1a",
-    textMuted: "#6b6b6b",
-    textDim: "#9b9b9b",
-    border: "#e8e8e0",
-  },
-  "clean-professional": {
-    bg: "#f8fafc",
-    surface: "#ffffff",
-    surface2: "#f1f5f9",
-    accent: "#2563eb",
-    accentLight: "#3b82f6",
-    text: "#0f172a",
-    textMuted: "#475569",
-    textDim: "#94a3b8",
-    border: "#e2e8f0",
-  },
-  "rose-wellness": {
-    bg: "#fdf2f8",
-    surface: "#ffffff",
-    surface2: "#fce7f3",
-    accent: "#ec4899",
-    accentLight: "#f472b6",
-    text: "#1f2937",
-    textMuted: "#6b7280",
-    textDim: "#9ca3af",
-    border: "#fce7f3",
-  },
 };
 
 export function renderHabitTrackerTemplate(data: HabitTrackerData): string {
