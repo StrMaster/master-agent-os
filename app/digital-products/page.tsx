@@ -32,6 +32,7 @@ type Product = {
     tags: string[];
   };
   createdAt: string;
+  thumbnailUrl?: string;
 };
 
 export default function DigitalProductsPage() {
@@ -209,6 +210,14 @@ export default function DigitalProductsPage() {
                   <div className="text-sm font-semibold text-white">
                     {product.title}
                   </div>
+                  {product.thumbnailUrl && (
+  <img
+    src={product.thumbnailUrl}
+    alt={product.title}
+    className="mt-3 w-full rounded-xl object-cover"
+    style={{ maxHeight: "200px" }}
+  />
+)}
                   <div className="mt-1 text-xs text-white/40">
                     {product.type} ·{" "}
                     {new Date(product.createdAt).toLocaleDateString()}
