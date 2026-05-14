@@ -66,6 +66,18 @@ export default function PdfGeneratorPage() {
 
             <div className="rounded-xl border border-white/10 bg-black/20 p-3">
               Warnings: {validation.warnings.length}
+              {validation.warnings.length > 0 ? (
+  <div className="mt-3 space-y-2">
+    {validation.warnings.map((warning, index) => (
+      <div
+        key={index}
+        className="rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-xs text-red-200"
+      >
+        {warning.componentId}: {warning.message}
+      </div>
+    ))}
+  </div>
+) : null}
             </div>
           </div>
 
@@ -103,9 +115,10 @@ export default function PdfGeneratorPage() {
         <section className="overflow-auto rounded-2xl border border-white/10 bg-neutral-900 p-6">
           <div className="mx-auto flex min-h-[900px] w-full items-start justify-center">
             <PdfDocumentPreview
-              document={testPdfDocument}
-              themeKey={themeKey}
-            />
+  document={testPdfDocument}
+  themeKey={themeKey}
+  warnings={validation.warnings}
+/>
           </div>
         </section>
       </div>
