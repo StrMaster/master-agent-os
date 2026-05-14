@@ -136,7 +136,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 .write-box {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  height: 72px;
+  height: 85px;
   background: var(--surface2);
 }
 
@@ -218,13 +218,13 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
   <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 1–15 · Mark each habit immediately upon completion.</p>
   <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
-    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
+    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
       <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
       ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
     </div>
     ${Array.from({ length: 15 }, (_, i) => i + 1).map(day => `
-    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
-      <div style="padding: 7px 10px; display: flex; align-items: center; gap: 6px;">
+    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
+      <div style="padding:9px 10px; display: flex; align-items: center; gap: 6px;">
         <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
         ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
       </div>
@@ -244,13 +244,13 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
   <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 16–30 · Final stretch. Identity is being forged.</p>
   <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
-    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
+    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
       <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
       ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
     </div>
     ${Array.from({ length: 15 }, (_, i) => i + 16).map(day => `
-    <div style="display: grid; grid-template-columns: 70px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
-      <div style="padding: 7px 10px; display: flex; align-items: center; gap: 6px;">
+    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
+      <div style="padding: 9px 10px; display: flex; align-items: center; gap: 6px;">
         <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
         ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
       </div>
@@ -269,7 +269,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   </div>
 
   <h2 style="margin-bottom: 4px;">Weekly Review System</h2>
-  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Reflection transforms data into growth. Complete each review on day 7, 14, 21, and 30.</p>
+ <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Reflection transforms data into growth. Complete each review on day 7, 14, 21, and 30.</p>
 
   ${data.weeklyReviews.map(review => `
   <div class="card" style="margin-bottom: 16px;">
