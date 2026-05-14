@@ -89,7 +89,7 @@ function renderComponent(
       {component.variant === "hero" ? (
         <div className="mt-5 max-w-[58%]">
           <h3 className="text-2xl font-semibold">{component.title}</h3>
-          <p className="mt-3 text-sm leading-7" style={{ color: theme.textMuted }}>
+          <p className="mt-3 text-[13px] leading-6" style={{ color: theme.textMuted }}>
             {component.description}
           </p>
         </div>
