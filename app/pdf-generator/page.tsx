@@ -1,9 +1,11 @@
 import { PdfDocumentPreview } from "../pdf-engine/render-preview";
 import { testPdfDocument } from "../pdf-engine/test-document";
+import { validateDocument } from "../pdf-engine/validate-document";
 
 export const dynamic = "force-dynamic";
 
 export default function PdfGeneratorPage() {
+    const validation = validateDocument(testPdfDocument);
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 text-white sm:px-6">
       <div>
@@ -33,6 +35,19 @@ export default function PdfGeneratorPage() {
             <div className="rounded-xl border border-white/10 bg-black/20 p-3">
               Export: Disabled
             </div>
+            <div
+  className={`rounded-xl border p-3 ${
+    validation.valid
+      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+      : "border-red-500/30 bg-red-500/10 text-red-300"
+  }`}
+>
+  Validation: {validation.valid ? "Passed" : "Failed"}
+</div>
+
+<div className="rounded-xl border border-white/10 bg-black/20 p-3">
+  Warnings: {validation.warnings.length}
+</div>
           </div>
         </aside>
 
