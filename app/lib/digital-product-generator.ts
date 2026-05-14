@@ -198,8 +198,11 @@ export async function createDigitalProduct(context: {
     }),
   ]);
 
-  const thumbnailUrl = await generateEtsyThumbnail({
-    palette: detectedPalette,
+  const { detectPalette } = await import("./product-templates/design-system");
+const detectedPalette = detectPalette(context.prompt, context.style);
+
+const thumbnailUrl = await generateEtsyThumbnail({
+  palette: detectedPalette,
     productType: context.type,
     productTitle: listing.title,
     niche: context.prompt,
