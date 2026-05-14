@@ -21,6 +21,7 @@ const navItems = [
   { href: '/agents', label: 'Agents' },
   { href: '/tasks', label: 'Tasks' },
   { href: '/execution', label: 'Execution' },
+  { href: '/digital-products', label: 'Products' },
 
 ];
 
