@@ -1,6 +1,9 @@
 import type { PdfComponent, PdfDocument, PdfPage } from "./types";
 import { pdfThemes } from "./themes";
 
+type PdfThemeKey = keyof typeof pdfThemes;
+type PdfThemeValue = (typeof pdfThemes)[PdfThemeKey];
+
 function TechLinesOverlay() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-60">
@@ -14,12 +17,7 @@ function TechLinesOverlay() {
   );
 }
 
-function renderComponent(
-  component: PdfComponent,
-  theme: (typeof pdfThemes)[keyof typeof pdfThemes],
-) {
-  const theme = pdfThemes.darkLuxury;
-
+function renderComponent(component: PdfComponent, theme: PdfThemeValue) {
   const baseStyle = {
     position: "absolute" as const,
     left: `${component.frame.x}mm`,
@@ -112,10 +110,9 @@ function PdfPreviewPage({
   themeKey,
 }: {
   page: PdfPage;
-  themeKey: keyof typeof pdfThemes;
+  themeKey: PdfThemeKey;
 }) {
   const theme = pdfThemes[themeKey];
-  const theme = pdfThemes.darkLuxury;
 
   return (
     <div
@@ -140,7 +137,9 @@ function PdfPreviewPage({
         }}
       />
 
-      <div className="relative z-10">{page.components.map((component) => renderComponent(component, theme))}</div>
+      <div className="relative z-10">
+        {page.components.map((component) => renderComponent(component, theme))}
+      </div>
     </div>
   );
 }
@@ -150,7 +149,7 @@ export function PdfDocumentPreview({
   themeKey = "darkLuxury",
 }: {
   document: PdfDocument;
-  themeKey?: keyof typeof pdfThemes;
+  themeKey?: PdfThemeKey;
 }) {
   return (
     <div className="space-y-8">
