@@ -90,9 +90,10 @@ body {
 
 .page {
   width: 210mm;
-  min-height: 297mm;
+  height: 297mm;
   margin: 0 auto;
-  padding: 14mm 15mm;
+  padding: 12mm 14mm;
+  overflow: hidden;
   background: var(--bg);
   page-break-after: always;
   position: relative;
