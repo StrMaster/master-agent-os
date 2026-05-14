@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { renderHabitTrackerTemplate, type HabitTrackerData } from "./product-templates/habit-tracker";
 import type { DigitalProductType } from "./digital-product-generator";
+import { detectPalette } from "./product-templates/design-system";
+
+// generateHabitTracker funkcijoje prieš API call:
+const detectedPalette = detectPalette(context.prompt, context.style);
+
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -46,7 +51,7 @@ Respond ONLY JSON:
   "tagline": "One line tagline (max 80 chars)",
   "subtitle": "2-3 sentence description of the system",
   "brandName": "Brand name (2 words max, uppercase)",
-  "colorPalette": "dark-premium|warm-minimal|clean-professional|rose-wellness (choose based on style preference)",
+  "colorPalette": "${detectedPalette}",
   "habits": [
     {"id": "h1", "label": "Habit name (2-3 words)", "description": "Short description (max 40 chars)"},
     {"id": "h2", "label": "Habit name", "description": "Short description"},
