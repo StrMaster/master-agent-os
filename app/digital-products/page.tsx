@@ -173,12 +173,27 @@ export default function DigitalProductsPage() {
 
               <div className="mt-4 flex gap-2">
                 <button
-                  type="button"
-                  onClick={() => setPreviewHtml(product.htmlContent)}
-                  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
-                >
-                  Preview
-                </button>
+  type="button"
+  onClick={() => setPreviewHtml(product.htmlContent)}
+  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
+>
+  Preview
+</button>
+<button
+  type="button"
+  onClick={() => {
+    const blob = new Blob([product.htmlContent], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${product.title?.replace(/[^a-z0-9]/gi, "-").toLowerCase() ?? "product"}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }}
+  className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 hover:bg-emerald-500/20"
+>
+  ⬇ Download
+</button>
               </div>
             </div>
           ))
