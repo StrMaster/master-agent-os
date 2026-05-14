@@ -8,9 +8,15 @@ export async function POST(req: Request) {
     const niche = String(body.niche ?? "").trim();
 
     if (action === "trending") {
-      const niches = await detectTrendingNiches();
-      return NextResponse.json({ ok: true, action, niches });
-    }
+  const niches = await detectTrendingNiches();
+  return NextResponse.json({ ok: true, action, niches });
+}
+
+if (action === "detect-opportunities") {
+  const { detectNicheOpportunities } = await import("@/agents/business/research-agent");
+  const opportunities = await detectNicheOpportunities();
+  return NextResponse.json({ ok: true, action, opportunities });
+}
 
     if (!niche) {
       return NextResponse.json({ ok: false, error: "niche is required" }, { status: 400 });
