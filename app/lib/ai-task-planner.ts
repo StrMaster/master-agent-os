@@ -67,12 +67,6 @@ Respond ONLY valid JSON, no markdown:
   return JSON.parse(clean);
 }
 
-const content = response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("OpenAI returned empty response");
-  }
-
 export async function generateProjectStatusSummary(context: {
   tasks: unknown[];
   activity: unknown[];
