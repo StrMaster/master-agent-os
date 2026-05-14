@@ -9,76 +9,63 @@ type ProjectContext = {
 };
 
 export async function generateTaskPlan(prompt: string, context?: ProjectContext) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the planning brain for Master Agent OS.
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-You receive:
-- user request
-- recent tasks
-- recent activity
-- conversation memory
-- repo context hints
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    system: `You are the planning brain for Master Agent OS.
 
 Your job:
 - understand the user's intent
-- choose the safest target file
-- generate one small task
-- keep the task safe and specific
+- choose the most accurate targetFile from the allowed list
+- generate one small, specific task
+- keep scope minimal and safe
 
 Allowed target files:
-- app/page.tsx
-- app/components/ActivityFeed.tsx
-- app/components/RunAgentButton.tsx
-- app/execution/page.tsx
+app/page.tsx, app/layout.tsx, app/execution/page.tsx, app/agents/page.tsx,
+app/tasks/page.tsx, app/chat/page.tsx,
+app/components/ActivityFeed.tsx, app/components/RunAgentButton.tsx,
+app/components/MasterAgentChat.tsx, app/components/RuntimeDashboard.tsx,
+app/components/RuntimeOverview.tsx, app/components/RecoveryControlCard.tsx,
+app/components/ObservabilityCard.tsx, app/components/ControlCenterControls.tsx,
+app/components/PendingPRQueue.tsx, app/components/DeployStatusCard.tsx,
+app/components/ApprovalExecutionCenter.tsx,
+app/api/agent-runner/route.ts, app/api/agent-runner/tasks.ts,
+app/api/agent-runner/memory.ts, app/api/create-task/route.ts,
+app/api/master-agent/route.ts, app/api/observability/route.ts,
+agents/core/agent-router.ts, agents/core/agent-registry.ts,
+app/lib/code-patch-generator.ts, app/tasks/task-utils.ts, app/tasks/task-data.ts
 
 Rules:
-- Only choose one allowed targetFile.
-- Prefer small UI/copy/layout improvements.
-- Do not suggest backend/API/config/package changes.
-- Do not create broad refactors.
-- If request is vague, choose the safest likely UI file.
-- Use recent context to avoid repeating the same work.
-- Prefer active runtime areas and avoid legacy or deprecated zones.
-- Always return a specific title, summary, targetFile, priority, and reasoning.
-- If the target is unclear or too broad, keep the task previewOnly with requiresApproval.
+- Pick the most specific matching file, not always app/page.tsx
+- Prefer small targeted changes
+- If backend/API task: use backend file, set riskLevel "medium"
+- If UI task: use component file, set riskLevel "low"
+- If unclear or broad: set previewOnly true, requiresApproval true
+- Use recent context to avoid repeating same work
+- Always respond in the same language as the user
 
-Respond ONLY valid JSON.
-Always respond in the same language as the user.
-
-JSON format:
-{
-  "title": "...",
-  "summary": "...",
-  "targetFile": "...",
-  "priority": "low|medium|high",
-  "reasoning": "..."
-}
-        `,
-      },
+Respond ONLY valid JSON, no markdown:
+{"title":"...","summary":"...","targetFile":"...","priority":"low|medium|high","riskLevel":"low|medium|high","intent":"ui-polish|bugfix|refactor|backend|memory","previewOnly":false,"requiresApproval":false,"reasoning":"..."}`,
+    messages: [
       {
         role: "user",
-        content: JSON.stringify(
-          {
-            prompt,
-            context: {
-              recentTasks: context?.recentTasks ?? [],
-              recentActivity: context?.recentActivity ?? [],
-              conversationMemory: context?.conversationMemory ?? [],
-              repoContext: context?.repoContext ?? null,
-            },
-          },
-          null,
-          2
-        ),
+        content: JSON.stringify({
+          prompt,
+          recentTasks: context?.recentTasks?.slice(0, 5) ?? [],
+          recentActivity: context?.recentActivity?.slice(0, 5) ?? [],
+          repoContext: context?.repoContext ?? null,
+        }),
       },
     ],
   });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const clean = raw.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
 
 const content = response.choices[0]?.message?.content;
 
