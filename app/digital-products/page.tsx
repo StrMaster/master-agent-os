@@ -321,27 +321,31 @@ export default function DigitalProductsPage() {
                 >
                   {pdfLoading ? "Generating PDF..." : "⬇ Download PDF"}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    const blob = new Blob([previewHtml], {
-                      type: "text/html",
-                    });
-
-                    const url = URL.createObjectURL(blob);
-
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = "product.html";
-                    a.click();
-
-                    URL.revokeObjectURL(url);
-                  }}
-                  className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20 transition"
-                >
-                  ⬇ Download HTML
-                </button>
+<button
+  type="button"
+  onClick={async () => {
+    try {
+      const res = await fetch("/api/export-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: product.htmlContent, title: product.title }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${product.title?.replace(/[^a-z0-9]/gi, "-").toLowerCase() ?? "product"}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("PDF generation failed. Try Preview → Print instead.");
+    }
+  }}
+  className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 hover:bg-emerald-500/20"
+>
+  ⬇ Download PDF
+</button>
 
                 <button
                   type="button"
