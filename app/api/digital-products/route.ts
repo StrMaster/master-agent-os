@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createDigitalProduct, type DigitalProductType } from "@/app/lib/digital-product-generator";
+import { generateFromTemplate } from "@/app/lib/product-template-engine";
 import { Redis } from "@upstash/redis";
 
 const PRODUCTS_KEY = "master-agent-os:digital-products";
@@ -22,7 +23,36 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "prompt is required" }, { status: 400 });
     }
 
-    const product = await createDigitalProduct({ type, prompt, style });
+    const useTemplate = ["habit-tracker"].includes(type);
+let htmlContent: string;
+let productData: unknown = null;
+
+if (useTemplate) {
+  const result = await generateFromTemplate({ type, prompt, style });
+  htmlContent = result.html;
+  productData = result.data;
+} else {
+  const result = await createDigitalProduct({ type, prompt, style });
+  htmlContent = result.htmlContent;
+}
+
+const { generateEtsyListing } = await import("@/app/lib/digital-product-generator");
+const listing = await generateEtsyListing({
+  type,
+  title: prompt,
+  description: `Professional ${type} digital download`,
+});
+
+const product = {
+  id: `product-${Date.now()}`,
+  type,
+  title: listing.title,
+  description: listing.description,
+  htmlContent,
+  etysListing: listing,
+  templateData: productData,
+  createdAt: new Date().toISOString(),
+};
 
     const redis = getRedis();
     const existing = await redis.get<typeof product[]>(PRODUCTS_KEY) ?? [];
