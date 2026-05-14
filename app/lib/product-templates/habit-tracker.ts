@@ -187,14 +187,21 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 
 @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { margin: 0; box-shadow: none; }
+  .page { 
+    margin: 0; 
+    box-shadow: none;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  .card { page-break-inside: avoid; }
+  .card-sm { page-break-inside: avoid; }
 }
 </style>
 </head>
 <body>
 
 <!-- PAGE 1: COVER + HABIT SETUP -->
-<div class="page">
+<div class="page" style="display: flex; flex-direction: column; justify-content: space-between;">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
     <span class="label">Premium Habit System</span>
