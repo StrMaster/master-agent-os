@@ -117,6 +117,7 @@ export default async function DigitalProductsPage() {
                   Preview HTML
                 </a>
               </div>
+            >
             </div>
           ))
         )}
