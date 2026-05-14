@@ -22,6 +22,7 @@ const navItems = [
   { href: '/tasks', label: 'Tasks' },
   { href: '/execution', label: 'Execution' },
   { href: '/digital-products', label: 'Products' },
+  { href: '/research', label: 'Research' },
 
 ];
 
