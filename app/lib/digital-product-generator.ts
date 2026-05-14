@@ -1,6 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export type DigitalProductType =
   | "cv-template"
@@ -43,51 +43,55 @@ export async function generateDigitalProductHTML(context: {
   prompt: string;
   style?: string;
 }): Promise<string> {
-  const raw = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    system: `You are a professional digital product designer.
+  const response = await client.chat.completions.create({
+    model: "gpt-5.5",
+    max_tokens: 8192,
+    messages: [
+      {
+        role: "system",
+        content: `You are a world-class digital product designer who creates premium, sellable templates worth $10-30.
 Generate a complete, beautiful, print-ready HTML document.
 
 Rules:
-- Use inline CSS only — no external stylesheets
-- Use professional fonts via Google Fonts @import
-- Make it visually stunning and ready to sell
-- Include realistic placeholder content
-- Optimize for A4 paper size (210mm x 297mm)
-- Use a cohesive color scheme
-- Return ONLY the complete HTML document, no explanation
+- Use inline CSS only — no external dependencies except Google Fonts @import at top
+- Use Google Fonts: Inter, Playfair Display, or Poppins depending on style
+- Make it visually stunning — gradients, shadows, proper spacing, premium feel
+- Include realistic, detailed placeholder content (not generic Lorem ipsum)
+- Optimize for A4 paper size (210mm x 297mm) with @media print rules
+- Use sophisticated color schemes — not generic blue/white
+- Every section must be fully designed with real content
+- Return ONLY the complete HTML document, nothing else
 
 Product type guidelines:
-- cv-template: Clean, modern resume with sections for experience, education, skills
-- invoice-template: Professional invoice with company details, line items, totals
-- planner-template: Weekly/monthly planner with time blocks, goals, notes
-- prompt-pack: Formatted list of 20 high-quality AI prompts with descriptions
-- mini-ebook: 5-page guide with cover, chapters, and professional layout
-- social-media-kit: Post templates, caption frameworks, hashtag sets
-- bio-link-page: Single page with links, avatar, bio, social icons
-- seo-audit-report: Professional SEO analysis report template
-- budget-tracker: Monthly budget tracker with income, expenses, savings categories, charts
-- meal-planner: Weekly meal planner with breakfast/lunch/dinner, shopping list, macros
-- habit-tracker: 30-day habit tracker with daily checkboxes, streaks, progress visualization
-- business-plan: Professional business plan with executive summary, market analysis, financials
-- social-media-calendar: Monthly content calendar with post ideas, captions, hashtags per day
-- wedding-checklist: Complete wedding planning checklist with timeline, budget, vendors
-- study-guide: Study system with schedule, notes template, flashcard layout, progress tracker
-- notion-template: Notion-style dashboard with sidebar, databases, linked views layout`,
-    messages: [
+- cv-template: Clean, modern resume with experience, education, skills, photo placeholder, sidebar
+- invoice-template: Professional invoice with company logo area, itemized table, payment terms, totals
+- planner-template: Weekly/monthly planner with time blocks, priority matrix, habit tracker, notes
+- prompt-pack: Beautifully formatted collection of 20 AI prompts with categories, descriptions, examples
+- mini-ebook: 5-page guide with premium cover, table of contents, chapters, callout boxes, footer
+- social-media-kit: Instagram/TikTok post templates, caption frameworks, hashtag strategy, brand kit
+- bio-link-page: Premium link-in-bio with avatar, tagline, animated buttons, social icons, dark theme
+- seo-audit-report: Professional SEO report with scores, recommendations, charts, action items
+- budget-tracker: Monthly budget with income/expense categories, savings goals, visual progress bars
+- meal-planner: Weekly meal plan with breakfast/lunch/dinner, shopping list, macros, prep notes
+- habit-tracker: 30-day tracker with daily checkboxes, streaks counter, monthly stats, motivational quotes
+- business-plan: Executive summary, market analysis, competitor matrix, financial projections, timeline
+- social-media-calendar: Monthly content calendar grid with post ideas, captions, hashtags per day
+- wedding-checklist: Complete planning checklist with 12-month timeline, budget tracker, vendor contacts
+- study-guide: Study schedule, Cornell notes template, flashcard layout, progress tracker, mind map
+- notion-template: Notion-style dashboard with sidebar navigation, kanban board, linked database views`,
+      },
       {
         role: "user",
         content: `Create a ${context.type} digital product.
-Style preference: ${context.style ?? "modern, minimal, professional"}
-Additional requirements: ${context.prompt}
+Style: ${context.style ?? "dark, premium, modern, professional"}
+Requirements: ${context.prompt}
 
-Return complete HTML document only.`,
+Return ONLY the complete HTML document.`,
       },
     ],
   });
 
-  const text = raw.content[0]?.type === "text" ? raw.content[0].text : "";
+  const text = response.choices[0]?.message?.content ?? "";
   return text.trim();
 }
 
@@ -96,33 +100,35 @@ export async function generateEtsyListing(context: {
   title: string;
   description: string;
 }): Promise<EtsyListing> {
-  const raw = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
+  const response = await client.chat.completions.create({
+    model: "gpt-5.5",
     max_tokens: 1024,
-    system: `You are an Etsy SEO expert who writes high-converting listings.
-Generate optimized Etsy listing details.
-Respond ONLY valid JSON, no markdown.`,
     messages: [
+      {
+        role: "system",
+        content: `You are an Etsy SEO expert who writes high-converting listings.
+Respond ONLY valid JSON, no markdown.`,
+      },
       {
         role: "user",
         content: `Product type: ${context.type}
 Title hint: ${context.title}
 Description hint: ${context.description}
 
-Generate Etsy listing. Respond ONLY JSON:
+Generate optimized listing. Respond ONLY JSON:
 {
   "title": "SEO optimized title under 140 chars",
-  "description": "Compelling description 150-300 words",
-  "tags": ["tag1","tag2",...13 tags total],
-  "price": 4.99,
+  "description": "Compelling description 150-300 words with keywords",
+  "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13"],
+  "price": 9.99,
   "category": "Templates"
 }`,
       },
     ],
   });
 
-  const text = raw.content[0]?.type === "text" ? raw.content[0].text : "";
-  const clean = text.replace(/```json|```/g, "").trim();
+  const raw = response.choices[0]?.message?.content ?? "";
+  const clean = raw.replace(/```json|```/g, "").trim();
   return JSON.parse(clean);
 }
 
