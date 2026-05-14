@@ -130,3 +130,80 @@ Technical rules:
 - Every element must be visible and properly spaced
 - Return ONLY the complete HTML document — no explanation`,
       },
+      {
+        role: "user",
+        content: `Product type: ${context.type}
+Style preference: ${context.style ?? "dark, premium, modern, professional"}
+
+Content structure from strategist:
+${content}
+
+Build the complete premium HTML document using this content and the design system.
+Return ONLY the HTML document.`,
+      },
+    ],
+  });
+
+  const text = response.choices[0]?.message?.content ?? "";
+  return text.trim();
+}
+
+export async function generateEtsyListing(context: {
+  type: DigitalProductType;
+  title: string;
+  description: string;
+}): Promise<EtsyListing> {
+  const response = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    system: `You are an Etsy SEO expert and copywriter who creates high-converting product listings.
+Write compelling, keyword-rich listings that convert browsers into buyers.
+Respond ONLY valid JSON, no markdown.`,
+    messages: [
+      {
+        role: "user",
+        content: `Product type: ${context.type}
+Product name: ${context.title}
+Description hint: ${context.description}
+
+Write an optimized Etsy listing. Respond ONLY JSON:
+{
+  "title": "SEO optimized title under 140 chars with main keywords first",
+  "description": "Compelling 200-300 word description with benefits, features, what's included, instant download note",
+  "tags": ["tag1","tag2","tag3","tag4","tag5","tag6","tag7","tag8","tag9","tag10","tag11","tag12","tag13"],
+  "price": 9.99,
+  "category": "Templates"
+}`,
+      },
+    ],
+  });
+
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const clean = raw.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
+}
+
+export async function createDigitalProduct(context: {
+  type: DigitalProductType;
+  prompt: string;
+  style?: string;
+}): Promise<DigitalProduct> {
+  const [htmlContent, listing] = await Promise.all([
+    generateDigitalProductHTML(context),
+    generateEtsyListing({
+      type: context.type,
+      title: context.prompt,
+      description: `Professional ${context.type} digital download`,
+    }),
+  ]);
+
+  return {
+    id: `product-${Date.now()}`,
+    type: context.type,
+    title: listing.title,
+    description: listing.description,
+    htmlContent,
+    etysListing: listing,
+    createdAt: new Date().toISOString(),
+  };
+}
