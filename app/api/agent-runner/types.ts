@@ -29,6 +29,7 @@ export type AgentTask = {
   retryCount?: number;
   lastRetryAt?: string;
   targetFile?: string;
+  targetFiles?: string[];
   status: AgentTaskStatus;
   priority?: Priority;
   dependsOn?: string[];
