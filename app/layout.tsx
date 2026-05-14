@@ -25,6 +25,7 @@ const navItems = [
   { href: '/research', label: 'Research' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/pipeline', label: 'Pipeline' },
+  { href: '/niche-detector', label: 'Niches' },
 
 ];
 
