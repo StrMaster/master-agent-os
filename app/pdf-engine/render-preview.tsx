@@ -23,11 +23,9 @@ function renderComponent(
   theme: PdfThemeValue,
   warnings: PdfValidationWarning[],
 ) {
-  const componentWarnings = warnings.filter(
+  const hasWarnings = warnings.some(
     (warning) => warning.componentId === component.id,
   );
-
-  const hasWarnings = componentWarnings.length > 0;
 
   const baseStyle = {
     position: "absolute" as const,
@@ -35,6 +33,7 @@ function renderComponent(
     top: `${component.frame.y}mm`,
     width: `${component.frame.width}mm`,
     height: `${component.frame.height}mm`,
+    outline: hasWarnings ? "2px solid rgba(255,0,0,0.7)" : undefined,
   };
 
   if (component.type === "text") {
@@ -49,20 +48,14 @@ function renderComponent(
       <div
         key={component.id}
         style={{
-  width: `${page.widthMm}mm`,
-  height: `${page.heightMm}mm`,
-  minWidth: `${page.widthMm}mm`,
-  maxWidth: `${page.widthMm}mm`,
-  minHeight: `${page.heightMm}mm`,
-  maxHeight: `${page.heightMm}mm`,
-  background: theme.pageBackground,
-  color: theme.textPrimary,
-  boxSizing: "border-box",
-  contain: "layout paint size",
-  pageBreakAfter: "always",
-  breakAfter: "page",
-  flex: "0 0 auto",
-}}
+          ...baseStyle,
+          color:
+            component.variant === "eyebrow"
+              ? theme.accent
+              : component.variant === "title"
+                ? theme.textPrimary
+                : theme.textMuted,
+        }}
         className={className}
       >
         {component.text}
@@ -78,7 +71,6 @@ function renderComponent(
         background: theme.cardBackground,
         borderColor: theme.cardBorder,
         color: theme.textPrimary,
-        outline: hasWarnings ? "2px solid rgba(255,0,0,0.7)" : undefined,
       }}
       className="rounded-2xl border p-5 shadow-2xl backdrop-blur-sm"
     >
@@ -140,8 +132,17 @@ function PdfPreviewPage({
       style={{
         width: `${page.widthMm}mm`,
         height: `${page.heightMm}mm`,
+        minWidth: `${page.widthMm}mm`,
+        maxWidth: `${page.widthMm}mm`,
+        minHeight: `${page.heightMm}mm`,
+        maxHeight: `${page.heightMm}mm`,
         background: theme.pageBackground,
         color: theme.textPrimary,
+        boxSizing: "border-box",
+        contain: "layout paint size",
+        pageBreakAfter: "always",
+        breakAfter: "page",
+        flex: "0 0 auto",
       }}
     >
       {theme.overlay === "tech-lines" ? <TechLinesOverlay /> : null}
