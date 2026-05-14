@@ -20,7 +20,23 @@ export type HabitTrackerData = {
 
 export function renderHabitTrackerTemplate(data: HabitTrackerData): string {
   const p = PALETTES[data.colorPalette];
-  const days = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  const reflectionBlock = `
+  <div class="card" style="margin-top: 16px; background: var(--surface); border: 1px solid var(--border);">
+    <div class="label" style="margin-bottom: 10px; color: var(--accent);">Weekly Energy Score</div>
+    <div style="display: flex; gap: 20px; margin-bottom: 18px; font-size: 11px; color: var(--text-muted);">
+      <span>○ Low</span>
+      <span>○ Medium</span>
+      <span>○ High</span>
+    </div>
+
+    <div class="label" style="margin-bottom: 8px;">Notes / Reflection</div>
+    <div class="write-box" style="height: 90px; margin-bottom: 12px;"></div>
+
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center;">
+      “Small rituals create lasting transformation.”
+    </div>
+  </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -68,12 +84,10 @@ body {
 
 .page:last-child { page-break-after: avoid; }
 
-/* Typography */
 h1 { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; line-height: 1.2; }
 h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; line-height: 1.3; }
 h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
 
-/* Cards */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -89,33 +103,10 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   padding: 12px;
 }
 
-/* Grid */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
 
-/* Spacers */
-.mt-8 { margin-top: 8px; }
-.mt-16 { margin-top: 16px; }
-.mt-24 { margin-top: 24px; }
-.mt-32 { margin-top: 32px; }
-
-/* Checkbox */
-.checkbox {
-  width: 16px; height: 16px;
-  border: 1.5px solid var(--border);
-  border-radius: 3px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-/* Divider */
-.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
-
-/* Label */
 .label { font-size: 9px; font-family: 'Poppins', sans-serif; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
 
-/* Header bar */
 .header-bar {
   display: flex; align-items: center; justify-content: space-between;
   padding-bottom: 8px;
@@ -125,36 +116,16 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 
 .brand { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); }
 
-/* Write line */
-.write-line {
-  border-bottom: 1px solid var(--border);
-  height: 28px;
-  margin-bottom: 8px;
-}
-
-/* Textarea box */
 .write-box {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   height: 85px;
   background: var(--surface2);
 }
-
-@media print {
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { margin: 0; box-shadow: none; page-break-after: always; }
-  .page:last-child { page-break-after: avoid; }
-  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  div { border-color: inherit !important; }
-  .checkbox { border: 1.5px solid rgba(255,255,255,0.3) !important; }
-  .card { page-break-inside: avoid; }
-  .card-sm { page-break-inside: avoid; }
-}
 </style>
 </head>
 <body>
 
-<!-- PAGE 1: COVER + HABIT SETUP -->
 <div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
@@ -186,120 +157,56 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
       <div class="card-sm" style="margin-bottom: 8px;">
         <div class="label" style="margin-bottom: 4px;">Current Streak</div>
         <div style="font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--accent);">0 Days</div>
-        <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Streaks build identity</div>
-      </div>
-      <div class="card-sm" style="margin-bottom: 8px;">
-        <div class="label" style="margin-bottom: 4px;">Best Streak</div>
-        <div style="font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700;">— Days</div>
-        <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">Your personal record</div>
-      </div>
-      <div class="card-sm">
-        <div class="label" style="margin-bottom: 4px;">Completion Rate</div>
-        <div style="font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700;">— %</div>
-        <div style="font-size: 11px; color: var(--text-dim); margin-top: 2px;">85%+ = elite territory</div>
       </div>
     </div>
   </div>
 
-  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 18px;">
     <span style="font-size: 11px; color: var(--text-muted);">Start Date</span>
     <div style="width: 120px; border-bottom: 1px solid var(--border);"></div>
     <span style="font-size: 11px; color: var(--text-muted);">End Date</span>
     <div style="width: 120px; border-bottom: 1px solid var(--border);"></div>
   </div>
+
+  <div class="card">
+    <div class="label" style="margin-bottom: 10px;">My 30-Day Commitment</div>
+    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 10px;"></div>
+    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 10px;"></div>
+    <div style="border-bottom: 1px solid var(--border); height: 26px; margin-bottom: 14px;"></div>
+    <div style="font-size: 11px; color: var(--text-dim); font-style: italic; text-align: center;">
+      “Consistency compounds into transformation.”
+    </div>
+  </div>
 </div>
 
-<!-- PAGE 2: TRACKER GRID DAYS 1-15 -->
+${[1,16].map(start => `
 <div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
-    <span class="label">Daily Tracker — Week 1-2</span>
+    <span class="label">Daily Tracker</span>
   </div>
+
   <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
-  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 1–15 · Mark each habit immediately upon completion.</p>
+  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+    ${start === 1 ? 'Days 1–15 · Mark each habit immediately upon completion.' : 'Days 16–30 · Final stretch. Identity is being forged.'}
+  </p>
+
   <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
-    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
-      <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
-      ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
-    </div>
-    ${Array.from({ length: 15 }, (_, i) => i + 1).map(day => `
-    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
-      <div style="padding:9px 10px; display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
-        ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
+    ${Array.from({ length: 15 }, (_, i) => i + start).map(day => `
+      <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border};">
+        <div style="padding: 13px 10px; font-size: 10px; font-weight: 600;">D${String(day).padStart(2, '0')}</div>
+        ${data.habits.map(() => `
+          <div style="border-left: 1px solid ${p.border}; display:flex; align-items:center; justify-content:center; padding:7px;">
+            <div style="width:14px; height:14px; border:1.5px solid ${p.textDim}; border-radius:3px;"></div>
+          </div>
+        `).join('')}
       </div>
-      ${data.habits.map(() => `<div style="border-left: 1px solid ${p.border}; display: flex; align-items: center; justify-content: center; padding: 5px;">
-        <div style="width: 14px; height: 14px; border: 1.5px solid ${p.textDim}; border-radius: 3px; flex-shrink: 0;"></div>
-      </div>`).join("")}
-    </div>`).join("")}
+    `).join('')}
   </div>
+
+  ${reflectionBlock}
 </div>
-
-<!-- PAGE 3: TRACKER GRID DAYS 16-30 -->
-<div class="page">
-  <div class="header-bar">
-    <span class="brand">${data.brandName}</span>
-    <span class="label">Daily Tracker — Week 3-4</span>
-  </div>
-  <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
-  <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Days 16–30 · Final stretch. Identity is being forged.</p>
-  <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
-    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 2px solid ${p.accent};">
-      <div style="padding: 8px 10px; font-size: 9px; font-weight: 600; color: ${p.textDim}; font-family: 'Poppins', sans-serif; letter-spacing: 0.1em; text-transform: uppercase;">DAY</div>
-      ${data.habits.map(h => `<div style="padding: 6px 3px; font-size: 8px; font-weight: 600; color: ${p.accent}; text-align: center; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid ${p.border}; line-height: 1.3; word-break: break-word;">${h.label.slice(0, 10)}</div>`).join("")}
-    </div>
-    ${Array.from({ length: 15 }, (_, i) => i + 16).map(day => `
-    <div style="display: grid; grid-template-columns: 60px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid ${p.border}; background: ${day % 7 === 0 ? `rgba(139,92,246,0.08)` : "transparent"};">
-      <div style="padding: 9px 10px; display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 10px; font-weight: 600; font-family: 'Poppins', sans-serif; color: ${day % 7 === 0 ? p.accent : p.textMuted};">D${String(day).padStart(2, "0")}</span>
-        ${day % 7 === 0 ? `<span style="font-size: 7px; color: ${p.accent}; font-family: 'Poppins', sans-serif; font-weight: 700; letter-spacing: 0.05em;">✓</span>` : ""}
-      </div>
-      ${data.habits.map(() => `<div style="border-left: 1px solid ${p.border}; display: flex; align-items: center; justify-content: center; padding: 5px;">
-        <div style="width: 14px; height: 14px; border: 1.5px solid ${p.textDim}; border-radius: 3px; flex-shrink: 0;"></div>
-      </div>`).join("")}
-    </div>`).join("")}
-  </div>
-</div>
-
-<!-- PAGE 3: WEEKLY REVIEWS -->
-<div class="page">
-  <div class="header-bar">
-    <span class="brand">${data.brandName}</span>
-    <span class="label">Weekly Reviews</span>
-  </div>
-
-  <h2 style="margin-bottom: 4px;">Weekly Review System</h2>
- <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Reflection transforms data into growth. Complete each review on day 7, 14, 21, and 30.</p>
-
-  ${data.weeklyReviews.map(review => `
-  <div class="card" style="margin-bottom: 16px;">
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px;">
-      <div>
-        <h3 style="margin-bottom: 4px;">Week ${String(review.week).padStart(2, "0")} Review // ${review.theme}</h3>
-        <h2 style="font-size: 18px;">${review.subtitle}</h2>
-      </div>
-      <span style="font-size: 10px; color: var(--text-dim); font-family: 'Poppins', sans-serif;">Day ${review.week * 7}</span>
-    </div>
-    <div class="grid-2">
-      <div>
-        <div class="label" style="margin-bottom: 6px;">What Worked</div>
-        <div class="write-box"></div>
-      </div>
-      <div>
-        <div class="label" style="margin-bottom: 6px;">What Resisted</div>
-        <div class="write-box"></div>
-      </div>
-      <div>
-        <div class="label" style="margin-bottom: 6px;">Pattern Recognition</div>
-        <div class="write-box"></div>
-      </div>
-      <div>
-        <div class="label" style="margin-bottom: 6px;">Next Week Optimization</div>
-        <div class="write-box"></div>
-      </div>
-    </div>
-  </div>`).join("")}
-</div>
+`).join('')}
 
 </body>
 </html>`;
