@@ -49,38 +49,19 @@ export default function ControlCenterControls() {
         throw new Error(data.error ?? 'Failed to load control state');
       }
 
-      const localState = readLocalControlState();
-
-      setState({
-        ...data.state,
-        ...localState,
-      });
+      setState(data.state);
       setError(null);
     } catch (err) {
-      const localState = readLocalControlState();
-
-      setState({
-        paused: Boolean(localState.paused),
-        autoRunEnabled: Boolean(localState.autoRunEnabled),
-        autoMergeEnabled: Boolean(localState.autoMergeEnabled),
-        emergencyStop: Boolean(localState.emergencyStop),
-      });
       setError(err instanceof Error ? err.message : 'Failed to load state');
     }
   }
 
-  async function updateState(patch: Partial<ControlState>) {
+ async function updateState(patch: Partial<ControlState>) {
     try {
       setLoading(true);
-      writeLocalControlState(patch);
 
       setState((current) =>
-        current
-          ? {
-              ...current,
-              ...patch,
-            }
-          : current
+        current ? { ...current, ...patch } : current
       );
 
       const res = await fetch('/api/control-state', {
@@ -95,6 +76,7 @@ export default function ControlCenterControls() {
         throw new Error(data.error ?? 'Failed to update control state');
       }
 
+      if (data.state) setState(data.state);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update state');
