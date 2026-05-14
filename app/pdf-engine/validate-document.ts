@@ -31,7 +31,7 @@ function validateComponent(
     warnings.push({
       pageId: page.id,
       componentId: component.id,
-      message: "Component exceeds left safe zone",
+      message: "Exceeds left safe zone",
     });
   }
 
@@ -39,7 +39,7 @@ function validateComponent(
     warnings.push({
       pageId: page.id,
       componentId: component.id,
-      message: "Component exceeds top safe zone",
+      message: "Exceeds top safe zone",
     });
   }
 
@@ -47,7 +47,7 @@ function validateComponent(
     warnings.push({
       pageId: page.id,
       componentId: component.id,
-      message: "Component exceeds right safe zone",
+      message: "Exceeds right safe zone",
     });
   }
 
@@ -55,7 +55,7 @@ function validateComponent(
     warnings.push({
       pageId: page.id,
       componentId: component.id,
-      message: "Component exceeds bottom safe zone",
+      message: "Exceeds bottom safe zone",
     });
   }
 
