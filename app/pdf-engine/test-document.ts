@@ -35,25 +35,37 @@ export const testPdfDocument: PdfDocument = {
         },
 
         {
-          type: "box",
-          id: "hero-card",
-          frame: { x: 20, y: 84, width: 170, height: 52 },
-          label: "Hero Card",
-        },
+  type: "box",
+  id: "hero-card",
+  variant: "hero",
+  frame: { x: 20, y: 84, width: 170, height: 52 },
+  label: "Hero Card",
+  title: "Premium composition system",
+  description:
+    "Structured rendering layers create stable luxury PDF layouts.",
+},
 
         {
-          type: "box",
-          id: "left-card",
-          frame: { x: 20, y: 148, width: 82, height: 60 },
-          label: "Soft Neutral",
-        },
+  type: "box",
+  id: "left-card",
+  variant: "info",
+  frame: { x: 20, y: 148, width: 82, height: 60 },
+  label: "Soft Neutral",
+  title: "Elegant balance",
+  description:
+    "Soft gradients and clean spacing reduce visual noise.",
+},
 
         {
-          type: "box",
-          id: "right-card",
-          frame: { x: 108, y: 148, width: 82, height: 60 },
-          label: "Minimal Luxury",
-        },
+  type: "box",
+  id: "right-card",
+  variant: "info",
+  frame: { x: 108, y: 148, width: 82, height: 60 },
+  label: "Minimal Luxury",
+  title: "Premium hierarchy",
+  description:
+    "Typography and spacing establish a refined visual structure.",
+},
 
         {
           type: "box",
