@@ -49,15 +49,20 @@ function renderComponent(
       <div
         key={component.id}
         style={{
-          ...baseStyle,
-          color:
-            component.variant === "eyebrow"
-              ? theme.accent
-              : component.variant === "title"
-                ? theme.textPrimary
-                : theme.textMuted,
-          outline: hasWarnings ? "2px solid rgba(255,0,0,0.7)" : undefined,
-        }}
+  width: `${page.widthMm}mm`,
+  height: `${page.heightMm}mm`,
+  minWidth: `${page.widthMm}mm`,
+  maxWidth: `${page.widthMm}mm`,
+  minHeight: `${page.heightMm}mm`,
+  maxHeight: `${page.heightMm}mm`,
+  background: theme.pageBackground,
+  color: theme.textPrimary,
+  boxSizing: "border-box",
+  contain: "layout paint size",
+  pageBreakAfter: "always",
+  breakAfter: "page",
+  flex: "0 0 auto",
+}}
         className={className}
       >
         {component.text}
@@ -131,7 +136,7 @@ function PdfPreviewPage({
 
   return (
     <div
-      className="relative overflow-hidden shadow-2xl"
+      className="pdf-page relative overflow-hidden shadow-2xl"
       style={{
         width: `${page.widthMm}mm`,
         height: `${page.heightMm}mm`,
@@ -152,7 +157,7 @@ function PdfPreviewPage({
         }}
       />
 
-      <div className="relative z-10">
+      <div className="absolute inset-0 z-10">
         {page.components.map((component) =>
           renderComponent(component, theme, warnings),
         )}
@@ -171,7 +176,7 @@ export function PdfDocumentPreview({
   warnings?: PdfValidationWarning[];
 }) {
   return (
-    <div className="space-y-8">
+    <div className="pdf-document flex flex-col gap-8 print:block print:gap-0">
       {document.pages.map((page) => (
         <PdfPreviewPage
           key={page.id}
