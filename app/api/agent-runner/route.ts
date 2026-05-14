@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { readRepoContext, getActiveFileHints } from "@/agents/core/repo-context";
-import { generateCodePatch } from "@/app/lib/code-patch-generator";
+import { generateCodePatch, generateMultiFilePatch } from "@/app/lib/code-patch-generator";
 import { updateGithubFile } from "@/app/lib/github-file-updater";
 import {
   createGithubBranch,
@@ -149,6 +149,15 @@ async function readTargetFile(path: string) {
   const file = (await res.json()) as GitHubFile;
 
   return Buffer.from(file.content, "base64").toString("utf-8");
+}
+
+async function readTargetFiles(paths: string[]): Promise<Array<{ filePath: string; currentContent: string }>> {
+  return Promise.all(
+    paths.map(async (filePath) => ({
+      filePath,
+      currentContent: await readTargetFile(filePath),
+    }))
+  );
 }
 
 function priorityScore(priority?: Priority) {
@@ -809,7 +818,74 @@ try {
   });
 }
 
+    const isMultiFile = Array.isArray(task.targetFiles) && task.targetFiles.length > 1;
+
     const currentContent = await readTargetFile(task.targetFile);
+
+    if (isMultiFile) {
+      const files = await readTargetFiles(task.targetFiles!);
+      const repoContext = await readRepoContext().catch(() => null);
+      const repoContextSummary = repoContext
+        ? [
+            `Frontend files: ${(repoContext.frontendFiles ?? []).join(", ")}`,
+            `Backend files: ${(repoContext.backendFiles ?? []).join(", ")}`,
+            `Legacy zones (do not touch): ${(repoContext.legacyZones ?? []).join(", ")}`,
+          ].filter(Boolean).join("\n")
+        : undefined;
+
+      const patches = await generateMultiFilePatch({
+        files,
+        taskTitle: task.title,
+        taskSummary: task.summary ?? "",
+        projectState: await readProjectState(),
+        repoContext: repoContextSummary,
+        agentSystemPrompt: task.agentSystemPrompt,
+        agentName: task.agentName,
+        agentRole: task.agentRole,
+        routingReason: task.routingReason,
+      });
+
+      const branchName = `agent-task-${task.id}`;
+      await createBranch(branchName);
+
+      for (const patch of patches) {
+        await updateFileOnBranch(branchName, patch.filePath, patch.patchedContent);
+      }
+
+      const pr = await createPullRequest({
+        branch: branchName,
+        title: task.title,
+        body: `Multi-file task: ${task.summary ?? task.title}\n\nFiles changed:\n${patches.map(p => `- ${p.filePath}`).join("\n")}`,
+      });
+
+      task.status = "pending-pr";
+      task.result = {
+        branchName,
+        pullRequestUrl: pr.html_url,
+        pullRequestNumber: pr.number,
+      };
+      task.updatedAt = new Date().toISOString();
+      tasks[taskIndex] = task;
+      await updateTaskStatus(task.id, "pending-pr");
+      await writeTasksFile(tasks, sha, `Multi-file PR for task ${task.id}`);
+
+      await addCoordinationEvent({
+        timestamp: Date.now(),
+        agent: task.agentName ?? "senior-execution",
+        type: "pull-request-created",
+        summary: `Multi-file PR created for task: ${task.title}`,
+        taskId: task.id,
+        targetFile: task.targetFiles!.join(", "),
+      }).catch(() => {});
+
+      return NextResponse.json({
+        ok: true,
+        mode: "multi-file-pr-created",
+        taskId: task.id,
+        pullRequestUrl: pr.html_url,
+        filesChanged: patches.map(p => p.filePath),
+      });
+    }
 
     const projectState = await readProjectState();
     const repoContext = await readRepoContext().catch(() => null);
