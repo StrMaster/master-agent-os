@@ -19,6 +19,15 @@ export async function POST(req: Request) {
     const prompt = String(body.prompt ?? "").trim();
     const style = body.style ? String(body.style) : undefined;
 
+    if (action === "delete") {
+  const id = String(body.id ?? "");
+  const redis = getRedis();
+  const existing = await redis.get<unknown[]>(PRODUCTS_KEY) ?? [];
+  const filtered = existing.filter((p: any) => p.id !== id);
+  await redis.set(PRODUCTS_KEY, filtered);
+  return NextResponse.json({ ok: true });
+}
+    
     if (!prompt) {
       return NextResponse.json({ ok: false, error: "prompt is required" }, { status: 400 });
     }
