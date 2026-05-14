@@ -41,6 +41,8 @@ export default function DigitalProductsPage() {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState<string>("");
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   async function loadProducts() {
     try {
@@ -54,14 +56,18 @@ export default function DigitalProductsPage() {
 
   async function generate() {
     if (!prompt.trim()) return;
+
     try {
       setLoading(true);
+
       const res = await fetch("/api/digital-products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, prompt, style }),
       });
+
       const data = await res.json();
+
       if (data.ok) {
         await loadProducts();
       } else {
@@ -76,32 +82,50 @@ export default function DigitalProductsPage() {
     }
   }
 
+  async function downloadPdf() {
+    if (!previewHtml) return;
+
+    try {
+      setPdfLoading(true);
+
+      const res = await fetch("/api/export-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          html: previewHtml,
+          title: previewTitle || "digital-product",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("PDF export failed.");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${previewTitle
+        ?.replace(/[^a-z0-9]/gi, "-")
+        .toLowerCase() || "digital-product"}.pdf`;
+
+      a.click();
+
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to generate PDF.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   useEffect(() => {
     loadProducts();
   }, []);
-
-  function openPrintablePdf(html: string) {
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const printWindow = window.open(url, "_blank", "noopener,noreferrer");
-
-    if (!printWindow) {
-      alert("Popup blocked. Allow popups to print this product.");
-      URL.revokeObjectURL(url);
-      return;
-    }
-
-    const cleanup = () => {
-      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-    };
-
-    printWindow.addEventListener("load", () => {
-      printWindow.document.title = "digital-product-print-ready";
-      printWindow.focus();
-      printWindow.print();
-      cleanup();
-    });
-  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
@@ -124,7 +148,9 @@ export default function DigitalProductsPage() {
               className="mt-1 w-full rounded-xl border border-white/10 bg-neutral-900 px-3 py-2 text-sm text-white"
             >
               {PRODUCT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
               ))}
             </select>
           </div>
@@ -141,7 +167,9 @@ export default function DigitalProductsPage() {
         </div>
 
         <div>
-          <label className="text-sm text-white/60">Description / Requirements</label>
+          <label className="text-sm text-white/60">
+            Description / Requirements
+          </label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -162,21 +190,31 @@ export default function DigitalProductsPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Generated Products ({products.length})</h2>
+        <h2 className="text-xl font-semibold">
+          Generated Products ({products.length})
+        </h2>
+
         {products.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/50">
             No products yet. Generate your first digital product above.
           </div>
         ) : (
           products.map((product) => (
-            <div key={product.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div
+              key={product.id}
+              className="rounded-2xl border border-white/10 bg-white/5 p-5"
+            >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-sm font-semibold text-white">{product.title}</div>
+                  <div className="text-sm font-semibold text-white">
+                    {product.title}
+                  </div>
                   <div className="mt-1 text-xs text-white/40">
-                    {product.type} · {new Date(product.createdAt).toLocaleDateString()}
+                    {product.type} ·{" "}
+                    {new Date(product.createdAt).toLocaleDateString()}
                   </div>
                 </div>
+
                 {product.etysListing?.price && (
                   <span className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-200">
                     ${product.etysListing.price}
@@ -187,7 +225,10 @@ export default function DigitalProductsPage() {
               {product.etysListing?.tags && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {product.etysListing.tags.slice(0, 6).map((tag) => (
-                    <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/50">
+                    <span
+                      key={tag}
+                      className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-white/50"
+                    >
                       {tag}
                     </span>
                   ))}
@@ -196,41 +237,58 @@ export default function DigitalProductsPage() {
 
               <div className="mt-4 flex gap-2">
                 <button
-  type="button"
-  onClick={() => setPreviewHtml(product.htmlContent)}
-  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
->
-  Preview
-</button>
-<button
-  type="button"
-  onClick={() => {
-    const blob = new Blob([product.htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${product.title?.replace(/[^a-z0-9]/gi, "-").toLowerCase() ?? "product"}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }}
-  className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 hover:bg-emerald-500/20"
->
-  ⬇ Download
-</button>
+                  type="button"
+                  onClick={() => {
+                    setPreviewHtml(product.htmlContent);
+                    setPreviewTitle(product.title);
+                  }}
+                  className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-200 hover:bg-blue-500/20"
+                >
+                  Preview
+                </button>
+
                 <button
-  type="button"
-  onClick={async () => {
-    await fetch("/api/digital-products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", id: product.id }),
-    });
-    await loadProducts();
-  }}
-  className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200 hover:bg-red-500/20"
->
-  🗑 Delete
-</button>
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob([product.htmlContent], {
+                      type: "text/html",
+                    });
+
+                    const url = URL.createObjectURL(blob);
+
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `${product.title
+                      ?.replace(/[^a-z0-9]/gi, "-")
+                      .toLowerCase()}.html`;
+
+                    a.click();
+
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200 hover:bg-emerald-500/20"
+                >
+                  ⬇ Download
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await fetch("/api/digital-products", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "delete",
+                        id: product.id,
+                      }),
+                    });
+
+                    await loadProducts();
+                  }}
+                  className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200 hover:bg-red-500/20"
+                >
+                  🗑 Delete
+                </button>
               </div>
             </div>
           ))
@@ -241,30 +299,41 @@ export default function DigitalProductsPage() {
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
           <div className="relative w-full max-w-5xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 bg-neutral-950 border-b border-white/10">
-              <span className="text-sm text-white/60">Product Preview</span>
+              <span className="text-sm text-white/60">
+                Product Preview
+              </span>
+
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => openPrintablePdf(previewHtml)}
-                  className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/20 transition"
+                  onClick={downloadPdf}
+                  disabled={pdfLoading}
+                  className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/20 transition disabled:opacity-50"
                 >
-                  🖨 Print / Save PDF
+                  {pdfLoading ? "Generating PDF..." : "⬇ Download PDF"}
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
-                    const blob = new Blob([previewHtml], { type: "text/html" });
+                    const blob = new Blob([previewHtml], {
+                      type: "text/html",
+                    });
+
                     const url = URL.createObjectURL(blob);
+
                     const a = document.createElement("a");
                     a.href = url;
                     a.download = "product.html";
                     a.click();
+
                     URL.revokeObjectURL(url);
                   }}
                   className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20 transition"
                 >
                   ⬇ Download HTML
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setPreviewHtml(null)}
@@ -274,6 +343,7 @@ export default function DigitalProductsPage() {
                 </button>
               </div>
             </div>
+
             <iframe
               id="preview-iframe"
               srcDoc={previewHtml}
