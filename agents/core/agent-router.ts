@@ -331,3 +331,28 @@ export function routePromptToAgent(prompt: string): AgentRouteDecision {
     reason: "Default executable engineering task.",
   };
 }
+
+export async function routePromptToAgentAI(prompt: string): Promise<AgentRouteDecision> {
+  try {
+    const res = await fetch("/api/route-agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    if (!res.ok) throw new Error("Routing API failed");
+
+    const data = await res.json();
+    const role = data.role as SmartAgentRole;
+    const agent = getSmartAgent(role);
+
+    return {
+      role,
+      agent,
+      confidence: data.confidence ?? "medium",
+      reason: data.reason ?? "AI routing decision",
+    };
+  } catch {
+    return routePromptToAgent(prompt);
+  }
+}
