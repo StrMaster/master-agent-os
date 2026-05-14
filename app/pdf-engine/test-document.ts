@@ -70,7 +70,7 @@ export const testPdfDocument: PdfDocument = {
         {
           type: "box",
           id: "quote-box",
-          frame: { x: 20, y: 202, width: 170, height: 34 },
+          frame: { x: 20, y: 194, width: 170, height: 26 },
           label: "Quote Block",
         },
       ],
