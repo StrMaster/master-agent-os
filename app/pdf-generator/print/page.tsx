@@ -26,6 +26,27 @@ export default function PdfPrintPage() {
           margin: 0;
         }
 
+        .pdf-document {
+  display: block !important;
+}
+
+.pdf-page {
+  width: 210mm !important;
+  height: 297mm !important;
+  min-width: 210mm !important;
+  max-width: 210mm !important;
+  min-height: 297mm !important;
+  max-height: 297mm !important;
+  overflow: hidden !important;
+  page-break-after: always;
+  break-after: page;
+}
+
+.pdf-page:last-child {
+  page-break-after: auto;
+  break-after: auto;
+}
+
         @media print {
           body {
             margin: 0;
