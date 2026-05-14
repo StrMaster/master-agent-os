@@ -318,8 +318,28 @@ export default function PipelinePage() {
                   )}
 
                   {expandedStage === stageKey && stageData.result !== undefined && (
-  <div className="mt-3 rounded-lg border border-white/10 bg-neutral-950/50 p-3 text-xs text-white/70 overflow-auto max-h-64">
-    <pre>{JSON.stringify(stageData.result as Record<string, unknown>, null, 2)}</pre>
+  <div className="mt-3 space-y-2">
+    <div className="rounded-lg border border-white/10 bg-neutral-950/50 p-3 text-xs text-white/70 overflow-auto max-h-48">
+      <pre>{JSON.stringify(stageData.result as Record<string, unknown>, null, 2)}</pre>
+    </div>
+    {stage === "listing" && (stageData.result as any)?.htmlContent && (
+      <button
+        type="button"
+        onClick={() => {
+          const html = (stageData.result as any).htmlContent;
+          const blob = new Blob([html], { type: "text/html" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${pipeline.name.replace(/\s+/g, "-").toLowerCase()}.html`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+        className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs text-emerald-200 hover:bg-emerald-500/20 transition"
+      >
+        ⬇ Download HTML
+      </button>
+    )}
   </div>
 )}
                 </div>
