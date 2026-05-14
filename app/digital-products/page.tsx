@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const PRODUCT_TYPES = [
   { value: "cv-template", label: "CV Template" },
@@ -62,15 +62,23 @@ export default function DigitalProductsPage() {
         body: JSON.stringify({ type, prompt, style }),
       });
       const data = await res.json();
-      if (data.ok) await loadProducts();
+      if (data.ok) {
+        await loadProducts();
+      } else {
+        console.error("Generation failed:", data.error);
+        alert(`Error: ${data.error ?? "Unknown error"}`);
+      }
+    } catch (err) {
+      console.error("Generate error:", err);
+      alert("Generation failed. Check console.");
     } finally {
       setLoading(false);
     }
   }
 
-  useState(() => {
+  useEffect(() => {
     loadProducts();
-  });
+  }, []);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 text-white sm:px-6">
