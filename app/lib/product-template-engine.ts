@@ -35,6 +35,11 @@ Respond ONLY valid JSON, no markdown.`,
         content: `Create habit tracker content for: ${context.prompt}
 Style: ${context.style ?? "dark, premium, minimal"}
 
+IMPORTANT: If style contains "light", "white", "clean", "minimal white" or "warm" → use "warm-minimal" or "clean-professional".
+If style contains "rose", "pink", "feminine", "wellness" → use "rose-wellness".
+If style contains "dark", "cyber", "premium dark", "black" → use "dark-premium".
+Default: "dark-premium".
+
 Respond ONLY JSON:
 {
   "title": "Product title (2-5 words, powerful)",
