@@ -108,6 +108,14 @@ export default function PdfGeneratorPage() {
               >
                 Soft Wellness
               </button>
+              <a
+  href={`/pdf-generator/print?theme=${themeKey}`}
+  target="_blank"
+  rel="noreferrer"
+  className="block rounded-xl border border-violet-400/30 bg-violet-400/10 px-4 py-3 text-sm font-semibold text-violet-200 transition hover:bg-violet-400/20"
+>
+  Open Print Export
+</a>
             </div>
           </div>
         </aside>
