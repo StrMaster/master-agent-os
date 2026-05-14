@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { generateEtsyThumbnail } from "./thumbnail-generator";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -197,13 +198,22 @@ export async function createDigitalProduct(context: {
     }),
   ]);
 
+  const thumbnailUrl = await generateEtsyThumbnail({
+    palette: detectedPalette,
+    productType: context.type,
+    productTitle: listing.title,
+    niche: context.prompt,
+  }).catch(() => "");
+
   return {
     id: `product-${Date.now()}`,
     type: context.type,
     title: listing.title,
     description: listing.description,
     htmlContent,
+    thumbnailUrl,
     etysListing: listing,
+    templateData: productData,
     createdAt: new Date().toISOString(),
   };
 }
