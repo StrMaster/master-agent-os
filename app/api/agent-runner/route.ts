@@ -846,7 +846,11 @@ try {
       });
 
       const branchName = `agent-task-${task.id}`;
-      await createBranch(branchName);
+      await createGithubBranch(branchName);
+
+for (const patch of patches) {
+  await updateGithubFile(patch.filePath, patch.patchedContent, branchName);
+}
 
       for (const patch of patches) {
         await updateFileOnBranch(branchName, patch.filePath, patch.patchedContent);
