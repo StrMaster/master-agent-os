@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { PdfDocumentPreview } from "../../pdf-engine/render-preview";
 import { testPdfDocument } from "../../pdf-engine/test-document";
@@ -9,12 +9,14 @@ import { pdfThemes } from "../../pdf-engine/themes";
 type ThemeKey = keyof typeof pdfThemes;
 
 export default function PdfPrintPage() {
-  const searchParams = useSearchParams();
+  const [themeKey, setThemeKey] = useState<ThemeKey>("darkLuxury");
 
-  const themeKey: ThemeKey =
-    searchParams.get("theme") === "softWellness"
-      ? "softWellness"
-      : "darkLuxury";
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setThemeKey(
+      params.get("theme") === "softWellness" ? "softWellness" : "darkLuxury",
+    );
+  }, []);
 
   return (
     <main className="min-h-screen bg-neutral-950 p-8 print:bg-white print:p-0">
