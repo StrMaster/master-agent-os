@@ -14,7 +14,10 @@ function TechLinesOverlay() {
   );
 }
 
-function renderComponent(component: PdfComponent) {
+function renderComponent(
+  component: PdfComponent,
+  theme: (typeof pdfThemes)[keyof typeof pdfThemes],
+) {
   const theme = pdfThemes.darkLuxury;
 
   const baseStyle = {
@@ -104,7 +107,14 @@ function renderComponent(component: PdfComponent) {
   );
 }
 
-function PdfPreviewPage({ page }: { page: PdfPage }) {
+function PdfPreviewPage({
+  page,
+  themeKey,
+}: {
+  page: PdfPage;
+  themeKey: keyof typeof pdfThemes;
+}) {
+  const theme = pdfThemes[themeKey];
   const theme = pdfThemes.darkLuxury;
 
   return (
@@ -130,16 +140,22 @@ function PdfPreviewPage({ page }: { page: PdfPage }) {
         }}
       />
 
-      <div className="relative z-10">{page.components.map(renderComponent)}</div>
+      <div className="relative z-10">{page.components.map((component) => renderComponent(component, theme))}</div>
     </div>
   );
 }
 
-export function PdfDocumentPreview({ document }: { document: PdfDocument }) {
+export function PdfDocumentPreview({
+  document,
+  themeKey = "darkLuxury",
+}: {
+  document: PdfDocument;
+  themeKey?: keyof typeof pdfThemes;
+}) {
   return (
     <div className="space-y-8">
       {document.pages.map((page) => (
-        <PdfPreviewPage key={page.id} page={page} />
+        <PdfPreviewPage key={page.id} page={page} themeKey={themeKey} />
       ))}
     </div>
   );
