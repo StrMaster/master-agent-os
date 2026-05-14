@@ -44,9 +44,15 @@ export function renderHabitTrackerTemplate(data: HabitTrackerData): string {
   <div style="margin-top: 12px; background: ${p.surface}; border: 1px solid ${p.border}; border-radius: 10px; padding: 14px;">
     <div style="font-size: 9px; font-family: 'Poppins', sans-serif; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: ${p.accent}; margin-bottom: 8px;">Weekly Reflection</div>
     <div style="display: flex; gap: 16px; margin-bottom: 10px; font-size: 11px; color: ${p.textMuted};">
-      <span>○ Low energy</span>
-      <span>○ Medium</span>
-      <span>○ High energy</span>
+      <span style="display: inline-flex; align-items: center; gap: 4px;">
+  <div style="width: 12px; height: 12px; border: 1.5px solid ${p.accent}; border-radius: 50%; flex-shrink: 0;"></div> Low
+</span>
+<span style="display: inline-flex; align-items: center; gap: 4px;">
+  <div style="width: 12px; height: 12px; border: 1.5px solid ${p.accent}; border-radius: 50%; flex-shrink: 0;"></div> Medium
+</span>
+<span style="display: inline-flex; align-items: center; gap: 4px;">
+  <div style="width: 12px; height: 12px; border: 1.5px solid ${p.accent}; border-radius: 50%; flex-shrink: 0;"></div> High
+</span>
     </div>
     <div style="font-size: 9px; font-family: 'Poppins', sans-serif; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: ${p.textDim}; margin-bottom: 6px;">Notes</div>
     <div style="border: 1px solid ${p.border}; border-radius: 6px; height: 52px; background: ${p.surface2};"></div>
@@ -152,7 +158,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
 .write-box {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  height: 70px;
+  height: 60px;
   background: var(--surface2);
 }
 
