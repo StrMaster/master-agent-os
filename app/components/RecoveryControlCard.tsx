@@ -63,9 +63,12 @@ async function createRecoveryTask() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        reason: 'Recovery mode is active',
-        stopCode: 'recovery-active',
-      }),
+  reason: 'Recovery mode is active — manual operator trigger',
+  stopCode: 'recovery-active',
+  targetFile: 'app/api/agent-runner/route.ts',
+  suggestedAction: 'Inspect recent failures in agent-runner, identify the root cause, apply minimal fix.',
+  targetArea: 'runtime/agent-runner',
+}),
     });
 
     const data = await res.json();
