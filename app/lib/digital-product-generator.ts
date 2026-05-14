@@ -44,7 +44,7 @@ export async function generateDigitalProductHTML(context: {
   style?: string;
 }): Promise<string> {
   const response = await client.chat.completions.create({
-    model: "gpt-5.5",
+    model: "gpt-5.4-mini",
     max_tokens: 8192,
     messages: [
       {
@@ -101,7 +101,7 @@ export async function generateEtsyListing(context: {
   description: string;
 }): Promise<EtsyListing> {
   const response = await client.chat.completions.create({
-    model: "gpt-5.5",
+    model: "gpt-5.4-mini",
     max_tokens: 1024,
     messages: [
       {
