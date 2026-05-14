@@ -26,6 +26,7 @@ const navItems = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/pipeline', label: 'Pipeline' },
   { href: '/niche-detector', label: 'Niches' },
+  { href: '/portfolio', label: 'Portfolio' },
 
 ];
 
