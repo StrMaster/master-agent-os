@@ -856,11 +856,11 @@ for (const patch of patches) {
         await updateGithubFile(patch.filePath, patch.patchedContent, branchName);
       }
 
-      const pr = await createPullRequest({
-        branch: branchName,
-        title: task.title,
-        body: `Multi-file task: ${task.summary ?? task.title}\n\nFiles changed:\n${patches.map(p => `- ${p.filePath}`).join("\n")}`,
-      });
+      const pr = await createPullRequest(
+  branchName,
+  `AI Patch: ${task.title}`,
+  `Multi-file task: ${task.summary ?? task.title}\n\nFiles changed:\n${patches.map(p => `- ${p.filePath}`).join("\n")}`
+);
 
       task.status = "pending-pr";
       task.result = {
