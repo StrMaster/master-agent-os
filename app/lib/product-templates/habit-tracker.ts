@@ -152,7 +152,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
 .write-box {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  height: 85px;
+  height: 70px;
   background: var(--surface2);
 }
 
@@ -287,7 +287,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
   <p style="font-size: 12px; color: ${p.textMuted}; margin-bottom: 18px;">Reflection transforms data into growth. Complete each review on day 7, 14, 21, and 30.</p>
 
   ${data.weeklyReviews.map(review => `
-  <div class="card" style="margin-bottom: 14px;">
+  <div class="card" style="margin-bottom: 10px;">
     <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px;">
       <div>
         <h3 style="margin-bottom: 4px;">Week ${String(review.week).padStart(2, "0")} Review // ${review.theme}</h3>
