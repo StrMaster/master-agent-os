@@ -71,7 +71,7 @@ async function generateProductContent(context: {
   style?: string;
 }): Promise<string> {
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5-20251001",
     max_tokens: 2048,
     system: `You are a premium digital product content strategist.
 Your job: create detailed content structure and copy for digital products.
@@ -154,7 +154,7 @@ export async function generateEtsyListing(context: {
   description: string;
 }): Promise<EtsyListing> {
   const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-20250514",
+    model: "claude-sonnet-4-5-20251001",
     max_tokens: 1024,
     system: `You are an Etsy SEO expert and copywriter who creates high-converting product listings.
 Write compelling, keyword-rich listings that convert browsers into buyers.
