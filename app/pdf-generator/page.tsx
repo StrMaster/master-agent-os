@@ -2,6 +2,8 @@ import { PdfDocumentPreview } from "../pdf-engine/render-preview";
 import { testPdfDocument } from "../pdf-engine/test-document";
 import { validateDocument } from "../pdf-engine/validate-document";
 
+
+const themeKey = "darkLuxury";
 export const dynamic = "force-dynamic";
 
 export default function PdfGeneratorPage() {
@@ -53,7 +55,7 @@ export default function PdfGeneratorPage() {
 
         <section className="overflow-auto rounded-2xl border border-white/10 bg-neutral-900 p-6">
           <div className="mx-auto flex min-h-[900px] w-full items-start justify-center">
-            <PdfDocumentPreview document={testPdfDocument} />
+            <PdfDocumentPreview document={testPdfDocument} themeKey={themeKey} />
           </div>
         </section>
       </div>
