@@ -179,8 +179,9 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
   .page { margin: 0; box-shadow: none; page-break-after: always; }
   .page:last-child { page-break-after: avoid; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  .card { page-break-inside: avoid; }
-  .card-sm { page-break-inside: avoid; }
+  .card { break-inside: avoid; page-break-inside: avoid; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+
 }
 </style>
 </head>
