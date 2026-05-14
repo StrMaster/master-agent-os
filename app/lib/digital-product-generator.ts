@@ -10,7 +10,15 @@ export type DigitalProductType =
   | "mini-ebook"
   | "social-media-kit"
   | "bio-link-page"
-  | "seo-audit-report";
+  | "seo-audit-report"
+  | "budget-tracker"
+  | "meal-planner"
+  | "habit-tracker"
+  | "business-plan"
+  | "social-media-calendar"
+  | "wedding-checklist"
+  | "study-guide"
+  | "notion-template";
 
 export type DigitalProduct = {
   id: string;
@@ -58,7 +66,15 @@ Product type guidelines:
 - mini-ebook: 5-page guide with cover, chapters, and professional layout
 - social-media-kit: Post templates, caption frameworks, hashtag sets
 - bio-link-page: Single page with links, avatar, bio, social icons
-- seo-audit-report: Professional SEO analysis report template`,
+- seo-audit-report: Professional SEO analysis report template
+- budget-tracker: Monthly budget tracker with income, expenses, savings categories, charts
+- meal-planner: Weekly meal planner with breakfast/lunch/dinner, shopping list, macros
+- habit-tracker: 30-day habit tracker with daily checkboxes, streaks, progress visualization
+- business-plan: Professional business plan with executive summary, market analysis, financials
+- social-media-calendar: Monthly content calendar with post ideas, captions, hashtags per day
+- wedding-checklist: Complete wedding planning checklist with timeline, budget, vendors
+- study-guide: Study system with schedule, notes template, flashcard layout, progress tracker
+- notion-template: Notion-style dashboard with sidebar, databases, linked views layout
     messages: [
       {
         role: "user",
