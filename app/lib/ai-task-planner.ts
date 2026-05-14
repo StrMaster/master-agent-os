@@ -1,4 +1,4 @@
-import { openai } from "./openai";
+import { callModel } from "./model-router";
 import type { RepoContext } from "@/agents/core/repo-context";
 
 type ProjectContext = {
@@ -73,42 +73,15 @@ export async function generateProjectStatusSummary(context: {
   memory: unknown;
   conversationMemory: unknown[];
 }) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the project status analyst for Master Agent OS.
-
-Summarize the current project state clearly.
-
-Focus on:
-- what was recently done
-- what is currently pending
-- failures or risks
-- deployment status if visible
-- recommended next step
-
-Keep it concise and practical.
-Respond in plain text.
-If the user message contains Lithuanian words or Lithuanian grammar, respond in Lithuanian.
-Otherwise respond in English.
-Never respond in German.
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(context, null, 2),
-      },
-    ],
-  });
-
-  return (
-    response.choices[0]?.message?.content ||
-    "No project status summary available."
+  const raw = await callModel(
+    "analyst",
+    `You are the Project Status Analyst for Master Agent OS.
+Analyze the current state and return a short status summary.
+Respond ONLY valid JSON: {"summary":"...","health":"healthy|degraded|blocked","nextAction":"..."}`,
+    JSON.stringify(context),
+    256
   );
+  return JSON.parse(raw);
 }
 export async function generateSelfImprovementSuggestions(context: {
   tasks: unknown[];
@@ -116,156 +89,43 @@ export async function generateSelfImprovementSuggestions(context: {
   memory: unknown;
   conversationMemory: unknown[];
 }) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.25,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the self-improvement planner for Master Agent OS.
-
-Analyze the current project context and suggest the best next improvements.
-
-Focus on:
-- stability
-- UX clarity
-- execution reliability
-- dashboard simplicity
-- agent safety
-- deploy visibility
-- reducing repeated failures
-- improving conversational workflow
-
-Rules:
-- Suggest 3 to 5 improvements.
-- Keep each improvement small and actionable.
-- Prefer safe UI/runtime improvements.
-- Do not suggest broad rewrites.
-- Do not suggest external services unless clearly useful.
-- If Lithuanian context is present, respond in Lithuanian.
-- Never respond in German.
-
-Respond in plain text with:
-1. Short status summary
-2. Recommended improvements
-3. Best next step
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(context, null, 2),
-      },
-    ],
-  });
-
-  return (
-    response.choices[0]?.message?.content ||
-    "No self-improvement suggestions available."
+  const raw = await callModel(
+    "analyst",
+    `You are the Self-Improvement Analyst for Master Agent OS.
+Analyze tasks, activity, and memory. Suggest 3 small improvements.
+Respond ONLY valid JSON: {"suggestions":[{"title":"...","description":"...","priority":"low|medium|high"}]}`,
+    JSON.stringify(context),
+    512
   );
+  return JSON.parse(raw);
 }
 
 export async function generateImprovementTasks(
   suggestions: string
 ) {
-  const response =
-    await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      temperature: 0.2,
-      messages: [
-        {
-          role: "system",
-          content: `
-You convert improvement suggestions into executable engineering tasks.
-
-Rules:
-- Generate 2 to 5 tasks.
-- Keep tasks safe and specific.
-- Prefer UI/dashboard/runtime improvements.
-- Every task must include title, summary, targetFile, priority, executionMode, and riskLevel.
-- If a task is broad or the targetFile is unclear, keep it previewOnly with requiresApproval.
-- Use only these target files:
-
-- app/page.tsx
-- app/components/ActivityFeed.tsx
-- app/components/RunAgentButton.tsx
-- app/execution/page.tsx
-
-Respond ONLY valid JSON array.
-
-Format:
-[
-  {
-    "title": "...",
-    "summary": "...",
-    "targetFile": "...",
-    "priority": "low|medium|high"
-  }
-]
-          `,
-        },
-        {
-          role: "user",
-          content: suggestions,
-        },
-      ],
-    });
-
-  const content =
-    response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error(
-      "OpenAI returned empty response"
-    );
-  }
-
-  return JSON.parse(content);
+  const raw = await callModel(
+    "planner",
+    `You are the Improvement Task Generator for Master Agent OS.
+Generate small executable improvement tasks based on suggestions.
+Respond ONLY valid JSON array: [{"title":"...","summary":"...","targetFile":"...","priority":"low|medium|high"}]`,
+    JSON.stringify({ suggestions, context }),
+    512
+  );
+  return JSON.parse(raw);
 }
 
 export async function determineAgentRole(
   prompt: string
 ) {
-  const normalized =
-    prompt.toLowerCase();
-
-  if (
-    normalized.includes(
-      "deploy"
-    ) ||
-    normalized.includes(
-      "production"
-    )
-  ) {
-    return "deploy";
-  }
-
-  if (
-    normalized.includes(
-      "review"
-    ) ||
-    normalized.includes(
-      "analyze"
-    ) ||
-    normalized.includes(
-      "failure"
-    )
-  ) {
-    return "reviewer";
-  }
-
-  if (
-    normalized.includes(
-      "plan"
-    ) ||
-    normalized.includes(
-      "roadmap"
-    )
-  ) {
-    return "planner";
-  }
-
-  return "executor";
+  const raw = await callModel(
+    "planner",
+    `You are the Agent Role Selector for Master Agent OS.
+Given a task, pick the best agent role.
+Respond ONLY valid JSON: {"role":"...","reason":"..."}`,
+    JSON.stringify(context),
+    128
+  );
+  return JSON.parse(raw);
 }
 
 export async function generateAgentDelegationResponse(context: {
@@ -273,45 +133,15 @@ export async function generateAgentDelegationResponse(context: {
   agentRole: "planner" | "executor" | "reviewer" | "deploy";
   projectContext?: unknown;
 }) {
-  const roleInstructions = {
-    planner:
-      "You are the Planner Agent. Create a concise execution plan. Do not create code. Focus on sequencing and safe next steps.",
-    executor:
-      "You are the Execution Agent. Convert the request into a safe executable engineering task.",
-    reviewer:
-      "You are the Reviewer Agent. Analyze risks, failures, recent activity, and quality issues. Recommend what should be fixed.",
-    deploy:
-      "You are the Deploy Agent. Analyze deployment status, production readiness, and deploy risks.",
-  };
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-${roleInstructions[context.agentRole]}
-
-Rules:
-- Be concise.
-- Be practical.
-- If Lithuanian is used, respond in Lithuanian.
-- Never respond in German.
-- Do not invent facts not present in context.
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(context, null, 2),
-      },
-    ],
-  });
-
-  return (
-    response.choices[0]?.message?.content ||
-    "No agent response available."
+  const raw = await callModel(
+    "analyst",
+    `You are the Agent Delegation Responder for Master Agent OS.
+Generate a short response explaining what the agent will do.
+Respond ONLY valid JSON: {"response":"...","nextSteps":["..."]}`,
+    JSON.stringify(context),
+    256
   );
+  return JSON.parse(raw);
 }
 
 export async function generateReviewerFixTasks(context: {
@@ -319,56 +149,15 @@ export async function generateReviewerFixTasks(context: {
   reviewerResponse: string;
   projectContext: unknown;
 }) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the Reviewer Agent task generator.
-
-Convert reviewer findings into safe executable fix tasks.
-
-Rules:
-- Generate 1 to 3 tasks.
-- Keep tasks small and safe.
-- Only use allowed target files:
-  - app/page.tsx
-  - app/components/ActivityFeed.tsx
-  - app/components/RunAgentButton.tsx
-  - app/execution/page.tsx
-- Do not suggest backend/config/package changes.
-- If Lithuanian is used, respond in Lithuanian.
-- Never respond in German.
-
-Respond ONLY valid JSON array.
-
-Format:
-[
-  {
-    "title": "...",
-    "summary": "...",
-    "targetFile": "...",
-    "priority": "low|medium|high"
-  }
-]
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(context, null, 2),
-      },
-    ],
-  });
-
-  const content = response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("OpenAI returned empty reviewer fix task response");
-  }
-
-  return JSON.parse(content);
+  const raw = await callModel(
+    "reviewer",
+    `You are the Reviewer Fix Task Generator for Master Agent OS.
+Given a failed review, generate fix tasks.
+Respond ONLY valid JSON array: [{"title":"...","summary":"...","targetFile":"...","priority":"low|medium|high"}]`,
+    JSON.stringify(context),
+    512
+  );
+  return JSON.parse(raw);
 }
 
 export async function generateExecutionSequence(
@@ -378,104 +167,15 @@ export async function generateExecutionSequence(
     projectContext: unknown;
   }
 ) {
-  const response =
-    await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-
-      temperature: 0.2,
-
-      messages: [
-        {
-          role: "system",
-
-          content: `
-You are the Planner Agent.
-
-Your job:
-- create a safe execution sequence
-- define execution order
-- define dependencies
-- minimize execution chaos
-
-Rules:
-- Generate 2 to 5 steps.
-- Prefer small safe improvements.
-- Avoid backend refactors.
-- Preserve dependency order with dependsOn.
-- Use parentTaskId and wave when returning planner-generated subtasks.
-- Prefer dependsOnTaskIds and blockedBy for explicit dependency ordering.
-- Use waveStatus to mark each step as ready, blocked, or completed.
-- Mark planner-generated multi-step work as previewOnly with requiresApproval.
-- Keep every step small, targeted, and approval-gated when the target is unclear.
-- Use only these target files:
-
-- app/page.tsx
-- app/components/ActivityFeed.tsx
-- app/components/RunAgentButton.tsx
-- app/execution/page.tsx
-
-Allowed agent roles:
-- planner
-- executor
-- reviewer
-- deploy
-
-Respond ONLY valid JSON array.
-
-Format:
-[
-  {
-    "id": "step-1",
-
-    "title": "...",
-
-    "summary": "...",
-
-    "agentRole": "executor",
-
-    "targetFile": "...",
-
-    "executionMode": "single-file|multi-step",
-
-    "wave": 1,
-
-    "waveStatus": "ready|blocked|completed",
-    "previewOnly": true,
-    "requiresApproval": true,
-
-    "parentTaskId": "optional-parent-task-id",
-
-    "priority": "low|medium|high",
-
-    "dependsOnTaskIds": [],
-    "blockedBy": []
-  }
-]
-          `,
-        },
-
-        {
-          role: "user",
-
-          content: JSON.stringify(
-            context,
-            null,
-            2
-          ),
-        },
-      ],
-    });
-
-  const content =
-    response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error(
-      "Execution sequence generation failed"
-    );
-  }
-
-  return JSON.parse(content);
+  const raw = await callModel(
+    "planner",
+    `You are the Execution Sequence Planner for Master Agent OS.
+Generate an ordered execution sequence for the given tasks.
+Respond ONLY valid JSON: {"sequence":[{"taskId":"...","order":1,"reason":"..."}]}`,
+    JSON.stringify(context),
+    512
+  );
+  return JSON.parse(raw);
 }
 
 export async function generateRecoveryPlan(context: {
@@ -535,54 +235,14 @@ export async function generateDeployRecoveryPlan(context: {
   recentActivity: unknown[];
   tasks: unknown[];
 }) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the Deploy Recovery Agent for Master Agent OS.
-
-Your job:
-- analyze deployment failures
-- identify likely UI/runtime issue
-- generate ONE safe recovery task
-
-Rules:
-- frontend only
-- no package.json
-- no config edits
-- no backend infra edits
-- only:
-  - app/page.tsx
-  - app/components/*
-  - app/execution/page.tsx
-- response must be valid JSON
-- never respond in German
-
-Format:
-{
-  "title": "...",
-  "summary": "...",
-  "targetFile": "...",
-  "priority": "low|medium|high",
-  "reasoning": "..."
-}
-        `,
-      },
-      {
-        role: "user",
-        content: JSON.stringify(context, null, 2),
-      },
-    ],
-  });
-
-  const content = response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("Deploy recovery returned empty response");
-  }
-
-  return JSON.parse(content);
+  const raw = await callModel(
+    "recovery",
+    `You are the Deploy Recovery Agent for Master Agent OS.
+Analyze deployment failures and generate ONE safe recovery task.
+Rules: frontend only, no package.json, no config edits.
+Respond ONLY valid JSON: {"title":"...","summary":"...","targetFile":"...","priority":"low|medium|high","reasoning":"..."}`,
+    JSON.stringify(context),
+    512
+  );
+  return JSON.parse(raw);
 }
