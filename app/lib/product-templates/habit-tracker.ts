@@ -261,7 +261,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   </div>
 </div>
 
-<!-- PAGE 4: WEEKLY REVIEWS -->
+<!-- PAGE 3: WEEKLY REVIEWS -->
 <div class="page">
   <div class="header-bar">
     <span class="brand">${data.brandName}</span>
