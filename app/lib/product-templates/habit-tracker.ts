@@ -141,13 +141,14 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 }
 
 @media print {
+  @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page { 
-    margin: 0; 
-    box-shadow: none;
-    page-break-after: always;
-    page-break-inside: avoid;
-  }
+  .page { margin: 0; box-shadow: none; page-break-after: always; }
+  .page:last-child { page-break-after: avoid; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  div { border-color: inherit !important; }
+  .checkbox { border: 1.5px solid rgba(255,255,255,0.3) !important; }
+}
   .card { page-break-inside: avoid; }
   .card-sm { page-break-inside: avoid; }
 }
@@ -220,7 +221,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
   <h2 style="margin-bottom: 4px;">The Accountability Matrix</h2>
   <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">30 days. ${data.habits.length} habits. ${30 * data.habits.length} decisions that define who you become.</p>
 
-  <div style="overflow: hidden; border-radius: var(--radius-md); border: 1px solid var(--border);">
+  <div style="overflow: hidden; border-radius: 12px; border: 1px solid ${p.border};">
     <!-- Header row -->
     <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border);">
       <div style="padding: 8px 12px; font-size: 10px; font-weight: 600; color: var(--text-dim);">DAY</div>
