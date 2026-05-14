@@ -1,17 +1,20 @@
+"use client";
+
+import { useSearchParams } from "next/navigation";
+
 import { PdfDocumentPreview } from "../../pdf-engine/render-preview";
 import { testPdfDocument } from "../../pdf-engine/test-document";
 import { pdfThemes } from "../../pdf-engine/themes";
 
 type ThemeKey = keyof typeof pdfThemes;
 
-export default async function PdfPrintPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ theme?: string }>;
-}) {
-  const params = await searchParams;
+export default function PdfPrintPage() {
+  const searchParams = useSearchParams();
+
   const themeKey: ThemeKey =
-    params.theme === "softWellness" ? "softWellness" : "darkLuxury";
+    searchParams.get("theme") === "softWellness"
+      ? "softWellness"
+      : "darkLuxury";
 
   return (
     <main className="min-h-screen bg-neutral-950 p-8 print:bg-white print:p-0">
@@ -44,17 +47,11 @@ export default async function PdfPrintPage({
           <p className="text-xs uppercase tracking-[0.25em] text-white/40">
             PDF Export Test
           </p>
-          <h1 className="mt-1 text-xl font-semibold">
-            Print / Save as PDF
-          </h1>
+          <h1 className="mt-1 text-xl font-semibold">Print / Save as PDF</h1>
         </div>
 
         <button
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.print();
-            }
-          }}
+          onClick={() => window.print()}
           className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black"
         >
           Print PDF
