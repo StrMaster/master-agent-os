@@ -201,23 +201,56 @@ export default function DigitalProductsPage() {
       </div>
 
       {previewHtml && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-4xl h-[80vh] bg-white rounded-2xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setPreviewHtml(null)}
-              className="absolute top-3 right-3 z-10 rounded-lg bg-black/20 px-3 py-1 text-sm text-black hover:bg-black/30"
-            >
-              Close
-            </button>
-            <iframe
-              srcDoc={previewHtml}
-              className="w-full h-full"
-              title="Product Preview"
-            />
-          </div>
+  <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+    <div className="relative w-full max-w-5xl h-[90vh] bg-white rounded-2xl overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-neutral-950 border-b border-white/10">
+        <span className="text-sm text-white/60">Product Preview</span>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const iframe = document.getElementById("preview-iframe") as HTMLIFrameElement;
+              if (iframe?.contentWindow) {
+                iframe.contentWindow.print();
+              }
+            }}
+            className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-200 hover:bg-emerald-500/20 transition"
+          >
+            🖨 Print / Save PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const blob = new Blob([previewHtml], { type: "text/html" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "product.html";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs text-blue-200 hover:bg-blue-500/20 transition"
+          >
+            ⬇ Download HTML
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewHtml(null)}
+            className="rounded-lg border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-white/60 hover:bg-white/10 transition"
+          >
+            Close
+          </button>
         </div>
-      )}
+      </div>
+      <iframe
+        id="preview-iframe"
+        srcDoc={previewHtml}
+        className="w-full flex-1"
+        title="Product Preview"
+      />
+    </div>
+  </div>
+)}
     </div>
   );
 }
