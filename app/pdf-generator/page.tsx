@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { renderPdfHtmlString } from "../pdf-engine/render-html-string";
 import { PdfDocumentPreview } from "../pdf-engine/render-preview";
 import { testPdfDocument } from "../pdf-engine/test-document";
 import { validateDocument } from "../pdf-engine/validate-document";
@@ -14,6 +14,36 @@ export default function PdfGeneratorPage() {
   >("darkLuxury");
 
   const validation = validateDocument(testPdfDocument);
+
+  async function downloadPdf() {
+    const html = renderPdfHtmlString(testPdfDocument, themeKey);
+
+    const response = await fetch("/api/export-pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        html,
+        title: `pdf-engine-${themeKey}`,
+      }),
+    });
+
+    if (!response.ok) {
+      alert("PDF export failed");
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `pdf-engine-${themeKey}.pdf`;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 text-white sm:px-6">
@@ -108,6 +138,12 @@ export default function PdfGeneratorPage() {
               >
                 Soft Wellness
               </button>
+<button
+  onClick={downloadPdf}
+  className="mt-4 w-full rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-left text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20"
+>
+  Download PDF
+</button>
               <a
   href={`/pdf-generator/print?theme=${themeKey}`}
   target="_blank"
