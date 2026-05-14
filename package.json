@@ -18,7 +18,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@react-pdf/renderer": "^3.4.5"
+    "@react-pdf/renderer": "^3.4.5",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
