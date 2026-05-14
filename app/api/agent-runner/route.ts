@@ -838,7 +838,7 @@ routingReason: task.routingReason,
     });
 
 const reviewerResult = reviewUiIntentPatch({
-  prompt: `${task.title}\n${task.summary ?? ""}`,
+  prompt: `${task.title}\n${task.summary ?? ""}\n${task.targetFile ?? ""}`,
   patchedContent,
 });
 
