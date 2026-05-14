@@ -504,60 +504,53 @@ export async function generateRecoveryPlan(context: {
   recentActivity: unknown[];
   memory: unknown;
 }) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    temperature: 0.2,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are the Recovery Planner Agent for Master Agent OS.
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+  const failedTask = context.failedTask as Record<string, unknown>;
+  const originalTargetFile = typeof failedTask?.targetFile === "string"
+    ? failedTask.targetFile
+    : null;
+  const failureReason = typeof failedTask?.error === "string"
+    ? failedTask.error
+    : "Unknown failure";
+
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 512,
+    system: `You are the Recovery Planner for Master Agent OS.
 
 Your job:
-- analyze a failed task
-- identify likely cause
-- create one safe recovery task
+- analyze a failed task and its error reason
+- create one safe, specific recovery task
+- use the SAME targetFile as the failed task unless the error clearly points elsewhere
+- keep the fix small and surgical
 
 Rules:
-- Generate exactly one recovery task.
-- Keep it small and safe.
-- Use only allowed target files:
-  - app/page.tsx
-  - app/components/ActivityFeed.tsx
-  - app/components/RunAgentButton.tsx
-  - app/execution/page.tsx
-- Do not suggest backend/config/package changes.
-- If Lithuanian is used, respond in Lithuanian.
-- Never respond in German.
-
-Respond ONLY valid JSON.
+- Generate exactly one recovery task
+- targetFile must be the same as the failed task's targetFile when possible
+- title and summary must reference the specific failure reason
+- Respond ONLY valid JSON, no markdown
 
 Format:
-{
-  "title": "...",
-  "summary": "...",
-  "targetFile": "...",
-  "priority": "low|medium|high",
-  "reasoning": "..."
-}
-        `,
-      },
+{"title": "...", "summary": "...", "targetFile": "...", "priority": "low|medium|high", "reasoning": "..."}`,
+    messages: [
       {
         role: "user",
-        content: JSON.stringify(context, null, 2),
+        content: JSON.stringify({
+          failedTask: context.failedTask,
+          originalTargetFile,
+          failureReason,
+          recentActivity: context.recentActivity.slice(0, 10),
+        }),
       },
     ],
   });
 
-  const content = response.choices[0]?.message?.content;
-
-  if (!content) {
-    throw new Error("OpenAI returned empty recovery plan");
-  }
-
-  return JSON.parse(content);
+  const raw = response.content[0]?.type === "text" ? response.content[0].text : "";
+  const clean = raw.replace(/```json|```/g, "").trim();
+  return JSON.parse(clean);
 }
-
 export async function generateDeployRecoveryPlan(context: {
   deployError: unknown;
   recentActivity: unknown[];
