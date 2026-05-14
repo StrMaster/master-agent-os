@@ -141,14 +141,12 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
 }
 
 @media print {
-  @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { margin: 0; box-shadow: none; page-break-after: always; }
   .page:last-child { page-break-after: avoid; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   div { border-color: inherit !important; }
   .checkbox { border: 1.5px solid rgba(255,255,255,0.3) !important; }
-}
   .card { page-break-inside: avoid; }
   .card-sm { page-break-inside: avoid; }
 }
@@ -229,7 +227,7 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 11px; font-weight: 600; lett
     </div>
     <!-- Day rows -->
     ${days.map(day => `
-    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid var(--border); $${day % 7 === 0 ? `background: rgba(139, 92, 246, 0.08);` : ""}">
+    <div style="display: grid; grid-template-columns: 80px repeat(${data.habits.length}, 1fr); border-bottom: 1px solid var(--border); ${day % 7 === 0 ? `background: rgba(139, 92, 246, 0.08);` : ""}">
       <div style="padding: 6px 12px; display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 10px; font-weight: 600; color: ${day % 7 === 0 ? "var(--accent)" : "var(--text-muted)"};">Day ${String(day).padStart(2, "0")}</span>
         ${day % 7 === 0 ? `<span style="font-size: 8px; color: var(--accent); font-family: 'Poppins', sans-serif; font-weight: 600;">REVIEW</span>` : ""}
