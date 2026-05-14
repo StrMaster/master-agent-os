@@ -11,6 +11,14 @@ const PRODUCT_TYPES = [
   { value: "social-media-kit", label: "Social Media Kit" },
   { value: "bio-link-page", label: "Bio Link Page" },
   { value: "seo-audit-report", label: "SEO Audit Report" },
+  { value: "budget-tracker", label: "Budget Tracker" },
+  { value: "meal-planner", label: "Meal Planner" },
+  { value: "habit-tracker", label: "Habit Tracker" },
+  { value: "business-plan", label: "Business Plan" },
+  { value: "social-media-calendar", label: "Social Media Calendar" },
+  { value: "wedding-checklist", label: "Wedding Checklist" },
+  { value: "study-guide", label: "Study Guide" },
+  { value: "notion-template", label: "Notion Template" },
 ];
 
 type Product = {
