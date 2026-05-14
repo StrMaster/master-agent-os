@@ -119,7 +119,7 @@ function PdfPreviewPage({
       className="relative overflow-hidden shadow-2xl"
       style={{
         width: `${page.widthMm}mm`,
-        minHeight: `${page.heightMm}mm`,
+        height: `${page.heightMm}mm`,
         background: theme.pageBackground,
         color: theme.textPrimary,
       }}
