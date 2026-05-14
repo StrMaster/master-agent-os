@@ -169,6 +169,11 @@ h3 { font-family: 'Poppins', sans-serif; font-size: 10px; font-weight: 700; lett
   line-height: 1;
 }
 
+@page {
+  size: A4;
+  margin: 0;
+}
+
 @media print {
   body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .page { margin: 0; box-shadow: none; page-break-after: always; }
