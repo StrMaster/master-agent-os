@@ -24,6 +24,7 @@ const navItems = [
   { href: '/digital-products', label: 'Products' },
   { href: '/research', label: 'Research' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/pipeline', label: 'Pipeline' },
 
 ];
 
