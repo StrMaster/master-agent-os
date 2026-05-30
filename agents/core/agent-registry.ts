@@ -16,7 +16,11 @@ export type SmartAgentRole =
   | "performance-specialist"
   | "observability"
   | "recovery-intelligence"
-  | "control-communication";
+  | "control-communication"
+  | "qa-agent"
+  | "documentation-agent"
+  | "master-agent";
+
 
 export type SmartAgent = {
   id: SmartAgentRole;
@@ -311,6 +315,51 @@ export const SMART_AGENTS: SmartAgent[] = [
       "Prefer concise structured summaries.",
       "Explain blockers and next actions clearly.",
       "Keep approval guidance short and direct.",
+    ],
+  },
+    {
+    id: "qa-agent",
+    name: "QA Agent",
+    purpose: "Tests and validates changes before merge. Checks for regressions and build safety.",
+    canCreateTasks: true,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Verify build passes before approving merge.",
+      "Check for visual regressions on UI changes.",
+      "Flag missing validation on API changes.",
+    ],
+  },
+  {
+    id: "documentation-agent",
+    name: "Documentation Agent",
+    purpose: "Maintains project documentation, changelogs and technical notes.",
+    canCreateTasks: true,
+    canEditCode: true,
+    canReviewCode: false,
+    canHandleDeploy: false,
+    canHandleRecovery: false,
+    rules: [
+      "Keep docs in sync with code changes.",
+      "Prefer short, clear technical notes.",
+      "Update changelog after significant changes.",
+    ],
+  },
+  {
+    id: "master-agent",
+    name: "Master Agent",
+    purpose: "Coordinates all other agents. Routes work, monitors progress and ensures delivery.",
+    canCreateTasks: true,
+    canEditCode: false,
+    canReviewCode: true,
+    canHandleDeploy: true,
+    canHandleRecovery: true,
+    rules: [
+      "Delegate to specialized agents — never execute directly.",
+      "Monitor all agent outputs before proceeding.",
+      "Require human approval on high-risk decisions.",
     ],
   },
 ];
