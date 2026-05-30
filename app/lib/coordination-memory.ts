@@ -1,6 +1,7 @@
 import { Redis } from "@upstash/redis";
 
 const COORDINATION_MEMORY_KEY = "master-agent-os:coordination-memory";
+const AGENT_STATUS_KEY = "master-agent-os:agent-status";
 const MAX_EVENTS = 50;
 
 export type CoordinationEvent = {
@@ -10,6 +11,16 @@ export type CoordinationEvent = {
   summary: string;
   taskId?: string;
   targetFile?: string;
+};
+
+export type AgentStatus = {
+  agentRole: string;
+  agentName: string;
+  status: "idle" | "working" | "blocked" | "done";
+  currentTaskId?: string;
+  currentTaskTitle?: string;
+  startedAt?: string;
+  updatedAt: string;
 };
 
 function getRedis() {
@@ -51,5 +62,27 @@ export async function clearCoordinationMemory(): Promise<void> {
     await redis.del(COORDINATION_MEMORY_KEY);
   } catch (error) {
     console.warn("[coordination-memory] failed to clear memory", error);
+  }
+}
+
+export async function updateAgentStatus(status: AgentStatus): Promise<void> {
+  try {
+    const redis = getRedis();
+    const existing = await redis.get<AgentStatus[]>(AGENT_STATUS_KEY) ?? [];
+    const filtered = existing.filter(s => s.agentRole !== status.agentRole);
+    await redis.set(AGENT_STATUS_KEY, [status, ...filtered]);
+  } catch (error) {
+    console.warn("[coordination-memory] failed to update agent status", error);
+  }
+}
+
+export async function getAgentStatuses(): Promise<AgentStatus[]> {
+  try {
+    const redis = getRedis();
+    const data = await redis.get<AgentStatus[]>(AGENT_STATUS_KEY);
+    return Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.warn("[coordination-memory] failed to read agent statuses", error);
+    return [];
   }
 }
