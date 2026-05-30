@@ -37,7 +37,17 @@ import type {
 } from "./types";
 import { addCoordinationEvent } from "@/app/lib/coordination-memory";
 
-
+// Silent error logger — logs errors instead of swallowing them silently
+function silentLog(context: string, runId?: string) {
+  return (err: unknown) => {
+    const reason = err instanceof Error ? err.message : "Unknown error";
+    logActivity({
+      type: "runner-silent-error",
+      runId: runId ?? "unknown",
+      reason: `[${context}] ${reason}`,
+    }).catch(() => {});
+  };
+}
 
 // Flow: task -> validation -> branch -> PR -> optional merge -> recovery
 export const runtime = "nodejs";
@@ -60,7 +70,17 @@ const SAFE_TARGET_FILES = [
   "app/page.tsx",
   "app/components/ActivityFeed.tsx",
   "app/components/RunAgentButton.tsx",
+  "app/components/RuntimeOverview.tsx",
+  "app/components/ObservabilityCard.tsx",
+  "app/components/StatCard.tsx",
+  "app/components/StatusBadge.tsx",
+  "app/components/SectionHeader.tsx",
   "app/execution/page.tsx",
+  "app/agents/page.tsx",
+  "app/chat/page.tsx",
+  "app/tasks/page.tsx",
+  "app/lib/data.ts",
+  "app/lib/types.ts",
 ];
 
 const RUNNABLE_TASK_STATUSES = ["todo", "queued"] as const;
@@ -355,7 +375,6 @@ function retryAllowed(task: AgentTask) {
 function selectNextTask(tasks: AgentTask[], activity: any[]) {
   const candidates = tasks
     .map((task, index) => ({ task, index }))
-    // Ready gate: approval, waves, and dependency state must be clear before selection.
     .filter(({ task }) => isRunnableTaskStatus(task.status))
     .filter(({ task }) => !task.previewOnly && !task.requiresApproval)
     .filter(({ task }) => task.waveStatus !== "blocked")
@@ -513,7 +532,7 @@ let activeTask: AgentTask | null = null;
 try {
     const { state, sha: stateSha } = await readStateFile();
     const now = Date.now();
-    await syncRunnerHealth(state, { runId }).catch(() => {});
+    await syncRunnerHealth(state, { runId }).catch(silentLog("syncRunnerHealth", runId));
     
     const stopCheck = evaluateStopConditions({
   emergencyStop: state.emergencyStop,
@@ -847,10 +866,6 @@ try {
 
       const branchName = `agent-task-${task.id}`;
       await createGithubBranch(branchName);
-
-for (const patch of patches) {
-  await updateGithubFile(patch.filePath, patch.patchedContent, branchName);
-}
 
       for (const patch of patches) {
         await updateGithubFile(patch.filePath, patch.patchedContent, branchName);
