@@ -25,6 +25,36 @@ export async function POST(req: Request) {
       description,
     });
 
+// Generate AI-powered project files
+try {
+  const { generateProjectFiles } = await import("@/app/lib/project-code-generator");
+  const { createFileInRepo } = await import("@/app/lib/github-repo-creator");
+
+  const projectType = body.type ?? "ai-consultant";
+  const industry = body.industry ?? "general";
+
+  const files = await generateProjectFiles({
+    name,
+    description,
+    type: projectType,
+    industry,
+  });
+
+  for (const file of files) {
+    await createFileInRepo({
+      owner: repo.owner,
+      repo: repo.repoName,
+      path: file.path,
+      content: file.content,
+      message: `feat: add ${file.path}`,
+    }).catch(() => {});
+    await new Promise(r => setTimeout(r, 300));
+  }
+} catch (codeGenError) {
+  console.warn("[create-project] code generation failed", codeGenError);
+}
+
+
     let vercelProject = null;
 let deployment = null;
 
