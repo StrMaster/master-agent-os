@@ -5,6 +5,7 @@ import DeleteTaskButton from "../components/DeleteTaskButton";
 import RuntimeDashboard from "../components/RuntimeDashboard";
 import { readActivityFile } from "../api/agent-runner/activity";
 import ObservabilityCard from "../components/ObservabilityCard";
+import { getAgentStatuses } from "@/app/lib/coordination-memory";
 
 export const dynamic = "force-dynamic";
 
@@ -69,11 +70,22 @@ async function readTasks(): Promise<AgentTask[]> {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+async function readAgentStatuses() {
+  try {
+    return await getAgentStatuses();
+  } catch {
+    return [];
+  }
+}
+
 export default async function ExecutionPage() {
   const [tasks, activityFile] = await Promise.all([readTasks(), readActivityFile()]);
   const activity = Array.isArray(activityFile.activity)
     ? activityFile.activity
     : [];
+const agentStatuses = await readAgentStatuses();
+const activeAgents = agentStatuses.filter(a => a.status === "working");
+
 
   // Filter out tasks that are likely to cause build spam by excluding low priority and previewOnly tasks from running and todo lists
   const runningTasks = tasks.filter(
@@ -118,6 +130,23 @@ export default async function ExecutionPage() {
         </p>
       </div>
       <ObservabilityCard />
+{activeAgents.length > 0 && (
+  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div className="text-xs uppercase tracking-wide text-white/40 mb-3">Active Agents</div>
+    <div className="space-y-2">
+      {activeAgents.map((agent) => (
+        <div key={agent.agentRole} className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-sm text-white">{agent.agentName}</span>
+          </div>
+          <span className="text-xs text-white/40 truncate max-w-48">{agent.currentTaskTitle}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
       <RuntimeDashboard tasks={tasks} activity={activity} />
 
       <RuntimeControlPanel />
