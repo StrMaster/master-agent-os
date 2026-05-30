@@ -28,8 +28,9 @@ export async function generateCodePatch(context: {
       : "You are the Senior Execution Agent for Master Agent OS.";
 
   const response = await client.messages.create({
-   model: "claude-haiku-4-5-20251001",
-    max_tokens: 1024,
+   model: "claude-sonnet-4-5",
+max_tokens: 2048,
+
     system: `${delegatedSystemPrompt}
 
 ${context.repoContext ? `\nRepo architecture context:\n${context.repoContext}\n` : ""}
@@ -92,7 +93,7 @@ Return ONLY a JSON object with "find" and "replace". Make the smallest possible 
       patch.replace.split("\n").length - patch.find.split("\n").length
     );
 
-    if (lineCount > 30) {
+    if (lineCount > 60) {
       throw new Error(`Too many lines changed (${lineCount}). Expected small patch.`);
     }
 
