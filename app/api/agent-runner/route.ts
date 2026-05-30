@@ -35,7 +35,6 @@ import type {
   Priority,
   RunnerHealthStatus,
 } from "./types";
-import { addCoordinationEvent } from "@/app/lib/coordination-memory";
 import { addCoordinationEvent, updateAgentStatus } from "@/app/lib/coordination-memory";
 
 
