@@ -25,14 +25,41 @@ export async function POST(req: Request) {
       description,
     });
 
-    return NextResponse.json({
-      ok: true,
-      repo: {
-        name: repo.repoName,
-        url: repo.repoUrl,
-        owner: repo.owner,
-      },
-    });
+    let vercelProject = null;
+let deployment = null;
+
+try {
+  const { createVercelProject, triggerVercelDeploy } = await import("@/app/lib/vercel-deployer");
+
+  vercelProject = await createVercelProject({
+    name: repo.repoName,
+    githubOwner: repo.owner,
+    githubRepo: repo.repoName,
+  });
+
+  deployment = await triggerVercelDeploy({
+    projectId: vercelProject.id,
+    githubOwner: repo.owner,
+    githubRepo: repo.repoName,
+  });
+} catch (deployError) {
+  console.warn("[create-project] Vercel deploy failed", deployError);
+}
+
+return NextResponse.json({
+  ok: true,
+  repo: {
+    name: repo.repoName,
+    url: repo.repoUrl,
+    owner: repo.owner,
+  },
+  vercel: vercelProject ? {
+    projectUrl: vercelProject.url,
+    deploymentId: deployment?.id,
+    deploymentState: deployment?.state,
+  } : null,
+});
+
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: error instanceof Error ? error.message : "Unknown error" },
