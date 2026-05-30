@@ -21,13 +21,9 @@ const navItems = [
   { href: '/agents', label: 'Agents' },
   { href: '/tasks', label: 'Tasks' },
   { href: '/execution', label: 'Execution' },
-  { href: '/digital-products', label: 'Products' },
   { href: '/research', label: 'Research' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/pipeline', label: 'Pipeline' },
-  { href: '/niche-detector', label: 'Niches' },
-  { href: '/portfolio', label: 'Portfolio' },
-  { href: '/pdf-generator', label: 'PDF Generator' },
 
 ];
 
@@ -138,7 +134,5 @@ export default function RootLayout({
       </body>
 
     </html>
-
   );
-
 }
