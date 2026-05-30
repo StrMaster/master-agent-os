@@ -231,9 +231,10 @@ export function summarizeRunnerHealth(state: AgentState): RunnerHealthStatus {
     return "blocked";
   }
 
-  if (state.runnerLocked || (state.consecutiveFailures ?? 0) > 0) {
-    return "degraded";
-  }
+  if ((state.consecutiveFailures ?? 0) >= 2) {
+  return "degraded";
+}
+
 
   return "healthy";
 }
