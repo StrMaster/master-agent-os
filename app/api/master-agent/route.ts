@@ -20,6 +20,8 @@ Delegavimo taisyklės:
 - Sudėtingi planai → senior-planner
 - Patikrinimai → senior-reviewer arba qa-agent
 - Gedimų taisymas → senior-recovery
+- Produkto kūrimas → create_product tool
+
 
 Tools:
 - create_task: sukuria naują užduotį
@@ -81,6 +83,32 @@ const TOOLS: Anthropic.Tool[] = [
         },
       },
       required: ["agentRole", "task"],
+    },
+  },
+  {
+    name: "create_product",
+    description: "Create a new AI product — generates code, creates GitHub repo and deploys to Vercel automatically",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description: "Project name (lowercase, no spaces, use dashes)",
+        },
+        description: {
+          type: "string",
+          description: "What this product should do",
+        },
+        type: {
+          type: "string",
+          description: "ai-consultant | chatbot | landing-page | saas-tool",
+        },
+        industry: {
+          type: "string",
+          description: "dental | restaurant | real-estate | fitness | beauty | legal | general",
+        },
+      },
+      required: ["name", "description"],
     },
   },
 ];
@@ -195,6 +223,20 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
     });
     return await parseResponse(res);
   }
+  if (name === "create_product") {
+    const res = await fetch(`${baseUrl}/api/create-project`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        name: input.name,
+        description: input.description,
+        type: input.type ?? "ai-consultant",
+        industry: input.industry ?? "general",
+      }),
+    });
+    return await parseResponse(res);
+  }
+
   return { error: "Unknown tool" };
 }
 
