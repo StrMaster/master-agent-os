@@ -14,6 +14,8 @@ const navItems = [
   { href: '/agents', label: 'Agents' },
   { href: '/tasks', label: 'Tasks' },
   { href: '/execution', label: 'Execution' },
+  { href: '/projects', label: 'Projects' },
+
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
