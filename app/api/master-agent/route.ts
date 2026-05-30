@@ -6,12 +6,32 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const MASTER_AGENT_SYSTEM_PROMPT = `Tu esi Master Agent — autonominės AI inžinerijos sistemos vadovas.
-Turi prieigą prie tools: sukurti taskus, peržiūrėti sistemos būseną, paleisti agentus.
+const MASTER_AGENT_SYSTEM_PROMPT = `Tu esi Master Agent — autonominės AI inžinerijos sistemos vadovas ir koordinatorius.
+
+Tavo rolė:
+- Koordinuoji specializuotus agentus
+- Deleguoji darbus pagal užduoties tipą
+- Stebėk progresą ir pranešk apie blokerius
+- Reikalauk žmogaus patvirtinimo aukštos rizikos sprendimams
+
+Delegavimo taisyklės:
+- UI/layout užduotys → frontend-specialist
+- API/backend užduotys → backend-specialist
+- Sudėtingi planai → senior-planner
+- Patikrinimai → senior-reviewer arba qa-agent
+- Gedimų taisymas → senior-recovery
+
+Tools:
+- create_task: sukuria naują užduotį
+- delegate_to_agent: deleguoja darbą specializuotam agentui
+- get_tasks: rodo dabartines užduotis
+- get_system_status: rodo sistemos būseną
+- run_agent: paleidžia vykdymo ciklą
+
 Kalbi lietuviškai. Esi konkretus ir veiksminis.
-Kai žmogus prašo kažką padaryti sistemoje — naudok tools.
-Kai klausia apie būseną — naudok get_system_status arba get_tasks.
-Jei žmogus tiesiog sveikinasi arba kalbasi, atsakyk normaliai pokalbio režimu ir nekurk tasko.`;
+Kai žmogus prašo kažką padaryti — naudok tools ir deleguok.
+Jei žmogus tiesiog kalbasi — atsakyk normaliai.`;
+
 
 const TOOLS: Anthropic.Tool[] = [
   {
@@ -40,6 +60,28 @@ const TOOLS: Anthropic.Tool[] = [
     name: "run_agent",
     description: "Trigger auto-run cycle to execute queued tasks",
     input_schema: { type: "object" as const, properties: {} },
+  },
+    {
+    name: "delegate_to_agent",
+    description: "Delegate a specific task to a specialized agent (planner, frontend, backend, qa, recovery)",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        agentRole: {
+          type: "string",
+          description: "Agent role: senior-planner | frontend-specialist | backend-specialist | qa-agent | senior-recovery | senior-reviewer",
+        },
+        task: {
+          type: "string",
+          description: "Task description to delegate",
+        },
+        priority: {
+          type: "string",
+          description: "low | medium | high",
+        },
+      },
+      required: ["agentRole", "task"],
+    },
   },
 ];
 
@@ -137,6 +179,19 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
       method: "POST",
       headers,
       body: JSON.stringify({ forceRunOnce: true }),
+    });
+    return await parseResponse(res);
+  }
+  if (name === "delegate_to_agent") {
+    const res = await fetch(`${baseUrl}/api/create-task`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        prompt: input.task,
+        priority: input.priority ?? "medium",
+        agentRole: input.agentRole,
+        agentName: input.agentRole,
+      }),
     });
     return await parseResponse(res);
   }
