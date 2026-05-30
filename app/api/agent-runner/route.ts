@@ -36,6 +36,8 @@ import type {
   RunnerHealthStatus,
 } from "./types";
 import { addCoordinationEvent } from "@/app/lib/coordination-memory";
+import { addCoordinationEvent, updateAgentStatus } from "@/app/lib/coordination-memory";
+
 
 // Silent error logger — logs errors instead of swallowing them silently
 function silentLog(context: string, runId?: string) {
@@ -743,6 +745,17 @@ if (stopCheck.stop) {
     await updateTaskStatus(task.id, "running");
 
     await writeTasksFile(tasks, sha, `Mark task ${task.id} as running`);
+
+await updateAgentStatus({
+  agentRole: task.agentRole ?? "senior-execution",
+  agentName: task.agentName ?? "Senior Execution Agent",
+  status: "working",
+  currentTaskId: task.id,
+  currentTaskTitle: task.title,
+  startedAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+}).catch(() => {});
+
 
     await logActivity({
   type: "execution-started",
