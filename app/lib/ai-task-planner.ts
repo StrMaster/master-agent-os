@@ -24,19 +24,13 @@ Your job:
 - keep scope minimal and safe
 
 Allowed target files:
-app/page.tsx, app/layout.tsx, app/execution/page.tsx, app/agents/page.tsx,
+app/page.tsx, app/execution/page.tsx, app/agents/page.tsx,
 app/tasks/page.tsx, app/chat/page.tsx,
 app/components/ActivityFeed.tsx, app/components/RunAgentButton.tsx,
-app/components/MasterAgentChat.tsx, app/components/RuntimeDashboard.tsx,
-app/components/RuntimeOverview.tsx, app/components/RecoveryControlCard.tsx,
-app/components/ObservabilityCard.tsx, app/components/ControlCenterControls.tsx,
-app/components/PendingPRQueue.tsx, app/components/DeployStatusCard.tsx,
-app/components/ApprovalExecutionCenter.tsx,
-app/api/agent-runner/route.ts, app/api/agent-runner/tasks.ts,
-app/api/agent-runner/memory.ts, app/api/create-task/route.ts,
-app/api/master-agent/route.ts, app/api/observability/route.ts,
-agents/core/agent-router.ts, agents/core/agent-registry.ts,
-app/lib/code-patch-generator.ts, app/tasks/task-utils.ts, app/tasks/task-data.ts
+app/components/RuntimeOverview.tsx, app/components/ObservabilityCard.tsx,
+app/components/StatCard.tsx, app/components/StatusBadge.tsx,
+app/components/SectionHeader.tsx,
+app/lib/data.ts, app/lib/types.ts
 
 Rules:
 - Pick the most specific matching file, not always app/page.tsx
