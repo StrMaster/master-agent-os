@@ -17,49 +17,49 @@ export type BusinessAgentExecutionResult = {
   analysis: BusinessAnalysisResult;
 };
 
-export function executeBusinessAgent(input: BusinessAnalysisRequest): BusinessAgentExecutionResult {
+export async function executeBusinessAgent(input: BusinessAnalysisRequest): Promise<BusinessAgentExecutionResult> {
   const route = routePromptToBusinessAgent(input.prompt);
 
   let analysis: BusinessAnalysisResult;
 
   switch (route.role) {
     case "website-audit-agent":
-      analysis = auditWebsite(input);
+      analysis = await auditWebsite(input);
       break;
     case "business-analyst-agent":
-      analysis = analyzeBusinessIdea(input);
+      analysis = await analyzeBusinessIdea(input);
       break;
     case "market-analysis-agent":
-      analysis = analyzeMarket(input);
+      analysis = await analyzeMarket(input);
       break;
     case "competitor-research-agent":
-      analysis = analyzeCompetitors(input);
+      analysis = await analyzeCompetitors(input);
       break;
     case "seo-agent":
-      analysis = analyzeSeo(input);
+      analysis = await analyzeSeo(input);
       break;
     case "marketing-agent":
-      analysis = analyzeMarketing(input);
+      analysis = await analyzeMarketing(input);
       break;
     case "offer-agent":
-      analysis = buildOffer(input);
+      analysis = await buildOffer(input);
       break;
     case "proposal-agent":
-      analysis = buildProposal(input);
+      analysis = await buildProposal(input);
       break;
     case "outreach-agent":
-      analysis = buildOutreach(input);
+      analysis = await buildOutreach(input);
       break;
     case "follow-up-agent":
-      analysis = buildFollowUp(input);
+      analysis = await buildFollowUp(input);
       break;
     case "client-report-agent":
-      analysis = buildClientReport(input);
+      analysis = await buildClientReport(input);
       break;
     case "pricing-agent":
     case "research-agent":
     default:
-      analysis = analyzeBusinessIdea(input);
+      analysis = await analyzeBusinessIdea(input);
       break;
   }
 
