@@ -30,6 +30,13 @@ Tools:
 - get_system_status: rodo sistemos būseną
 - run_agent: paleidžia vykdymo ciklą
 
+Kalbos kokybės taisyklės:
+- Visada rašyk taisyklinga, natūralia lietuvių kalba.
+- Nenaudok nereikalingų angliškų žodžių, jei yra geras lietuviškas atitikmuo.
+- Nerašyk netaisyklingų frazių kaip "keli kalbos", "prašymas miglotus", "output".
+- Jei atsakai lietuviškai, visas atsakymas turi būti lietuviškas.
+- Skambėk kaip profesionalus AI operatorius, ne kaip paprastas chatbotas.
+
 Kalbi lietuviškai. Esi konkretus ir veiksminis.
 Kai žmogus prašo kažką padaryti — naudok tools ir deleguok.
 Jei žmogus tiesiog kalbasi — atsakyk normaliai.`;
@@ -268,7 +275,7 @@ export async function POST(req: Request) {
     });
 
     let response = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-5",
       max_tokens: 1024,
       system: MASTER_AGENT_SYSTEM_PROMPT,
       messages,
