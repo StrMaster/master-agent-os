@@ -10,18 +10,21 @@ type PendingTask = {
   executionMode?: string;
   riskLevel?: string;
   wave?: number;
-parentTaskId?: string;
-plannerNotes?: string;
+  parentTaskId?: string;
+  plannerNotes?: string;
   result?: {
     pullRequestUrl?: string;
     merged?: boolean;
   };
 };
 
+type BuildStatus = "success" | "failure" | "pending" | "unknown";
+
 export default function PendingPRQueue() {
   const [tasks, setTasks] = useState<PendingTask[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [plannerMessage, setPlannerMessage] = useState<string | null>(null);
+  const [buildStatuses, setBuildStatuses] = useState<Record<string, BuildStatus>>({});
 
   async function loadPendingPRs() {
     try {
@@ -37,14 +40,31 @@ export default function PendingPRQueue() {
         );
       }
 
-      setTasks(Array.isArray(data.pending) ? data.pending : []);
+      const newTasks = Array.isArray(data.pending) ? data.pending : [];
+      setTasks(newTasks);
       setError(null);
+      // Fetch build status for each task with a branch
+      newTasks.forEach((t: PendingTask) => {
+        if (t.branchName) fetchBuildStatus(t.branchName);
+      });
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : 'Failed to load pending PR queue'
       );
+    }
+  }
+
+  async function fetchBuildStatus(branch: string) {
+    try {
+      const res = await fetch(`/api/pr-build-status?branch=${encodeURIComponent(branch)}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data.ok) {
+        setBuildStatuses((prev) => ({ ...prev, [branch]: data.status as BuildStatus }));
+      }
+    } catch {
+      // ignore
     }
   }
 
@@ -162,8 +182,17 @@ async function createPlannerWaves(taskId?: string) {
 )}
 
                 {task.branchName && (
-                  <div className="mt-1 text-xs text-white/50">
-                    Branch: {task.branchName}
+                  <div className="mt-1 flex items-center gap-1.5 text-xs text-white/50">
+                    <span>Branch: {task.branchName}</span>
+                    {buildStatuses[task.branchName] === 'success' && (
+                      <span title="Build passed" className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+                    )}
+                    {buildStatuses[task.branchName] === 'failure' && (
+                      <span title="Build failed" className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                    )}
+                    {buildStatuses[task.branchName] === 'pending' && (
+                      <span title="Build running" className="inline-block h-2 w-2 animate-pulse rounded-full bg-yellow-400" />
+                    )}
                   </div>
                 )}
               </div>
