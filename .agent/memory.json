@@ -1,9 +1,17 @@
 {
-  "lastRun": "2026-05-31T16:43:06.682Z",
-  "lastTaskId": "manual-task-1780245685122",
+  "lastRun": "2026-05-31T17:58:19.368Z",
+  "lastTaskId": "manual-task-1780250223443",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
-  "lastFailure": "JSX tag imbalance: 7 opening vs 11 closing tags",
+  "lastFailure": "Generated content validation failed: JSX tag imbalance: 13 opening vs 23 closing tags",
   "failedTasks": [
+    {
+      "taskId": "manual-task-1780250223443",
+      "title": "Peržiūrėk ir patobulk dashboard puslapio ir pagelink UI komponentų dizainą:",
+      "targetFile": "app/layout.tsx",
+      "reason": "Generated content validation failed: JSX tag imbalance: 13 opening vs 23 closing tags",
+      "at": "2026-05-31T17:58:19.368Z",
+      "runId": "c2e0d194-c73e-4d82-adc0-ea87942de9a4"
+    },
     {
       "taskId": "manual-task-1780245685122",
       "title": "Peržiūrėk dashboard puslapį ir pagerink UI:",
@@ -63,10 +71,10 @@
   "riskyFiles": [
     {
       "targetFile": "app/layout.tsx",
-      "hits": 1,
-      "lastSeenAt": "2026-05-31T16:43:06.682Z",
-      "lastTaskId": "manual-task-1780245685122",
-      "lastReason": "JSX tag imbalance: 7 opening vs 11 closing tags"
+      "hits": 2,
+      "lastSeenAt": "2026-05-31T17:58:19.368Z",
+      "lastTaskId": "manual-task-1780250223443",
+      "lastReason": "Generated content validation failed: JSX tag imbalance: 13 opening vs 23 closing tags"
     },
     {
       "targetFile": "app/page.tsx",
@@ -304,5 +312,5 @@
       "completedAt": "2026-05-11T23:44:57.670Z"
     }
   ],
-  "updatedAt": "2026-05-31T16:43:06.757Z"
+  "updatedAt": "2026-05-31T17:58:19.427Z"
 }
