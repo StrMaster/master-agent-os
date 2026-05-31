@@ -82,6 +82,9 @@ const SAFE_TARGET_FILES = [
   "app/tasks/page.tsx",
   "app/lib/data.ts",
   "app/lib/types.ts",
+  "app/layout.tsx",
+  "app/studio/page.tsx",
+  "app/api/create-project/route.ts",
 ];
 
 const RUNNABLE_TASK_STATUSES = ["todo", "queued"] as const;
