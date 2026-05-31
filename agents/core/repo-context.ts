@@ -21,8 +21,50 @@ export type RepoContext = {
   backendFiles?: string[];
   orchestrationFiles?: string[];
   riskyFiles?: RuntimeMemory["riskyFiles"];
+  allFiles?: string[];
   updatedAt?: string;
 };
+
+type GitHubTreeItem = {
+  path: string;
+  type: string;
+};
+
+type GitHubTreeResponse = {
+  tree: GitHubTreeItem[];
+  truncated: boolean;
+};
+
+export async function fetchRepoTree(): Promise<string[]> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return [];
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) return [];
+
+    const data = (await res.json()) as GitHubTreeResponse;
+    return data.tree
+      .filter((item) => item.type === "blob")
+      .map((item) => item.path)
+      .filter((path) =>
+        path.endsWith(".ts") || path.endsWith(".tsx") || path.endsWith(".json")
+      )
+      .slice(0, 200);
+  } catch {
+    return [];
+  }
+}
 
 type RepoContextFile = RepoContext;
 
@@ -169,9 +211,10 @@ function collectObservedFiles(memory: RuntimeMemory) {
 }
 
 export async function readRepoContext() {
-  const [{ context }, { memory }] = await Promise.all([
+  const [{ context }, { memory }, allFiles] = await Promise.all([
     readRepoContextFile(),
     readRuntimeMemoryFile(),
+    fetchRepoTree(),
   ]);
 
   const observedFiles = collectObservedFiles(memory);
@@ -184,6 +227,7 @@ export async function readRepoContext() {
     ...context,
     activeRuntimeAreas,
     riskyFiles: memory.riskyFiles ?? context.riskyFiles ?? [],
+    allFiles: allFiles.length > 0 ? allFiles : context.allFiles,
   });
 }
 
