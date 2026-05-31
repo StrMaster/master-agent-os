@@ -176,8 +176,8 @@ function buildTask(body: Record<string, unknown>): AgentTask {
     createdAt,
     queuedAt: createdAt,
     updatedAt: createdAt,
-    agentRole: typeof body.agentRole === "string" ? body.agentRole : undefined,
-    agentName: typeof body.agentName === "string" ? body.agentName : undefined,
+    agentRole: typeof body.agentRole === "string" ? body.agentRole : "senior-execution",
+    agentName: typeof body.agentName === "string" ? body.agentName : "Senior Execution Agent",
     agentSystemPrompt:
       typeof body.agentSystemPrompt === "string"
         ? body.agentSystemPrompt
