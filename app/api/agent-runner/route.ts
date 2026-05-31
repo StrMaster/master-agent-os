@@ -8,6 +8,7 @@ import {
   findOpenPullRequest,
   mergePullRequest,
   validatePullRequest,
+  checkBuildStatus,
 } from "@/app/lib/github-pr";
 import { validatePatch } from "@/app/lib/patch-validator";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
@@ -1297,6 +1298,22 @@ agentRole: task.agentRole,
       mergeState.runnerHealthStatus !== "blocked";
 
 if (mergeState.autoMergeEnabled && typeof pr.number === "number") {
+  // Check build status before merging
+  const buildStatus = branchName ? await checkBuildStatus(branchName).catch(() => "unknown" as const) : "unknown";
+  const buildPassed = buildStatus === "success" || buildStatus === "unknown";
+
+  if (buildStatus === "failure") {
+    await logActivity({
+      type: "auto-merge-blocked",
+      runId,
+      taskId: task.id,
+      branch: branchName,
+      pullRequestUrl: pr.html_url,
+      reason: "Auto-merge blocked: build failed",
+      details: JSON.stringify({ buildStatus }),
+    }).catch(() => {});
+  }
+
   const canAutoMerge =
     prValidation &&
     taskWasApproved &&
@@ -1306,6 +1323,7 @@ if (mergeState.autoMergeEnabled && typeof pr.number === "number") {
     prValidation.state === "open" &&
     deploySafe &&
     runtimeSafe &&
+    buildPassed &&
     task.targetFile &&
     SAFE_TARGET_FILES.includes(task.targetFile);
 
