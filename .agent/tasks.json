@@ -70,8 +70,8 @@
   },
   {
     "id": "manual-task-1778441438513",
-    "title": "Pagerink tarpus tarp master chat \u017einu\u010di\u0173",
-    "summary": "Padidinti tarpus tarp master chat \u017einu\u010di\u0173, kad pager\u0117t\u0173 skaitomumas ir vizualin\u0117 atskirtis, i\u0161laikant esam\u0105 i\u0161d\u0117stym\u0105 ir komponentus nepakitus.",
+    "title": "Pagerink tarpus tarp master chat žinučių",
+    "summary": "Padidinti tarpus tarp master chat žinučių, kad pagerėtų skaitomumas ir vizualinė atskirtis, išlaikant esamą išdėstymą ir komponentus nepakitus.",
     "targetFile": "app/page.tsx",
     "status": "pending-pr",
     "priority": "medium",
@@ -259,11 +259,11 @@
     "title": "Stage 7: Create AI Studio page scaffold",
     "summary": "Create app/studio/page.tsx - AI Studio page with project name input, project type selector, and create button. Dark theme matching existing pages.",
     "targetFile": "app/studio/page.tsx",
-    "status": "todo",
+    "status": "running",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-31T08:08:00.000Z",
-    "updatedAt": "2026-05-31T08:15:49.939Z",
+    "updatedAt": "2026-05-31T08:20:22.295Z",
     "agentRole": "senior-ui",
     "agentName": "Senior UI Agent",
     "intent": "new-feature",
@@ -273,7 +273,8 @@
     "previewOnly": false,
     "requiresApproval": false,
     "plannerNotes": "Stage 7 UI. New file - safe to create.",
-    "error": "Failed to read target file app/studio/page.tsx: 404"
+    "error": "Failed to read target file app/studio/page.tsx: 404",
+    "startedAt": "2026-05-31T08:20:22.295Z"
   },
   {
     "id": "manual-task-1780214900469-s7-3",
