@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
-import { routePromptToBusinessAgent } from "@/agents/business/business-agent-router";
+import { executeBusinessAgent } from "@/agents/business/business-agent-executor";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -29,8 +29,8 @@ Intent routing taisyklės:
 
 Business Agent routing:
 - Kai vartotojas prašo svetainės analizės, SEO, marketingo, konkurentų, kainodaros, pasiūlymo, outreach arba verslo idėjos vertinimo, pirmiausia naudok business_analysis tool.
-- business_analysis tool nerenka duomenų iš interneto ir nekeičia failų. Jis tik parenka tinkamą Business Agent rolę.
-- Gavęs business_analysis rezultatą, pateik vartotojui aiškią analizę ir nurodyk, kuris Business Agent būtų atsakingas.
+- business_analysis tool nekeičia failų, nepaleidžia runner ir nerenka duomenų iš interneto. Jis parenka tinkamą Business Agent ir paleidžia saugią vidinę analizę pagal turimą užklausą.
+- Gavęs business_analysis rezultatą, pateik vartotojui aiškią analizę: įvertinimas, stiprybės, problemos, prioritetai ir kitas veiksmas.
 
 Delegavimo taisyklės:
 - UI/layout užduotys → frontend-specialist
@@ -41,7 +41,7 @@ Delegavimo taisyklės:
 - Produkto kūrimas → create_product tool tik kai vartotojas aiškiai prašo kurti produktą
 
 Tools:
-- business_analysis: parenka tinkamą Business Agent rolę pagal vartotojo užklausą
+- business_analysis: parenka ir paleidžia tinkamą Business Agent analizę pagal vartotojo užklausą
 - create_task: sukuria naują vykdymo užduotį
 - delegate_to_agent: deleguoja darbą specializuotam agentui
 - get_tasks: rodo dabartines užduotis
@@ -66,13 +66,33 @@ Atsakymo stilius:
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "business_analysis",
-    description: "Route a business, research, website, SEO, marketing, pricing, offer, proposal, outreach or client report request to the best Business Agent role. This does not edit files or run the code runner.",
+    description: "Execute a safe internal Business Agent analysis for business, research, website, SEO, marketing, pricing, offer, proposal, outreach or client report requests. This does not edit files or run the code runner.",
     input_schema: {
       type: "object" as const,
       properties: {
         prompt: {
           type: "string",
           description: "The user's business or analysis request",
+        },
+        url: {
+          type: "string",
+          description: "Optional website URL if the user provided one",
+        },
+        businessName: {
+          type: "string",
+          description: "Optional business name if known",
+        },
+        industry: {
+          type: "string",
+          description: "Optional industry or niche",
+        },
+        targetCustomer: {
+          type: "string",
+          description: "Optional target customer segment",
+        },
+        goal: {
+          type: "string",
+          description: "Optional goal of the analysis",
         },
       },
       required: ["prompt"],
@@ -224,22 +244,31 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
   };
   if (name === "business_analysis") {
     const prompt = String(input.prompt ?? "");
-    const decision = routePromptToBusinessAgent(prompt);
+    const result = executeBusinessAgent({
+      prompt,
+      url: typeof input.url === "string" ? input.url : undefined,
+      businessName: typeof input.businessName === "string" ? input.businessName : undefined,
+      industry: typeof input.industry === "string" ? input.industry : undefined,
+      targetCustomer: typeof input.targetCustomer === "string" ? input.targetCustomer : undefined,
+      goal: typeof input.goal === "string" ? input.goal : undefined,
+    });
+
     return {
-      type: "business-agent-route",
-      role: decision.role,
-      confidence: decision.confidence,
-      reason: decision.reason,
+      type: "business-agent-execution",
+      role: result.route.role,
+      confidence: result.route.confidence,
+      reason: result.route.reason,
       agent: {
-        id: decision.agent.id,
-        name: decision.agent.name,
-        mode: decision.agent.mode,
-        purpose: decision.agent.purpose,
-        outputFormat: decision.agent.outputFormat,
-        canUseWebResearch: decision.agent.canUseWebResearch,
-        canCreateClientOutput: decision.agent.canCreateClientOutput,
-        canRecommendBuildTasks: decision.agent.canRecommendBuildTasks,
+        id: result.route.agent.id,
+        name: result.route.agent.name,
+        mode: result.route.agent.mode,
+        purpose: result.route.agent.purpose,
+        outputFormat: result.route.agent.outputFormat,
+        canUseWebResearch: result.route.agent.canUseWebResearch,
+        canCreateClientOutput: result.route.agent.canCreateClientOutput,
+        canRecommendBuildTasks: result.route.agent.canRecommendBuildTasks,
       },
+      analysis: result.analysis,
     };
   }
   if (name === "create_task") {
