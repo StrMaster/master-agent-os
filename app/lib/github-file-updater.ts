@@ -39,14 +39,12 @@ export async function updateGithubFile(
       }
     );
 
-  if (!existingRes.ok) {
-    throw new Error(
-      `Failed to fetch ${path}`
-    );
-  }
+  // If file does not exist on branch yet, create it (new file)
+  const existingSha = existingRes.ok
+    ? ((await existingRes.json()) as { sha: string }).sha
+    : undefined;
 
-  const existing =
-    await existingRes.json();
+  const existing = { sha: existingSha };
 
   const updateRes = await fetch(
     `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
@@ -71,7 +69,7 @@ export async function updateGithubFile(
           content
         ).toString("base64"),
 
-        sha: existing.sha,
+        ...(existing.sha ? { sha: existing.sha } : {}),
 
         branch: branch || DEFAULT_BRANCH,
       }),
