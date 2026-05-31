@@ -288,11 +288,11 @@
     "title": "Stage 7: Create /api/create-project API endpoint",
     "summary": "Create app/api/create-project/route.ts - POST endpoint accepting projectName and projectType, uses github-repo-creator.ts to create GitHub repo, returns repo URL.",
     "targetFile": "app/api/create-project/route.ts",
-    "status": "todo",
+    "status": "running",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-31T08:08:00.000Z",
-    "updatedAt": "2026-05-31T08:08:00.000Z",
+    "updatedAt": "2026-05-31T08:20:36.764Z",
     "agentRole": "backend-specialist",
     "agentName": "Backend Specialist",
     "intent": "new-feature",
@@ -301,6 +301,7 @@
     "wave": 2,
     "previewOnly": false,
     "requiresApproval": false,
-    "plannerNotes": "Stage 7 backend. New file using existing github-repo-creator.ts."
+    "plannerNotes": "Stage 7 backend. New file using existing github-repo-creator.ts.",
+    "startedAt": "2026-05-31T08:20:36.764Z"
   }
 ]
