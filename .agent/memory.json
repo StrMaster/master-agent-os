@@ -1,9 +1,17 @@
 {
-  "lastRun": "2026-05-31T19:19:28.309Z",
-  "lastTaskId": "manual-task-1780253656015",
+  "lastRun": "2026-05-31T19:19:50.843Z",
+  "lastTaskId": "manual-task-1780254887900",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
-  "lastFailure": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>",
+  "lastFailure": "Generated content validation failed: Invalid lowercase JSX custom tag: <DashboardTask>. Use a standard HTML tag like <div>/<section> or a PascalCase React component.",
   "failedTasks": [
+    {
+      "taskId": "manual-task-1780254887900",
+      "title": "Pagerink dashboard tuščios būsenos (empty state) tekstą faile app/page.tsx. Padaryk jį draugiškesnį, aiškesnį ir labiau motyvuojantį vartotoją imtis veiksmų. Užtikrink, kad tekstas būtų lietuviškas, natūralus ir profesionalus. Jei reikia, pridėk geresnę struktūrą ar emocionalinį toną.",
+      "targetFile": "app/page.tsx",
+      "reason": "Generated content validation failed: Invalid lowercase JSX custom tag: <DashboardTask>. Use a standard HTML tag like <div>/<section> or a PascalCase React component.",
+      "at": "2026-05-31T19:19:50.843Z",
+      "runId": "47a90321-8052-47af-82db-d64c0ea0ad82"
+    },
     {
       "taskId": "manual-task-1780253656015",
       "title": "Patobulinti dashboard UI: pagerinti dizainą, išdėstymą, vizualinę hierarchiją, responsyvumą ir vartotojo patirtį. Pridėti modernių elementų, geresnę spalvų schemą, aiškesnius duomenų vizualizavimo komponentus ir sklandesnius perėjimus.",
@@ -108,10 +116,10 @@
   "riskyFiles": [
     {
       "targetFile": "app/page.tsx",
-      "hits": 3,
-      "lastSeenAt": "2026-05-31T18:59:50.579Z",
-      "lastTaskId": "manual-task-1780253656015",
-      "lastReason": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>"
+      "hits": 4,
+      "lastSeenAt": "2026-05-31T19:19:50.843Z",
+      "lastTaskId": "manual-task-1780254887900",
+      "lastReason": "Generated content validation failed: Invalid lowercase JSX custom tag: <DashboardTask>. Use a standard HTML tag like <div>/<section> or a PascalCase React component."
     },
     {
       "targetFile": "app/layout.tsx",
@@ -345,5 +353,5 @@
       "completedAt": "2026-05-12T07:17:00.114Z"
     }
   ],
-  "updatedAt": "2026-05-31T19:19:28.379Z"
+  "updatedAt": "2026-05-31T19:19:50.908Z"
 }
