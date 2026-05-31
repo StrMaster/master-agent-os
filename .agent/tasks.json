@@ -1,24 +1,5 @@
 [
   {
-    "id": "recovery-1780215351691",
-    "title": "Recovery: Stage 7: Create AI Studio page scaffold",
-    "summary": "Recover failed task: manual-task-1780214900469-s7-2",
-    "targetFile": "app/studio/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "createdAt": "2026-05-31T08:15:51.691Z",
-    "previewOnly": true,
-    "requiresApproval": true,
-    "retryCount": 0,
-    "lastRetryAt": "2026-05-31T08:15:51.691Z",
-    "agentRole": "senior-recovery",
-    "agentName": "Senior Recovery Agent",
-    "recoveryOfTaskId": "manual-task-1780214900469-s7-2",
-    "recoveryReason": "Failed to read target file app/studio/page.tsx: 404",
-    "recoverySignature": "failed to read target file app/studio/page.tsx: 404",
-    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: create-recovery-task."
-  },
-  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
@@ -89,8 +70,8 @@
   },
   {
     "id": "manual-task-1778441438513",
-    "title": "Pagerink tarpus tarp master chat žinučių",
-    "summary": "Padidinti tarpus tarp master chat žinučių, kad pagerėtų skaitomumas ir vizualinė atskirtis, išlaikant esamą išdėstymą ir komponentus nepakitus.",
+    "title": "Pagerink tarpus tarp master chat \u017einu\u010di\u0173",
+    "summary": "Padidinti tarpus tarp master chat \u017einu\u010di\u0173, kad pager\u0117t\u0173 skaitomumas ir vizualin\u0117 atskirtis, i\u0161laikant esam\u0105 i\u0161d\u0117stym\u0105 ir komponentus nepakitus.",
     "targetFile": "app/page.tsx",
     "status": "pending-pr",
     "priority": "medium",
@@ -278,7 +259,7 @@
     "title": "Stage 7: Create AI Studio page scaffold",
     "summary": "Create app/studio/page.tsx - AI Studio page with project name input, project type selector, and create button. Dark theme matching existing pages.",
     "targetFile": "app/studio/page.tsx",
-    "status": "failed",
+    "status": "todo",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-31T08:08:00.000Z",
@@ -292,8 +273,6 @@
     "previewOnly": false,
     "requiresApproval": false,
     "plannerNotes": "Stage 7 UI. New file - safe to create.",
-    "startedAt": "2026-05-31T08:15:47.582Z",
-    "completedAt": "2026-05-31T08:15:49.939Z",
     "error": "Failed to read target file app/studio/page.tsx: 404"
   },
   {
