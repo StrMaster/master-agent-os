@@ -31,6 +31,13 @@
   ],
   "recoveryHistory": [
     {
+      "taskId": "manual-task-1780220394484",
+      "recoveryTaskId": "recovery-1780220412523",
+      "reason": "Patch generation failed: Unexpected token 'I', \"I need to \"... is not valid JSON",
+      "status": "created",
+      "at": "2026-05-31T09:40:13.185Z"
+    },
+    {
       "taskId": "manual-task-1780214900469-s7-2",
       "recoveryTaskId": "recovery-1780215351691",
       "reason": "Failed to read target file app/studio/page.tsx: 404",
@@ -283,5 +290,5 @@
       "completedAt": "2026-05-11T23:44:57.670Z"
     }
   ],
-  "updatedAt": "2026-05-31T09:40:11.911Z"
+  "updatedAt": "2026-05-31T09:40:13.278Z"
 }
