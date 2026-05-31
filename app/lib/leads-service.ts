@@ -73,7 +73,7 @@ export async function incrementOutreachCount(id: string): Promise<void> {
   const supabase = getSupabase();
   if (!supabase) return;
 
-  await supabase.rpc("increment_outreach_count", { lead_id: id }).catch(() => {});
+  await supabase.rpc("increment_outreach_count", { lead_id: id });
   await supabase
     .from("leads")
     .update({ last_contacted_at: new Date().toISOString() })
