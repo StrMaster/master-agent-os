@@ -12,9 +12,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const repoUrl = await createGithubRepo(projectName, projectType);
+    const result = await createGithubRepo({
+      name: projectName,
+      description: `AI Studio project: ${projectType}`,
+      private: false,
+    });
 
-    return NextResponse.json({ ok: true, repoUrl });
+    return NextResponse.json({ ok: true, repoUrl: result.repoUrl });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to create project";
     return NextResponse.json(
