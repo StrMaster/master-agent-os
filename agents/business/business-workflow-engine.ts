@@ -128,43 +128,43 @@ export async function executeBusinessWorkflow(input: BusinessAnalysisRequest): P
 
   switch (workflowType) {
     case "website-analysis":
-      results = [
+      results = await Promise.all([
         auditWebsite(enrichedInput),
         analyzeSeo(enrichedInput),
         analyzeMarketing(enrichedInput),
         buildClientReport(enrichedInput),
-      ];
+      ]);
       break;
     case "business-idea":
-      results = [
+      results = await Promise.all([
         analyzeBusinessIdea(enrichedInput),
         analyzeMarket(enrichedInput),
         analyzeCompetitors(enrichedInput),
         buildOffer(enrichedInput),
-      ];
+      ]);
       break;
     case "marketing-review":
-      results = [
+      results = await Promise.all([
         analyzeMarketing(enrichedInput),
         buildOffer(enrichedInput),
         buildOutreach(enrichedInput),
-      ];
+      ]);
       break;
     case "client-acquisition":
-      results = [
+      results = await Promise.all([
         buildOffer(enrichedInput),
         buildProposal(enrichedInput),
         buildOutreach(enrichedInput),
         buildFollowUp(enrichedInput),
-      ];
+      ]);
       break;
     case "general-business-analysis":
     default:
-      results = [
+      results = await Promise.all([
         analyzeBusinessIdea(enrichedInput),
         analyzeMarket(enrichedInput),
         analyzeMarketing(enrichedInput),
-      ];
+      ]);
       break;
   }
 
