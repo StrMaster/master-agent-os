@@ -46,6 +46,13 @@
   ],
   "recoveryHistory": [
     {
+      "taskId": "manual-task-1780250223443",
+      "recoveryTaskId": "recovery-1780250301558",
+      "reason": "Generated content validation failed: JSX tag imbalance: 13 opening vs 23 closing tags",
+      "status": "created",
+      "at": "2026-05-31T17:58:22.109Z"
+    },
+    {
       "taskId": "manual-task-1780220394484",
       "recoveryTaskId": "recovery-1780220412523",
       "reason": "Patch generation failed: Unexpected token 'I', \"I need to \"... is not valid JSON",
@@ -310,5 +317,5 @@
       "completedAt": "2026-05-12T07:16:29.394Z"
     }
   ],
-  "updatedAt": "2026-05-31T17:58:21.086Z"
+  "updatedAt": "2026-05-31T17:58:22.185Z"
 }
