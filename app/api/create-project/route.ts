@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createGitHubRepo } from "@/app/lib/github-repo-creator";
+import { createGithubRepo } from "@/app/lib/github-repo-creator";
 
 export async function POST(request: Request) {
   try {
@@ -12,13 +12,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const repoUrl = await createGitHubRepo(projectName, projectType);
+    const repoUrl = await createGithubRepo(projectName, projectType);
 
     return NextResponse.json({ ok: true, repoUrl });
-  } catch (error: any) {
-    console.error("Error creating project:", error);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to create project";
     return NextResponse.json(
-      { ok: false, error: error.message || "Failed to create project" },
+      { ok: false, error: message },
       { status: 500 }
     );
   }
