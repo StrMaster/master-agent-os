@@ -25,7 +25,7 @@ function checkImports(content: string): string[] {
 }
 
 // Lightweight JSX sanity check.
-// This intentionally avoids regex tag counting because modern TSX often contains
+// This intentionally avoids full parsing because modern TSX often contains
 // fragments, components, conditionals, generics and self-closing tags that make
 // simple open/close counts unreliable. The build step remains the real compiler.
 function checkJsxBalance(content: string): string[] {
@@ -33,10 +33,20 @@ function checkJsxBalance(content: string): string[] {
   const stack: string[] = [];
   const tagRegex = /<\/?([a-z][a-z0-9-]*)\b[^>]*>/gi;
   const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+  const htmlTags = new Set([
+    "a", "article", "aside", "button", "canvas", "code", "div", "em", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header", "html", "label", "li", "main", "nav", "ol", "option", "p", "pre", "section", "select", "span", "strong", "svg", "table", "tbody", "td", "textarea", "tfoot", "th", "thead", "tr", "ul",
+    ...Array.from(voidTags),
+  ]);
 
   for (const match of content.matchAll(tagRegex)) {
     const full = match[0];
-    const tag = match[1].toLowerCase();
+    const originalTag = match[1];
+    const tag = originalTag.toLowerCase();
+
+    if (!htmlTags.has(tag)) {
+      issues.push(`Invalid lowercase JSX custom tag: <${originalTag}>. Use a standard HTML tag like <div>/<section> or a PascalCase React component.`);
+      break;
+    }
 
     if (full.startsWith("</")) {
       const previous = stack.pop();
