@@ -1,9 +1,16 @@
 {
-  "lastRun": "2026-05-31T09:40:11.825Z",
-  "lastTaskId": "manual-task-1780220394484",
+  "lastRun": "2026-05-31T16:43:06.682Z",
+  "lastTaskId": "manual-task-1780245685122",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
-  "lastFailure": "Patch generation failed: Unexpected token 'I', \"I need to \"... is not valid JSON",
+  "lastFailure": "JSX tag imbalance: 7 opening vs 11 closing tags",
   "failedTasks": [
+    {
+      "taskId": "manual-task-1780245685122",
+      "title": "Peržiūrėk dashboard puslapį ir pagerink UI:",
+      "targetFile": "app/layout.tsx",
+      "reason": "JSX tag imbalance: 7 opening vs 11 closing tags",
+      "at": "2026-05-31T16:43:06.682Z"
+    },
     {
       "taskId": "manual-task-1780220394484",
       "title": "Check if agents/business folder exists in the repository. If it exists, list all files in it with their structure. If it does not exist, return a clear status that it's missing. Do NOT create or modify anything. Analysis only. Return structured output showing: 1) Folder exists: yes/no, 2) If yes: complete file tree of agents/business, 3) If no: confirmation that folder is missing.",
@@ -54,6 +61,13 @@
   ],
   "deployFailures": [],
   "riskyFiles": [
+    {
+      "targetFile": "app/layout.tsx",
+      "hits": 1,
+      "lastSeenAt": "2026-05-31T16:43:06.682Z",
+      "lastTaskId": "manual-task-1780245685122",
+      "lastReason": "JSX tag imbalance: 7 opening vs 11 closing tags"
+    },
     {
       "targetFile": "app/page.tsx",
       "hits": 2,
@@ -290,5 +304,5 @@
       "completedAt": "2026-05-11T23:44:57.670Z"
     }
   ],
-  "updatedAt": "2026-05-31T09:40:13.278Z"
+  "updatedAt": "2026-05-31T16:43:06.757Z"
 }
