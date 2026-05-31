@@ -8,6 +8,9 @@ const REPO = "master-agent-os";
 const BRANCH = "main";
 const REPO_CONTEXT_PATH = ".agent/repo-context.json";
 const MAX_CONTEXT_ITEMS = 24;
+const REPO_TREE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
+
+let _repoTreeCache: { files: string[]; expiresAt: number } | null = null;
 
 type GitHubFile = {
   sha: string;
@@ -36,6 +39,11 @@ type GitHubTreeResponse = {
 };
 
 export async function fetchRepoTree(): Promise<string[]> {
+  // Return cached result if still fresh
+  if (_repoTreeCache && Date.now() < _repoTreeCache.expiresAt) {
+    return _repoTreeCache.files;
+  }
+
   const token = process.env.GITHUB_TOKEN;
   if (!token) return [];
 
@@ -54,13 +62,16 @@ export async function fetchRepoTree(): Promise<string[]> {
     if (!res.ok) return [];
 
     const data = (await res.json()) as GitHubTreeResponse;
-    return data.tree
+    const files = data.tree
       .filter((item) => item.type === "blob")
       .map((item) => item.path)
       .filter((path) =>
         path.endsWith(".ts") || path.endsWith(".tsx") || path.endsWith(".json")
       )
       .slice(0, 200);
+
+    _repoTreeCache = { files, expiresAt: Date.now() + REPO_TREE_CACHE_MS };
+    return files;
   } catch {
     return [];
   }
