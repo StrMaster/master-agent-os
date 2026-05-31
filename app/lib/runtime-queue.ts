@@ -1,6 +1,5 @@
 import { Redis } from "@upstash/redis";
 
-
 const RUNTIME_QUEUE_KEY = "master-agent-os:runtime-queue";
 
 export type RuntimeQueueTask = {
@@ -37,9 +36,7 @@ function getRedis() {
 }
 
 function normalizeRuntimeQueueTask(item: unknown): RuntimeQueueTask | null {
-  if (!item) {
-    return null;
-  }
+  if (!item) return null;
 
   if (typeof item === "string") {
     try {
@@ -49,15 +46,10 @@ function normalizeRuntimeQueueTask(item: unknown): RuntimeQueueTask | null {
     }
   }
 
-  if (typeof item !== "object") {
-    return null;
-  }
+  if (typeof item !== "object") return null;
 
   const task = item as RuntimeQueueTask;
-
-  if (!task.id || !task.title) {
-    return null;
-  }
+  if (!task.id || !task.title) return null;
 
   return {
     ...task,
@@ -92,31 +84,25 @@ export async function getRuntimeQueueTasks(): Promise<RuntimeQueueTask[]> {
 export async function updateRuntimeQueueTask(id: string, updatedTask: unknown) {
   const redis = getRedis();
   const tasks = await getRuntimeQueueTasks();
-  const updated = tasks.map(t => t.id === id ? { ...t, ...(updatedTask as object) } : t);
-  await redis.del("master-agent-os:runtime-queue");
+  const updated = tasks.map((task) => task.id === id ? { ...task, ...(updatedTask as object) } : task);
+
+  await redis.del(RUNTIME_QUEUE_KEY);
   for (const task of updated) {
-    await redis.rpush("master-agent-os:runtime-queue", JSON.stringify(task));
+    await redis.rpush(RUNTIME_QUEUE_KEY, JSON.stringify(task));
   }
 }
 
-
-
 export async function removeRuntimeTask(taskId: string) {
-  const rawItems = await getRedis().lrange<unknown>(RUNTIME_QUEUE_KEY, 0, 200);
+  const redis = getRedis();
+  const tasks = await getRuntimeQueueTasks();
+  const remaining = tasks.filter((task) => task.id !== taskId);
 
-  for (const rawItem of rawItems) {
-    const task = normalizeRuntimeQueueTask(rawItem);
-
-    if (task?.id !== taskId) {
-      continue;
-    }
-
-    const itemToRemove =
-      typeof rawItem === "string" ? rawItem : JSON.stringify(rawItem);
-
-    await getRedis().lrem(RUNTIME_QUEUE_KEY, 1, itemToRemove);
-    return;
+  await redis.del(RUNTIME_QUEUE_KEY);
+  for (const task of remaining) {
+    await redis.rpush(RUNTIME_QUEUE_KEY, JSON.stringify(task));
   }
+
+  return tasks.length !== remaining.length;
 }
 
 export async function clearRuntimeQueue() {
