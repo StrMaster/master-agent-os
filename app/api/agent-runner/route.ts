@@ -1062,7 +1062,7 @@ if (!review.valid) {
   );
 }
 
-    const validation = validatePatch(patchedContent);
+    const validation = validatePatch(patchedContent, task.targetFile);
 
     if (!validation.valid) {
       const latest = await readTasksFile();
