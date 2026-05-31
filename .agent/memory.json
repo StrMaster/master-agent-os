@@ -23,6 +23,13 @@
   ],
   "recoveryHistory": [
     {
+      "taskId": "manual-task-1780214900469-s7-2",
+      "recoveryTaskId": "recovery-1780215351691",
+      "reason": "Failed to read target file app/studio/page.tsx: 404",
+      "status": "created",
+      "at": "2026-05-31T08:15:52.387Z"
+    },
+    {
       "taskId": "manual-task-1778681081841",
       "recoveryTaskId": "recovery-1778681108080",
       "reason": "404 {\"type\":\"error\",\"error\":{\"type\":\"not_found_error\",\"message\":\"model: claude-sonnet-4-5-20251001\"},\"request_id\":\"req_011CazhGdaEnraFS5XpzPrrz\"}",
@@ -252,5 +259,5 @@
       "completedAt": "2026-05-11T17:07:07.275Z"
     }
   ],
-  "updatedAt": "2026-05-31T08:15:51.067Z"
+  "updatedAt": "2026-05-31T08:15:52.463Z"
 }
