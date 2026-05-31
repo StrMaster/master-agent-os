@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const SUPABASE_PROJECT_ID = process.env.SUPABASE_PROJECT_ID;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!SUPABASE_PROJECT_ID || !SUPABASE_SERVICE_KEY) {
-      return NextResponse.json({ ok: false, error: "Missing SUPABASE_PROJECT_ID or SUPABASE_SERVICE_KEY" }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Missing SUPABASE_PROJECT_ID or SUPABASE_SERVICE_ROLE_KEY" }, { status: 500 });
     }
 
     // Use Supabase Management API to run SQL
