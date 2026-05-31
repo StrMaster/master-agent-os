@@ -285,3 +285,21 @@ export async function mergePullRequest(
 
   return res.json();
 }
+
+export async function closeStalePullRequest(prNumber: number): Promise<void> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return;
+
+  await fetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/pulls/${prNumber}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ state: "closed" }),
+    }
+  );
+}
