@@ -49,6 +49,9 @@ CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
 - Never restructure the file
 - The change must be surgical and minimal
 - If you cannot find a unique string to change, use surrounding context to make it unique
+- To DELETE code: set "find" to the exact block to remove, and "replace" to "" (empty string)
+- To DELETE a tab/nav link: find the exact JSX element and replace with ""
+- Deletions of any size are allowed
 
 Response format (JSON only, no markdown):
 {"find": "exact string to find", "replace": "replacement string"}`,
@@ -65,7 +68,8 @@ ${context.currentContent
   ? `Current content:
 ${context.currentContent}
 
-Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.`
+Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.
+If the task is to DELETE something, set "replace" to "" (empty string).`
   : `This is a NEW file that does not exist yet. Create the full file content.
 Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the complete new file content.`
 }`,
@@ -101,11 +105,13 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
       throw new Error(`Find block must match exactly once. Found ${occurrences} matches.`);
     }
 
+    // Allow full deletions (replace = "") without line limit
+    const isDeletion = patch.replace === "";
     const lineCount = Math.abs(
       patch.replace.split("\n").length - patch.find.split("\n").length
     );
 
-    if (lineCount > 60) {
+    if (!isDeletion && lineCount > 60) {
       throw new Error(`Too many lines changed (${lineCount}). Expected small patch.`);
     }
 
