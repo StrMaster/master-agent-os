@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-05-31T17:58:19.368Z",
+  "lastRun": "2026-05-31T17:58:19.931Z",
   "lastTaskId": "manual-task-1780250223443",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
   "lastFailure": "Generated content validation failed: JSX tag imbalance: 13 opening vs 23 closing tags",
@@ -92,6 +92,13 @@
     }
   ],
   "executionSummaries": [
+    {
+      "taskId": "manual-task-1780250223443",
+      "title": "Peržiūrėk ir patobulk dashboard puslapio ir pagelink UI komponentų dizainą:",
+      "targetFile": "app/layout.tsx",
+      "status": "runner-failed",
+      "completedAt": "2026-05-31T17:58:19.931Z"
+    },
     {
       "taskId": "manual-task-1780220394484",
       "title": "Check if agents/business folder exists in the repository. If it exists, list all files in it with their structure. If it does not exist, return a clear status that it's missing. Do NOT create or modify anything. Analysis only. Return structured output showing: 1) Folder exists: yes/no, 2) If yes: complete file tree of agents/business, 3) If no: confirmation that folder is missing.",
@@ -301,16 +308,7 @@
       "branchName": "agent-task-manual-task-1778544282522",
       "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/188",
       "completedAt": "2026-05-12T07:16:29.394Z"
-    },
-    {
-      "taskId": "manual-task-1778543069001",
-      "title": "Title: Add execution pipeline test marker",
-      "targetFile": "app/execution/page.tsx",
-      "status": "pull-request-created",
-      "branchName": "agent-task-manual-task-1778543069001",
-      "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/187",
-      "completedAt": "2026-05-11T23:44:57.670Z"
     }
   ],
-  "updatedAt": "2026-05-31T17:58:19.427Z"
+  "updatedAt": "2026-05-31T17:58:20.007Z"
 }
