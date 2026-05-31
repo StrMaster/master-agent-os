@@ -61,10 +61,14 @@ Summary: ${context.taskSummary}
 
 File: ${context.filePath}
 
-Current content:
+${context.currentContent
+  ? `Current content:
 ${context.currentContent}
 
-Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.`,
+Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.`
+  : `This is a NEW file that does not exist yet. Create the full file content.
+Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the complete new file content.`
+}`,
       },
     ],
   });
@@ -77,6 +81,14 @@ Return ONLY a JSON object with "find" and "replace". Make the smallest possible 
 
     if (!patch.find || patch.replace === undefined) {
       throw new Error("Invalid patch format");
+    }
+
+    // New file: find is empty string, replace is full content
+    if (patch.find === "" && !context.currentContent) {
+      if (!patch.replace) {
+        throw new Error("New file creation requires non-empty replace content");
+      }
+      return patch.replace;
     }
 
     const occurrences = context.currentContent.split(patch.find).length - 1;
