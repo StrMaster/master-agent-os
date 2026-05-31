@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
+import { routePromptToBusinessAgent } from "@/agents/business/business-agent-router";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -26,6 +27,11 @@ Intent routing taisyklės:
 - review: PR, patch, build safety, architektūros rizika, klaidų tikrinimas. Deleguok senior-reviewer arba qa-agent, jei reikia vykdymo.
 - system: užduotys, runner būsena, deploy, queue, control state. Naudok get_tasks arba get_system_status.
 
+Business Agent routing:
+- Kai vartotojas prašo svetainės analizės, SEO, marketingo, konkurentų, kainodaros, pasiūlymo, outreach arba verslo idėjos vertinimo, pirmiausia naudok business_analysis tool.
+- business_analysis tool nerenka duomenų iš interneto ir nekeičia failų. Jis tik parenka tinkamą Business Agent rolę.
+- Gavęs business_analysis rezultatą, pateik vartotojui aiškią analizę ir nurodyk, kuris Business Agent būtų atsakingas.
+
 Delegavimo taisyklės:
 - UI/layout užduotys → frontend-specialist
 - API/backend užduotys → backend-specialist
@@ -35,6 +41,7 @@ Delegavimo taisyklės:
 - Produkto kūrimas → create_product tool tik kai vartotojas aiškiai prašo kurti produktą
 
 Tools:
+- business_analysis: parenka tinkamą Business Agent rolę pagal vartotojo užklausą
 - create_task: sukuria naują vykdymo užduotį
 - delegate_to_agent: deleguoja darbą specializuotam agentui
 - get_tasks: rodo dabartines užduotis
@@ -57,6 +64,20 @@ Atsakymo stilius:
 
 
 const TOOLS: Anthropic.Tool[] = [
+  {
+    name: "business_analysis",
+    description: "Route a business, research, website, SEO, marketing, pricing, offer, proposal, outreach or client report request to the best Business Agent role. This does not edit files or run the code runner.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        prompt: {
+          type: "string",
+          description: "The user's business or analysis request",
+        },
+      },
+      required: ["prompt"],
+    },
+  },
   {
     name: "create_task",
     description: "Create a new task for execution",
@@ -84,7 +105,7 @@ const TOOLS: Anthropic.Tool[] = [
     description: "Trigger auto-run cycle to execute queued tasks",
     input_schema: { type: "object" as const, properties: {} },
   },
-    {
+  {
     name: "delegate_to_agent",
     description: "Delegate a specific task to a specialized agent (planner, frontend, backend, qa, recovery)",
     input_schema: {
@@ -201,6 +222,26 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
     "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? "",
     "x-vercel-set-bypass-cookie": "samesitenone",
   };
+  if (name === "business_analysis") {
+    const prompt = String(input.prompt ?? "");
+    const decision = routePromptToBusinessAgent(prompt);
+    return {
+      type: "business-agent-route",
+      role: decision.role,
+      confidence: decision.confidence,
+      reason: decision.reason,
+      agent: {
+        id: decision.agent.id,
+        name: decision.agent.name,
+        mode: decision.agent.mode,
+        purpose: decision.agent.purpose,
+        outputFormat: decision.agent.outputFormat,
+        canUseWebResearch: decision.agent.canUseWebResearch,
+        canCreateClientOutput: decision.agent.canCreateClientOutput,
+        canRecommendBuildTasks: decision.agent.canRecommendBuildTasks,
+      },
+    };
+  }
   if (name === "create_task") {
     const res = await fetch(`${baseUrl}/api/create-task`, {
       method: "POST",
