@@ -870,9 +870,7 @@ try {
             `Frontend files: ${(repoContext.frontendFiles ?? []).join(", ")}`,
             `Backend files: ${(repoContext.backendFiles ?? []).join(", ")}`,
             `Legacy zones (do not touch): ${(repoContext.legacyZones ?? []).join(", ")}`,
-            repoContext.allFiles?.length
-              ? `All repo files:\n${repoContext.allFiles.join("\n")}`
-              : "",
+
           ].filter(Boolean).join("\n")
         : undefined;
 
@@ -943,9 +941,7 @@ try {
           repoContext.riskyFiles?.length
             ? `Risky files (extra caution): ${repoContext.riskyFiles.map(f => `${f.targetFile} (${f.hits} hits)`).join(", ")}`
             : "",
-          repoContext.allFiles?.length
-            ? `All repo files:\n${repoContext.allFiles.join("\n")}`
-            : "",
+
         ].filter(Boolean).join("\n")
       : undefined;
 
