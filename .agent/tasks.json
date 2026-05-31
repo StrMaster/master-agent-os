@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "recovery-1780255192559",
+    "title": "Recovery: Pagerink dashboard tuščios būsenos (empty state) tekstą faile app/page.tsx. Padaryk jį draugiškesnį, aiškesnį ir labiau motyvuojantį vartotoją imtis veiksmų. Užtikrink, kad tekstas būtų lietuviškas, natūralus ir profesionalus. Jei reikia, pridėk geresnę struktūrą ar emocionalinį toną.",
+    "summary": "Recover failed task: manual-task-1780254887900",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "createdAt": "2026-05-31T19:19:52.559Z",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "retryCount": 0,
+    "lastRetryAt": "2026-05-31T19:19:52.559Z",
+    "agentRole": "senior-recovery",
+    "agentName": "Senior Recovery Agent",
+    "recoveryOfTaskId": "manual-task-1780254887900",
+    "recoveryReason": "Generated content validation failed: Invalid lowercase JSX custom tag: <DashboardTask>. Use a standard HTML tag like <div>/<section> or a PascalCase React component.",
+    "recoverySignature": "generated content validation failed: invalid lowercase jsx custom tag: <dashboardtask>. use a standard html tag like <div>/<section> or a pascalcase react compo",
+    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: cooldown-runtime."
+  }
+]
