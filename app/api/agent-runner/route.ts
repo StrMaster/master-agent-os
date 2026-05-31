@@ -9,8 +9,10 @@ import {
   mergePullRequest,
   validatePullRequest,
   checkBuildStatus,
+  closeStalePullRequest,
 } from "@/app/lib/github-pr";
 import { validatePatch } from "@/app/lib/patch-validator";
+import { storeMemory, searchMemory } from "@/app/lib/agent-memory";
 import { updateTaskStatus } from "@/app/lib/task-runtime";
 import { evaluateStopConditions } from "@/app/lib/stop-conditions";
 import { reviewUiIntentPatch } from "@/agents/core/agent-review-rules";
@@ -858,6 +860,33 @@ try {
   });
 }
 
+    // Auto-close stale pending-pr tasks older than 48 hours
+    const STALE_PR_MS = 48 * 60 * 60 * 1000;
+    const stalePrTasks = tasks.filter((t) =>
+      t.status === "pending-pr" &&
+      t.id !== task.id &&
+      t.updatedAt &&
+      Date.now() - new Date(t.updatedAt).getTime() > STALE_PR_MS
+    );
+    for (const staleTask of stalePrTasks) {
+      const prNum = staleTask.result?.pullRequestNumber;
+      if (prNum) {
+        closeStalePullRequest(prNum).catch(() => {});
+      }
+      staleTask.status = "failed";
+      staleTask.error = "Auto-closed: pending-pr stale after 48h";
+      staleTask.updatedAt = new Date().toISOString();
+      logActivity({
+        type: "stale-pr-closed",
+        runId,
+        taskId: staleTask.id,
+        reason: "Pending PR stale after 48 hours",
+      }).catch(() => {});
+    }
+    if (stalePrTasks.length > 0) {
+      await writeTasksFile(tasks, sha, "Auto-close stale pending-pr tasks").catch(() => {});
+    }
+
     const isMultiFile = Array.isArray(task.targetFiles) && task.targetFiles.length > 1;
 
     const currentContent = await readTargetFile(task.targetFile);
@@ -945,11 +974,21 @@ try {
         ].filter(Boolean).join("\n")
       : undefined;
 
+    // Search long-term memory for past issues with this file
+    const memoryHints = await searchMemory(
+      `${task.targetFile} ${task.title}`,
+      undefined,
+      3
+    ).catch(() => []);
+    const memoryContext = memoryHints.length > 0
+      ? `\nPast issues with this file:\n${memoryHints.map(m => `- ${m.content}`).join("\n")}`
+      : "";
+
     const patchedContent = await generateCodePatch({
       filePath: task.targetFile,
       currentContent,
       taskTitle: executionContext.taskTitle,
-      taskSummary: executionContext.taskSummary,
+      taskSummary: executionContext.taskSummary + memoryContext,
       projectState,
       repoContext: repoContextSummary,
       agentSystemPrompt: task.agentSystemPrompt,
@@ -1073,6 +1112,13 @@ if (!review.valid) {
         latestTask.error = `Patch validation failed: ${validation.issues.join(
           ", "
         )}`;
+
+        // Store failure in long-term memory
+        storeMemory({
+          content: `Task "${task.title}" on ${task.targetFile} failed validation: ${validation.issues.join(", ")}`,
+          category: "error-pattern",
+          metadata: { taskId: task.id, targetFile: task.targetFile },
+        }).catch(() => {});
       }
 
       await updateTaskStatus(task.id, "failed");
@@ -1338,6 +1384,13 @@ if (mergeState.autoMergeEnabled && typeof pr.number === "number") {
         agentName: task.agentName,
 agentRole: task.agentRole,
       });
+
+      // Store successful outcome in long-term memory
+      storeMemory({
+        content: `Task "${task.title}" on ${task.targetFile} completed successfully.`,
+        category: "task-outcome",
+        metadata: { taskId: task.id, targetFile: task.targetFile },
+      }).catch(() => {});
     } catch (error) {
       await logActivity({
         type: "pull-request-merge-failed",
