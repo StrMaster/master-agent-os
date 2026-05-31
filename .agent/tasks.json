@@ -70,8 +70,8 @@
   },
   {
     "id": "manual-task-1778441438513",
-    "title": "Pagerink tarpus tarp master chat \u017einu\u010di\u0173",
-    "summary": "Padidinti tarpus tarp master chat \u017einu\u010di\u0173, kad pager\u0117t\u0173 skaitomumas ir vizualin\u0117 atskirtis, i\u0161laikant esam\u0105 i\u0161d\u0117stym\u0105 ir komponentus nepakitus.",
+    "title": "Pagerink tarpus tarp master chat žinučių",
+    "summary": "Padidinti tarpus tarp master chat žinučių, kad pagerėtų skaitomumas ir vizualinė atskirtis, išlaikant esamą išdėstymą ir komponentus nepakitus.",
     "targetFile": "app/page.tsx",
     "status": "pending-pr",
     "priority": "medium",
@@ -231,11 +231,11 @@
     "title": "Stage 7: Add Studio link to navigation",
     "summary": "Add /studio navigation link to app/layout.tsx alongside existing nav links.",
     "targetFile": "app/layout.tsx",
-    "status": "todo",
+    "status": "running",
     "priority": "high",
     "source": "manual",
     "createdAt": "2026-05-31T08:08:00.000Z",
-    "updatedAt": "2026-05-31T08:08:00.000Z",
+    "updatedAt": "2026-05-31T08:15:39.801Z",
     "agentRole": "senior-ui",
     "agentName": "Senior UI Agent",
     "intent": "new-feature",
@@ -244,7 +244,8 @@
     "wave": 1,
     "previewOnly": false,
     "requiresApproval": false,
-    "plannerNotes": "Stage 7 foundation. Add studio nav link. Safe change."
+    "plannerNotes": "Stage 7 foundation. Add studio nav link. Safe change.",
+    "startedAt": "2026-05-31T08:15:39.801Z"
   },
   {
     "id": "manual-task-1780214900469-s7-2",
