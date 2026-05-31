@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "recovery-1780253992566",
+    "title": "Recovery: Patobulinti dashboard UI: pagerinti dizainą, išdėstymą, vizualinę hierarchiją, responsyvumą ir vartotojo patirtį. Pridėti modernių elementų, geresnę spalvų schemą, aiškesnius duomenų vizualizavimo komponentus ir sklandesnius perėjimus.",
+    "summary": "Recover failed task: manual-task-1780253656015",
+    "targetFile": "app/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "createdAt": "2026-05-31T18:59:52.566Z",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "retryCount": 0,
+    "lastRetryAt": "2026-05-31T18:59:52.566Z",
+    "agentRole": "senior-recovery",
+    "agentName": "Senior Recovery Agent",
+    "recoveryOfTaskId": "manual-task-1780253656015",
+    "recoveryReason": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>",
+    "recoverySignature": "generated content validation failed: possible unclosed jsx tag: <dashboardtask>",
+    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: cooldown-runtime."
+  }
+]
