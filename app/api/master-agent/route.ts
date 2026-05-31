@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { supabase } from "@/app/lib/supabase";
-import { executeBusinessAgent } from "@/agents/business/business-agent-executor";
+import { executeBusinessWorkflow } from "@/agents/business/business-workflow-engine";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -29,8 +29,8 @@ Intent routing taisyklės:
 
 Business Agent routing:
 - Kai vartotojas prašo svetainės analizės, SEO, marketingo, konkurentų, kainodaros, pasiūlymo, outreach arba verslo idėjos vertinimo, pirmiausia naudok business_analysis tool.
-- business_analysis tool nekeičia failų, nepaleidžia runner ir nerenka duomenų iš interneto. Jis parenka tinkamą Business Agent ir paleidžia saugią vidinę analizę pagal turimą užklausą.
-- Gavęs business_analysis rezultatą, pateik vartotojui aiškią analizę: įvertinimas, stiprybės, problemos, prioritetai ir kitas veiksmas.
+- business_analysis tool nekeičia failų, nepaleidžia runner ir nerenka duomenų iš interneto. Jis parenka tinkamą Business Workflow ir paleidžia kelis saugius Business Agentus pagal turimą užklausą.
+- Gavęs business_analysis rezultatą, pateik vartotojui vieną sujungtą analizę: workflow tipas, dalyvavę agentai, įvertinimas, stiprybės, problemos, prioritetai ir kitas veiksmas.
 
 Delegavimo taisyklės:
 - UI/layout užduotys → frontend-specialist
@@ -41,7 +41,7 @@ Delegavimo taisyklės:
 - Produkto kūrimas → create_product tool tik kai vartotojas aiškiai prašo kurti produktą
 
 Tools:
-- business_analysis: parenka ir paleidžia tinkamą Business Agent analizę pagal vartotojo užklausą
+- business_analysis: parenka ir paleidžia tinkamą kelių Business Agentų workflow pagal vartotojo užklausą
 - create_task: sukuria naują vykdymo užduotį
 - delegate_to_agent: deleguoja darbą specializuotam agentui
 - get_tasks: rodo dabartines užduotis
@@ -62,11 +62,10 @@ Atsakymo stilius:
 - Jei vartotojas klausia paprasto klausimo, atsakyk tiesiai.
 - Jei vartotojas prašo veiksmų su kodu ar sistema, naudok tools ir deleguok.`;
 
-
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "business_analysis",
-    description: "Execute a safe internal Business Agent analysis for business, research, website, SEO, marketing, pricing, offer, proposal, outreach or client report requests. This does not edit files or run the code runner.",
+    description: "Execute a safe internal multi-agent Business Workflow for business, research, website, SEO, marketing, pricing, offer, proposal, outreach or client report requests. This does not edit files or run the code runner.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -177,9 +176,9 @@ const TOOLS: Anthropic.Tool[] = [
 
 async function readConversationHistory(sessionId: string) {
   try {
-if (!supabase) {
-  return [];
-}
+    if (!supabase) {
+      return [];
+    }
 
     const { data, error } = await supabase
       .from("conversations")
@@ -210,8 +209,8 @@ async function saveConversationMessage({
 }) {
   try {
     if (!supabase) {
-  return;
-}
+      return;
+    }
     const { error } = await supabase.from("conversations").insert({
       session_id: sessionId,
       role,
@@ -244,7 +243,7 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
   };
   if (name === "business_analysis") {
     const prompt = String(input.prompt ?? "");
-    const result = executeBusinessAgent({
+    const workflow = executeBusinessWorkflow({
       prompt,
       url: typeof input.url === "string" ? input.url : undefined,
       businessName: typeof input.businessName === "string" ? input.businessName : undefined,
@@ -254,21 +253,13 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
     });
 
     return {
-      type: "business-agent-execution",
-      role: result.route.role,
-      confidence: result.route.confidence,
-      reason: result.route.reason,
-      agent: {
-        id: result.route.agent.id,
-        name: result.route.agent.name,
-        mode: result.route.agent.mode,
-        purpose: result.route.agent.purpose,
-        outputFormat: result.route.agent.outputFormat,
-        canUseWebResearch: result.route.agent.canUseWebResearch,
-        canCreateClientOutput: result.route.agent.canCreateClientOutput,
-        canRecommendBuildTasks: result.route.agent.canRecommendBuildTasks,
-      },
-      analysis: result.analysis,
+      type: "business-workflow-execution",
+      workflowType: workflow.workflowType,
+      agentsExecuted: workflow.agentsExecuted,
+      finalSummary: workflow.finalSummary,
+      priorityActions: workflow.priorityActions,
+      recommendedNextStep: workflow.recommendedNextStep,
+      results: workflow.results,
     };
   }
   if (name === "create_task") {
