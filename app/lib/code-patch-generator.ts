@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { validatePatch } from "@/app/lib/patch-validator";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -183,6 +184,12 @@ export async function generateMultiFilePatch(context: {
       agentRole: context.agentRole,
       routingReason: context.routingReason,
     });
+
+    // Validate each patched file
+    const validation = validatePatch(patchedContent, file.filePath);
+    if (!validation.valid) {
+      throw new Error(`Multi-file patch validation failed for ${file.filePath}: ${validation.issues.join(", ")}`);
+    }
 
     results.push({ filePath: file.filePath, patchedContent });
   }
