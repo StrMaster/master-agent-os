@@ -1,1 +1,21 @@
-[]
+[
+  {
+    "id": "recovery-1780251047958",
+    "title": "Recovery: Peržiūrėk ir patobulink dashboard puslapį ir pagelink UI komponentus:",
+    "summary": "Recover failed task: manual-task-1780250970027",
+    "targetFile": "app/layout.tsx",
+    "status": "todo",
+    "priority": "high",
+    "createdAt": "2026-05-31T18:10:47.958Z",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "retryCount": 0,
+    "lastRetryAt": "2026-05-31T18:10:47.958Z",
+    "agentRole": "senior-recovery",
+    "agentName": "Senior Recovery Agent",
+    "recoveryOfTaskId": "manual-task-1780250970027",
+    "recoveryReason": "Generated content validation failed: Possible JSX tag mismatch: expected </nav> before </link>, Possible JSX tag imbalance: 5 unclosed tags",
+    "recoverySignature": "generated content validation failed: possible jsx tag mismatch: expected </nav> before </link>, possible jsx tag imbalance: 5 unclosed tags",
+    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: cooldown-runtime."
+  }
+]
