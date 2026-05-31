@@ -1,5 +1,5 @@
 {
-  "lastRun": "2026-05-31T18:10:45.157Z",
+  "lastRun": "2026-05-31T18:10:45.895Z",
   "lastTaskId": "manual-task-1780250970027",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
   "lastFailure": "Generated content validation failed: Possible JSX tag mismatch: expected </nav> before </link>, Possible JSX tag imbalance: 5 unclosed tags",
@@ -107,6 +107,13 @@
     }
   ],
   "executionSummaries": [
+    {
+      "taskId": "manual-task-1780250970027",
+      "title": "Peržiūrėk ir patobulink dashboard puslapį ir pagelink UI komponentus:",
+      "targetFile": "app/layout.tsx",
+      "status": "runner-failed",
+      "completedAt": "2026-05-31T18:10:45.895Z"
+    },
     {
       "taskId": "manual-task-1780250223443",
       "title": "Peržiūrėk ir patobulk dashboard puslapio ir pagelink UI komponentų dizainą:",
@@ -314,16 +321,7 @@
       "branchName": "agent-task-manual-task-1778544282522",
       "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/188",
       "completedAt": "2026-05-12T07:17:00.114Z"
-    },
-    {
-      "taskId": "manual-task-1778544282522",
-      "title": "Title: Add Redis runtime queue test marker",
-      "targetFile": "app/execution/page.tsx",
-      "status": "pull-request-created",
-      "branchName": "agent-task-manual-task-1778544282522",
-      "pullRequestUrl": "https://github.com/StrMaster/master-agent-os/pull/188",
-      "completedAt": "2026-05-12T07:16:29.394Z"
     }
   ],
-  "updatedAt": "2026-05-31T18:10:45.245Z"
+  "updatedAt": "2026-05-31T18:10:45.979Z"
 }
