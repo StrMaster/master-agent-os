@@ -183,6 +183,44 @@ export async function getPullRequest(
   return res.json();
 }
 
+export async function checkBuildStatus(
+  branchName: string
+): Promise<"success" | "failure" | "pending" | "unknown"> {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return "unknown";
+
+  try {
+    const commitRes = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/commits/${branchName}`,
+      {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (!commitRes.ok) return "unknown";
+    const commit = await commitRes.json() as { sha: string };
+
+    const checksRes = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/commits/${commit.sha}/check-runs`,
+      {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+        cache: "no-store",
+      }
+    );
+    if (!checksRes.ok) return "unknown";
+
+    const checks = await checksRes.json() as { check_runs: Array<{ status: string; conclusion: string | null }> };
+    const runs = checks.check_runs ?? [];
+    if (runs.length === 0) return "pending";
+
+    if (runs.some((r) => r.conclusion === "failure" || r.conclusion === "cancelled")) return "failure";
+    if (runs.every((r) => r.conclusion === "success")) return "success";
+    return "pending";
+  } catch {
+    return "unknown";
+  }
+}
+
 export async function validatePullRequest(
   prNumber: number
 ) {
