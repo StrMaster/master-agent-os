@@ -114,3 +114,77 @@ export const AGENT_IDENTITIES: Record<
     ],
   },
 };
+
+// ─── Long-term memory (Supabase pgvector) ────────────────────────────────────
+
+import { getSupabase } from "@/app/lib/supabase";
+import OpenAI from "openai";
+
+export type MemoryEntry = {
+  id?: string;
+  content: string;
+  category: "task-outcome" | "error-pattern" | "file-context" | "agent-decision";
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+};
+
+async function getEmbedding(text: string): Promise<number[]> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const res = await client.embeddings.create({
+      model: "text-embedding-3-small",
+      input: text.slice(0, 2000),
+    });
+    return res.data[0]?.embedding ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function storeMemory(entry: MemoryEntry): Promise<boolean> {
+  const supabase = getSupabase();
+  if (!supabase) return false;
+
+  try {
+    const embedding = await getEmbedding(entry.content);
+
+    const { error } = await supabase.from("agent_memories").insert({
+      content: entry.content,
+      category: entry.category,
+      metadata: entry.metadata ?? {},
+      embedding: embedding.length > 0 ? JSON.stringify(embedding) : null,
+    });
+
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function searchMemory(
+  query: string,
+  category?: MemoryEntry["category"],
+  limit = 5
+): Promise<MemoryEntry[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  try {
+    const embedding = await getEmbedding(query);
+    if (embedding.length === 0) return [];
+
+    const { data, error } = await supabase.rpc("match_agent_memories", {
+      query_embedding: JSON.stringify(embedding),
+      match_category: category ?? null,
+      match_count: limit,
+    });
+
+    if (error || !data) return [];
+    return data as MemoryEntry[];
+  } catch {
+    return [];
+  }
+}
