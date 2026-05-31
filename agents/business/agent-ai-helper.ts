@@ -20,8 +20,8 @@ export async function runAgentWithClaude(
   ].filter(Boolean).join("\n");
 
   const res = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 600,
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
     system: `${systemPrompt}
 
 Return ONLY valid JSON matching this exact structure (no markdown):
