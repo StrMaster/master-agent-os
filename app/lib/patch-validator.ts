@@ -24,16 +24,39 @@ function checkImports(content: string): string[] {
   return issues;
 }
 
-// Check JSX tag balance
+// Lightweight JSX sanity check.
+// This intentionally avoids regex tag counting because modern TSX often contains
+// fragments, components, conditionals, generics and self-closing tags that make
+// simple open/close counts unreliable. The build step remains the real compiler.
 function checkJsxBalance(content: string): string[] {
   const issues: string[] = [];
+  const stack: string[] = [];
+  const tagRegex = /<\/?([a-z][a-z0-9-]*)\b[^>]*>/gi;
+  const voidTags = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
 
-  // Count self-closing vs open/close tags for common elements
-  const openTags = (content.match(/<(div|span|section|main|nav|ul|ol|li|form|button|input|a|p|h[1-6])[^/]*>/gi) ?? []).length;
-  const closeTags = (content.match(/<\/(div|span|section|main|nav|ul|ol|li|form|button|input|a|p|h[1-6])>/gi) ?? []).length;
+  for (const match of content.matchAll(tagRegex)) {
+    const full = match[0];
+    const tag = match[1].toLowerCase();
 
-  if (Math.abs(openTags - closeTags) > 2) {
-    issues.push(`JSX tag imbalance: ${openTags} opening vs ${closeTags} closing tags`);
+    if (full.startsWith("</")) {
+      const previous = stack.pop();
+      if (previous && previous !== tag) {
+        issues.push(`Possible JSX tag mismatch: expected </${previous}> before </${tag}>`);
+        break;
+      }
+      continue;
+    }
+
+    if (full.endsWith("/>") || voidTags.has(tag)) continue;
+    stack.push(tag);
+  }
+
+  if (stack.length > 0 && stack.length <= 2) {
+    issues.push(`Possible unclosed JSX tag: <${stack[stack.length - 1]}>`);
+  }
+
+  if (stack.length > 2) {
+    issues.push(`Possible JSX tag imbalance: ${stack.length} unclosed tags`);
   }
 
   return issues;
