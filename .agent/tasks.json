@@ -1,5 +1,24 @@
 [
   {
+    "id": "recovery-1780215351691",
+    "title": "Recovery: Stage 7: Create AI Studio page scaffold",
+    "summary": "Recover failed task: manual-task-1780214900469-s7-2",
+    "targetFile": "app/studio/page.tsx",
+    "status": "todo",
+    "priority": "high",
+    "createdAt": "2026-05-31T08:15:51.691Z",
+    "previewOnly": true,
+    "requiresApproval": true,
+    "retryCount": 0,
+    "lastRetryAt": "2026-05-31T08:15:51.691Z",
+    "agentRole": "senior-recovery",
+    "agentName": "Senior Recovery Agent",
+    "recoveryOfTaskId": "manual-task-1780214900469-s7-2",
+    "recoveryReason": "Failed to read target file app/studio/page.tsx: 404",
+    "recoverySignature": "failed to read target file app/studio/page.tsx: 404",
+    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: create-recovery-task."
+  },
+  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
