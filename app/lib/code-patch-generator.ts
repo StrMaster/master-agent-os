@@ -115,7 +115,43 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
       throw new Error(`Too many lines changed (${lineCount}). Expected small patch.`);
     }
 
-    return context.currentContent.replace(patch.find, patch.replace);
+    const result = patch.find === ""
+      ? patch.replace
+      : context.currentContent.replace(patch.find, patch.replace);
+
+    // Quick self-review: ask Claude to verify the patch is valid
+    const reviewResponse = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 200,
+      system: "You are a TypeScript code reviewer. Answer ONLY with JSON: {"ok": true} or {"ok": false, "reason": "short reason"}",
+      messages: [
+        {
+          role: "user",
+          content: `Review this TypeScript/TSX patch for obvious errors (wrong import names, missing exports, syntax issues).
+File: ${context.filePath}
+Patch result:
+${result.slice(0, 3000)}
+
+Reply ONLY with JSON: {"ok": true} or {"ok": false, "reason": "..."}`,
+        },
+      ],
+    });
+
+    const reviewRaw = reviewResponse.content[0]?.type === "text" ? reviewResponse.content[0].text : "{}";
+    try {
+      const reviewClean = reviewRaw.replace(/\`\`\`json|\`\`\`/g, "").trim();
+      const review = JSON.parse(reviewClean) as { ok: boolean; reason?: string };
+      if (!review.ok && review.reason) {
+        throw new Error(`Self-review failed: ${review.reason}`);
+      }
+    } catch (reviewErr) {
+      // If review parsing fails, continue — don't block on review errors
+      if (reviewErr instanceof Error && reviewErr.message.startsWith("Self-review failed:")) {
+        throw reviewErr;
+      }
+    }
+
+    return result;
   } catch (e) {
     throw new Error(`Patch generation failed: ${e instanceof Error ? e.message : String(e)}`);
   }
