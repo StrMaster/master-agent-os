@@ -29,7 +29,7 @@ export async function generateCodePatch(context: {
 
   const response = await client.messages.create({
    model: "claude-sonnet-4-5",
-max_tokens: 2048,
+max_tokens: 1200,
 
     system: `${delegatedSystemPrompt}
 
@@ -55,6 +55,12 @@ CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
 
 Response format (JSON only, no markdown):
 {"find": "exact string to find", "replace": "replacement string"}`,
+    // Truncate large files to save tokens (max 300 lines)
+    const fileLines = (context.currentContent || "").split("\n");
+    const truncatedContent = fileLines.length > 300
+      ? fileLines.slice(0, 300).join("\n") + `\n// ... [${fileLines.length - 300} more lines truncated]`
+      : context.currentContent;
+
     messages: [
       {
         role: "user",
@@ -121,8 +127,8 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
 
     // Quick self-review: ask Claude to verify the patch is valid
     const reviewResponse = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 200,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 100,
       system: "You are a TypeScript code reviewer. Answer ONLY with JSON: {"ok": true} or {"ok": false, "reason": "short reason"}",
       messages: [
         {
