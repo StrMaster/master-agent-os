@@ -243,7 +243,7 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
   };
   if (name === "business_analysis") {
     const prompt = String(input.prompt ?? "");
-    const workflow = executeBusinessWorkflow({
+    const workflow = await executeBusinessWorkflow({
       prompt,
       url: typeof input.url === "string" ? input.url : undefined,
       businessName: typeof input.businessName === "string" ? input.businessName : undefined,
