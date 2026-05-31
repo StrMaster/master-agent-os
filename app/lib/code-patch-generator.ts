@@ -27,10 +27,14 @@ export async function generateCodePatch(context: {
       ? context.agentSystemPrompt
       : "You are the Senior Execution Agent for Master Agent OS.";
 
-  const response = await client.messages.create({
-   model: "claude-sonnet-4-5",
-max_tokens: 1200,
+  const fileLines = (context.currentContent || "").split("\n");
+  const truncatedContent = fileLines.length > 300
+    ? fileLines.slice(0, 300).join("\n") + `\n// ... [${fileLines.length - 300} more lines truncated]`
+    : context.currentContent;
 
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-5",
+    max_tokens: 2048,
     system: `${delegatedSystemPrompt}
 
 ${context.repoContext ? `\nRepo architecture context:\n${context.repoContext}\n` : ""}
@@ -55,12 +59,6 @@ CRITICAL RULES - YOU MUST FOLLOW THESE EXACTLY:
 
 Response format (JSON only, no markdown):
 {"find": "exact string to find", "replace": "replacement string"}`,
-    // Truncate large files to save tokens (max 300 lines)
-    const fileLines = (context.currentContent || "").split("\n");
-    const truncatedContent = fileLines.length > 300
-      ? fileLines.slice(0, 300).join("\n") + `\n// ... [${fileLines.length - 300} more lines truncated]`
-      : context.currentContent;
-
     messages: [
       {
         role: "user",
@@ -72,7 +70,7 @@ File: ${context.filePath}
 
 ${context.currentContent
   ? `Current content:
-${context.currentContent}
+${truncatedContent}
 
 Return ONLY a JSON object with "find" and "replace". Make the smallest possible change.
 If the task is to DELETE something, set "replace" to "" (empty string).`
@@ -93,7 +91,6 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
       throw new Error("Invalid patch format");
     }
 
-    // New file: find is empty string, replace is full content
     if (patch.find === "" && !context.currentContent) {
       if (!patch.replace) {
         throw new Error("New file creation requires non-empty replace content");
@@ -104,14 +101,13 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
     const occurrences = context.currentContent.split(patch.find).length - 1;
 
     if (occurrences === 0) {
-      throw new Error(`Find block not found in file`);
+      throw new Error("Find block not found in file");
     }
 
     if (occurrences > 1) {
       throw new Error(`Find block must match exactly once. Found ${occurrences} matches.`);
     }
 
-    // Allow full deletions (replace = "") without line limit
     const isDeletion = patch.replace === "";
     const lineCount = Math.abs(
       patch.replace.split("\n").length - patch.find.split("\n").length
@@ -125,11 +121,10 @@ Return ONLY a JSON object where "find" is "" (empty string) and "replace" is the
       ? patch.replace
       : context.currentContent.replace(patch.find, patch.replace);
 
-    // Quick self-review: ask Claude to verify the patch is valid
     const reviewResponse = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
-      system: "You are a TypeScript code reviewer. Answer ONLY with JSON: {"ok": true} or {"ok": false, "reason": "short reason"}",
+      model: "claude-sonnet-4-5",
+      max_tokens: 200,
+      system: "You are a TypeScript code reviewer. Answer ONLY with JSON: {\"ok\": true} or {\"ok\": false, \"reason\": \"short reason\"}",
       messages: [
         {
           role: "user",
@@ -145,13 +140,12 @@ Reply ONLY with JSON: {"ok": true} or {"ok": false, "reason": "..."}`,
 
     const reviewRaw = reviewResponse.content[0]?.type === "text" ? reviewResponse.content[0].text : "{}";
     try {
-      const reviewClean = reviewRaw.replace(/\`\`\`json|\`\`\`/g, "").trim();
+      const reviewClean = reviewRaw.replace(/```json|```/g, "").trim();
       const review = JSON.parse(reviewClean) as { ok: boolean; reason?: string };
       if (!review.ok && review.reason) {
         throw new Error(`Self-review failed: ${review.reason}`);
       }
     } catch (reviewErr) {
-      // If review parsing fails, continue — don't block on review errors
       if (reviewErr instanceof Error && reviewErr.message.startsWith("Self-review failed:")) {
         throw reviewErr;
       }
@@ -162,9 +156,8 @@ Reply ONLY with JSON: {"ok": true} or {"ok": false, "reason": "..."}`,
     throw new Error(`Patch generation failed: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
-  
 
-  export async function generateMultiFilePatch(context: {
+export async function generateMultiFilePatch(context: {
   files: Array<{ filePath: string; currentContent: string }>;
   taskTitle: string;
   taskSummary: string;
