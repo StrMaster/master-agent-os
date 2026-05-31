@@ -17,6 +17,15 @@ const DELETABLE_STATUSES = [
   "failed",
 ];
 
+async function removeFromRuntimeQueue(taskId: string) {
+  try {
+    const { removeRuntimeTask } = await import("@/app/lib/runtime-queue");
+    return await removeRuntimeTask(taskId);
+  } catch (error) {
+    console.warn("[delete-task] failed to remove from Redis", error);
+    return false;
+  }
+}
 
 async function readTasksFile() {
   const token = process.env.GITHUB_TOKEN;
@@ -112,6 +121,16 @@ export async function POST(req: NextRequest) {
     );
 
     if (!existingTask) {
+      const removedFromRuntimeQueue = await removeFromRuntimeQueue(taskId);
+
+      if (removedFromRuntimeQueue) {
+        return NextResponse.json({
+          ok: true,
+          deletedTaskId: taskId,
+          deletedFrom: "runtime-queue",
+        });
+      }
+
       return NextResponse.json(
         {
           ok: false,
@@ -145,17 +164,13 @@ export async function POST(req: NextRequest) {
       `Delete task ${taskId}`
     );
 
-    try {
-  const { removeRuntimeTask } = await import("@/app/lib/runtime-queue");
-  await removeRuntimeTask(taskId);
-} catch (e) {
-  console.warn("[delete-task] failed to remove from Redis", e);
-}
+    const removedFromRuntimeQueue = await removeFromRuntimeQueue(taskId);
 
-return NextResponse.json({
-  ok: true,
-  deletedTaskId: taskId,
-});
+    return NextResponse.json({
+      ok: true,
+      deletedTaskId: taskId,
+      deletedFrom: removedFromRuntimeQueue ? "github-and-runtime-queue" : "github",
+    });
 
   } catch (error) {
     return NextResponse.json(
