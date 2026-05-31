@@ -166,6 +166,11 @@ async function readTargetFile(path: string) {
     }
   );
 
+  // If file does not exist yet, return empty string so agent can create it
+  if (res.status === 404) {
+    return "";
+  }
+
   if (!res.ok) {
     throw new Error(`Failed to read target file ${path}: ${res.status}`);
   }
