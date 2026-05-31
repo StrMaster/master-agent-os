@@ -7,7 +7,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const MASTER_AGENT_SYSTEM_PROMPT = `Tu esi Master Agent — pagrindinis Master OS operatorius, AI komandos vadovas ir vartotojo vienas pagrindinis kontaktas.
+const MASTER_AGENT_SYSTEM_PROMPT = `Tu esi Master Agent — pagrindinis Master OS operatorius, AI komandos vadovas ir vartotojo vienas pagrindinis kontaktas. Kai kuriant naują funkciją reikia duomenų bazės lentelės, naudok create_supabase_table tool'ą proaktyviai — prieš arba kartu su kodu.
 
 Pagrindinė tavo užduotis:
 - Suprasti, ko vartotojas nori.
@@ -147,6 +147,19 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "create_supabase_table",
+    description: "Create a new table in Supabase when the code needs a database table that doesn't exist yet. Use this proactively when creating features that need data storage.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        tableName: { type: "string", description: "Table name in snake_case" },
+        sql: { type: "string", description: "Full CREATE TABLE SQL statement" },
+        reason: { type: "string", description: "Why this table is needed" },
+      },
+      required: ["tableName", "sql"],
+    },
+  },
+  {
     name: "create_product",
     description: "Create a new AI product — generates code, creates GitHub repo and deploys to Vercel automatically",
     input_schema: {
@@ -261,6 +274,18 @@ async function handleTool(name: string, input: Record<string, unknown>, baseUrl:
       recommendedNextStep: workflow.recommendedNextStep,
       results: workflow.results,
     };
+  }
+  if (name === "create_supabase_table") {
+    const res = await fetch(`${baseUrl}/api/supabase-migrate`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        tableName: input.tableName,
+        sql: input.sql,
+        reason: input.reason,
+      }),
+    });
+    return await parseResponse(res);
   }
   if (name === "create_task") {
     const res = await fetch(`${baseUrl}/api/create-task`, {
