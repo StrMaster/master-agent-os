@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { validatePatch } from "@/app/lib/patch-validator";
+import { getProjectContextSummary } from "@/lib/dev/project-context";
+import { createPatchRepairDecision } from "@/lib/dev/patch-repair-loop";
+import { shouldBlockAutonomousPatch } from "@/lib/dev/target-file-resolver";
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -15,8 +18,9 @@ type PatchMode = "surgical" | "full-file";
 const LARGE_FILE_LINE_THRESHOLD = 180;
 const FULL_FILE_MAX_TOKENS = 8192;
 const SURGICAL_MAX_TOKENS = 2048;
+const MAX_REPAIR_ATTEMPTS = 1;
 
-export async function generateCodePatch(context: {
+type GeneratePatchContext = {
   filePath: string;
   currentContent: string;
   taskTitle: string;
@@ -27,50 +31,85 @@ export async function generateCodePatch(context: {
   agentName?: string;
   agentRole?: string;
   routingReason?: string;
-}): Promise<string> {
+  repairInstructions?: string;
+};
+
+export async function generateCodePatch(context: GeneratePatchContext): Promise<string> {
+  const block = shouldBlockAutonomousPatch(
+    `${context.taskTitle}\n${context.taskSummary}`,
+    context.filePath
+  );
+
+  if (block.blocked) {
+    throw new Error(block.reason);
+  }
+
   const fileLines = (context.currentContent || "").split("\n");
 
   if (!context.currentContent) {
-    const fullFile = await generatePatchWithMode(context, "full-file");
-    return validateGeneratedContent(fullFile, context.filePath);
+    return generateWithRepair(context, "full-file");
   }
 
   const shouldPreferFullFile = shouldUseFullFileMode(context.filePath, fileLines.length);
 
   if (shouldPreferFullFile) {
     try {
-      const fullFile = await generatePatchWithMode(context, "full-file");
-      return validateGeneratedContent(fullFile, context.filePath);
+      return await generateWithRepair(context, "full-file");
     } catch (fullFileError) {
       console.warn("Full-file patch failed, falling back to surgical patch:", fullFileError);
     }
   }
 
   try {
-    const surgicalPatch = await generatePatchWithMode(context, "surgical");
-    return validateGeneratedContent(surgicalPatch, context.filePath);
+    return await generateWithRepair(context, "surgical");
   } catch (surgicalError) {
     if (!shouldAllowFallbackToFullFile(context.filePath, fileLines.length, surgicalError)) {
       throw new Error(`Patch generation failed: ${surgicalError instanceof Error ? surgicalError.message : String(surgicalError)}`);
     }
 
-    const fullFile = await generatePatchWithMode(context, "full-file");
-    return validateGeneratedContent(fullFile, context.filePath);
+    return generateWithRepair(context, "full-file");
   }
 }
 
-async function generatePatchWithMode(context: {
-  filePath: string;
-  currentContent: string;
-  taskTitle: string;
-  taskSummary: string;
-  projectState?: string;
-  repoContext?: string;
-  agentSystemPrompt?: string;
-  agentName?: string;
-  agentRole?: string;
-  routingReason?: string;
-}, mode: PatchMode): Promise<string> {
+async function generateWithRepair(context: GeneratePatchContext, mode: PatchMode): Promise<string> {
+  let attempt = 0;
+  let lastError: unknown = null;
+  let repairInstructions = context.repairInstructions;
+
+  while (attempt <= MAX_REPAIR_ATTEMPTS) {
+    try {
+      const patched = await generatePatchWithMode(
+        {
+          ...context,
+          repairInstructions,
+        },
+        mode
+      );
+      return validateGeneratedContent(patched, context.filePath);
+    } catch (error) {
+      lastError = error;
+      const validationOutput = error instanceof Error ? error.message : String(error);
+      const repairDecision = createPatchRepairDecision({
+        taskPrompt: `${context.taskTitle}\n${context.taskSummary}`,
+        targetFile: context.filePath,
+        validationOutput,
+        attempt,
+        maxAttempts: MAX_REPAIR_ATTEMPTS,
+      });
+
+      if (!repairDecision.shouldRetry) {
+        break;
+      }
+
+      repairInstructions = repairDecision.repairInstructions;
+      attempt = repairDecision.nextAttempt;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error(String(lastError ?? "Patch generation failed"));
+}
+
+async function generatePatchWithMode(context: GeneratePatchContext, mode: PatchMode): Promise<string> {
   const delegatedSystemPrompt =
     typeof context.agentSystemPrompt === "string" && context.agentSystemPrompt.trim().length > 0
       ? context.agentSystemPrompt
@@ -83,16 +122,23 @@ async function generatePatchWithMode(context: {
       ? fileLines.slice(0, 300).join("\n") + `\n// ... [${fileLines.length - 300} more lines truncated]`
       : context.currentContent;
 
+  const developerContext = getProjectContextSummary();
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: mode === "full-file" ? FULL_FILE_MAX_TOKENS : SURGICAL_MAX_TOKENS,
     system: `${delegatedSystemPrompt}
+
+Developer project context:
+${developerContext}
 
 ${context.repoContext ? `\nRepo architecture context:\n${context.repoContext}\n` : ""}
 
 Active agent: ${context.agentName ?? "Senior Execution Agent"}
 Agent role: ${context.agentRole ?? "senior-execution"}
 Routing reason: ${context.routingReason ?? "Default execution route."}
+
+${context.repairInstructions ? `\nRepair instructions from previous validation failure:\n${context.repairInstructions}\n` : ""}
 
 ${mode === "full-file" ? fullFileRules() : surgicalRules()}`,
     messages: [
@@ -159,6 +205,8 @@ function surgicalRules() {
 - Never rewrite whole functions or components unless the task explicitly requires it
 - Never change imports unless the task explicitly requires it
 - Never restructure the file
+- Never edit app/layout.tsx for generic dashboard UI polish
+- Preserve JSX nesting and close every tag correctly
 - If you cannot find a unique string to change, use surrounding context to make it unique
 - To DELETE code: set "find" to the exact block to remove, and "replace" to "" (empty string)
 
@@ -175,6 +223,8 @@ function fullFileRules() {
 - Keep unrelated code unchanged
 - Do not include markdown fences
 - Do not omit imports, closing tags, or trailing code
+- Preserve JSX nesting and close every tag correctly
+- Do not use app/layout.tsx for generic dashboard UI polish
 - Use this mode when JSX is complex, the file is large, or surgical find/replace is unsafe
 
 Response format (JSON only, no markdown):
