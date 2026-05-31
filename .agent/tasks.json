@@ -1,24 +1,5 @@
 [
   {
-    "id": "recovery-1780220412523",
-    "title": "Recovery: Check if agents/business folder exists in the repository. If it exists, list all files in it with their structure. If it does not exist, return a clear status that it's missing. Do NOT create or modify anything. Analysis only. Return structured output showing: 1) Folder exists: yes/no, 2) If yes: complete file tree of agents/business, 3) If no: confirmation that folder is missing.",
-    "summary": "Recover failed task: manual-task-1780220394484",
-    "targetFile": "app/page.tsx",
-    "status": "todo",
-    "priority": "high",
-    "createdAt": "2026-05-31T09:40:12.523Z",
-    "previewOnly": true,
-    "requiresApproval": true,
-    "retryCount": 0,
-    "lastRetryAt": "2026-05-31T09:40:12.523Z",
-    "agentRole": "senior-recovery",
-    "agentName": "Senior Recovery Agent",
-    "recoveryOfTaskId": "manual-task-1780220394484",
-    "recoveryReason": "Patch generation failed: Unexpected token 'I', \"I need to \"... is not valid JSON",
-    "recoverySignature": "patch generation failed: unexpected token 'i', \"i need to \"... is not valid json",
-    "plannerNotes": "Automatically generated recovery task after reviewer/execution failure. Recovery intelligence: cooldown-runtime."
-  },
-  {
     "id": "manual-task-1778543069001",
     "title": "Title: Add execution pipeline test marker",
     "summary": "Plan safe work for: Title: Add execution pipeline test marker",
