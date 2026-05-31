@@ -1,3 +1,4 @@
+import { fetchWebsite, type FetchedWebsite } from "@/lib/website/fetch-website";
 import { analyzeBusinessIdea } from "./business-analyst-agent";
 import { analyzeCompetitors } from "./competitor-research-agent";
 import { buildClientReport } from "./client-report-agent";
@@ -25,16 +26,47 @@ export type BusinessWorkflowResult = {
   finalSummary: string;
   priorityActions: string[];
   recommendedNextStep: string;
+  website?: FetchedWebsite;
 };
 
 function hasAny(text: string, terms: string[]): boolean {
   return terms.some((term) => text.includes(term));
 }
 
+function extractUrlFromPrompt(prompt: string): string | undefined {
+  const match = prompt.match(/https?:\/\/[^\s)]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s)]*)?/i);
+  return match?.[0];
+}
+
+function buildWebsiteContext(website?: FetchedWebsite): string {
+  if (!website) {
+    return "";
+  }
+
+  if (website.error) {
+    return `Website fetch failed. URL: ${website.url}. Error: ${website.error}`;
+  }
+
+  return [
+    `Fetched website URL: ${website.finalUrl}`,
+    `HTTP status: ${website.status}`,
+    `Title: ${website.title}`,
+    `Meta description: ${website.metaDescription}`,
+    `Headings: ${website.headings.join(" | ")}`,
+    `Visible text: ${website.textContent}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 export function selectBusinessWorkflow(prompt: string): BusinessWorkflowType {
   const text = prompt.toLowerCase();
 
   if (hasAny(text, ["website", "puslap", "svetain", "landing", "homepage", "ux", "seo", "cta", "conversion", "dizain", "design"])) {
+    return "website-analysis";
+  }
+
+  if (extractUrlFromPrompt(prompt)) {
     return "website-analysis";
   }
 
@@ -53,7 +85,7 @@ export function selectBusinessWorkflow(prompt: string): BusinessWorkflowType {
   return "general-business-analysis";
 }
 
-function summarizeWorkflow(workflowType: BusinessWorkflowType, results: BusinessAnalysisResult[]): string {
+function summarizeWorkflow(workflowType: BusinessWorkflowType, results: BusinessAnalysisResult[], website?: FetchedWebsite): string {
   const averageScore = Math.round(
     results.reduce((sum, result) => sum + (result.score ?? 70), 0) / Math.max(results.length, 1)
   );
@@ -66,7 +98,13 @@ function summarizeWorkflow(workflowType: BusinessWorkflowType, results: Business
     "general-business-analysis": "General business analysis workflow completed",
   };
 
-  return `${workflowLabels[workflowType]}. Combined confidence score: ${averageScore}/100. Results are preliminary and based on the provided prompt/context only.`;
+  const dataSource = website
+    ? website.error
+      ? "Website fetch was attempted but failed, so the result may be incomplete."
+      : `Website content was fetched from ${website.finalUrl}.`
+    : "Results are preliminary and based on the provided prompt/context only.";
+
+  return `${workflowLabels[workflowType]}. Combined confidence score: ${averageScore}/100. ${dataSource}`;
 }
 
 function mergePriorityActions(results: BusinessAnalysisResult[]): string[] {
@@ -74,49 +112,58 @@ function mergePriorityActions(results: BusinessAnalysisResult[]): string[] {
   return Array.from(new Set(actions)).slice(0, 8);
 }
 
-export function executeBusinessWorkflow(input: BusinessAnalysisRequest): BusinessWorkflowResult {
+export async function executeBusinessWorkflow(input: BusinessAnalysisRequest): Promise<BusinessWorkflowResult> {
   const workflowType = selectBusinessWorkflow(input.prompt);
+  const url = input.url ?? extractUrlFromPrompt(input.prompt);
+  const website = workflowType === "website-analysis" && url ? await fetchWebsite(url) : undefined;
+  const websiteContext = buildWebsiteContext(website);
+  const enrichedInput: BusinessAnalysisRequest & { pageContent?: string } = {
+    ...input,
+    url,
+    prompt: websiteContext ? `${input.prompt}\n\n${websiteContext}` : input.prompt,
+    pageContent: websiteContext,
+  };
 
   let results: BusinessAnalysisResult[];
 
   switch (workflowType) {
     case "website-analysis":
       results = [
-        auditWebsite(input),
-        analyzeSeo(input),
-        analyzeMarketing(input),
-        buildClientReport(input),
+        auditWebsite(enrichedInput),
+        analyzeSeo(enrichedInput),
+        analyzeMarketing(enrichedInput),
+        buildClientReport(enrichedInput),
       ];
       break;
     case "business-idea":
       results = [
-        analyzeBusinessIdea(input),
-        analyzeMarket(input),
-        analyzeCompetitors(input),
-        buildOffer(input),
+        analyzeBusinessIdea(enrichedInput),
+        analyzeMarket(enrichedInput),
+        analyzeCompetitors(enrichedInput),
+        buildOffer(enrichedInput),
       ];
       break;
     case "marketing-review":
       results = [
-        analyzeMarketing(input),
-        buildOffer(input),
-        buildOutreach(input),
+        analyzeMarketing(enrichedInput),
+        buildOffer(enrichedInput),
+        buildOutreach(enrichedInput),
       ];
       break;
     case "client-acquisition":
       results = [
-        buildOffer(input),
-        buildProposal(input),
-        buildOutreach(input),
-        buildFollowUp(input),
+        buildOffer(enrichedInput),
+        buildProposal(enrichedInput),
+        buildOutreach(enrichedInput),
+        buildFollowUp(enrichedInput),
       ];
       break;
     case "general-business-analysis":
     default:
       results = [
-        analyzeBusinessIdea(input),
-        analyzeMarket(input),
-        analyzeMarketing(input),
+        analyzeBusinessIdea(enrichedInput),
+        analyzeMarket(enrichedInput),
+        analyzeMarketing(enrichedInput),
       ];
       break;
   }
@@ -125,8 +172,9 @@ export function executeBusinessWorkflow(input: BusinessAnalysisRequest): Busines
     workflowType,
     agentsExecuted: results.map((result) => result.agentRole),
     results,
-    finalSummary: summarizeWorkflow(workflowType, results),
+    finalSummary: summarizeWorkflow(workflowType, results, website),
     priorityActions: mergePriorityActions(results),
     recommendedNextStep: results.at(-1)?.recommendedNextStep ?? "Review the analysis and choose the next approved action.",
+    website,
   };
 }
