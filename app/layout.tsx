@@ -16,6 +16,7 @@ const navItems = [
   { href: '/execution', label: 'Execution' },
   { href: '/projects', label: 'Projects' },
   { href: '/studio', label: 'Studio' },
+  { href: '/leads', label: 'Leads' },
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
