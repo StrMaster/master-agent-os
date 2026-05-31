@@ -62,6 +62,13 @@
   ],
   "recoveryHistory": [
     {
+      "taskId": "manual-task-1780253656015",
+      "recoveryTaskId": "recovery-1780253992566",
+      "reason": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>",
+      "status": "created",
+      "at": "2026-05-31T18:59:53.121Z"
+    },
+    {
       "taskId": "manual-task-1780250970027",
       "recoveryTaskId": "recovery-1780251047958",
       "reason": "Generated content validation failed: Possible JSX tag mismatch: expected </nav> before </link>, Possible JSX tag imbalance: 5 unclosed tags",
@@ -338,5 +345,5 @@
       "completedAt": "2026-05-12T07:17:00.114Z"
     }
   ],
-  "updatedAt": "2026-05-31T18:59:52.102Z"
+  "updatedAt": "2026-05-31T18:59:53.193Z"
 }
