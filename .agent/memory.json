@@ -1,9 +1,17 @@
 {
-  "lastRun": "2026-05-31T18:10:47.359Z",
-  "lastTaskId": "manual-task-1780250970027",
+  "lastRun": "2026-05-31T18:59:50.579Z",
+  "lastTaskId": "manual-task-1780253656015",
   "lastBranch": "agent-task-manual-task-1780214900469-s7-3",
-  "lastFailure": "Generated content validation failed: Possible JSX tag mismatch: expected </nav> before </link>, Possible JSX tag imbalance: 5 unclosed tags",
+  "lastFailure": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>",
   "failedTasks": [
+    {
+      "taskId": "manual-task-1780253656015",
+      "title": "Patobulinti dashboard UI: pagerinti dizainą, išdėstymą, vizualinę hierarchiją, responsyvumą ir vartotojo patirtį. Pridėti modernių elementų, geresnę spalvų schemą, aiškesnius duomenų vizualizavimo komponentus ir sklandesnius perėjimus.",
+      "targetFile": "app/page.tsx",
+      "reason": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>",
+      "at": "2026-05-31T18:59:50.579Z",
+      "runId": "f033dba4-d729-4e4e-b84a-4aff6be1b63f"
+    },
     {
       "taskId": "manual-task-1780250970027",
       "title": "Peržiūrėk ir patobulink dashboard puslapį ir pagelink UI komponentus:",
@@ -92,18 +100,18 @@
   "deployFailures": [],
   "riskyFiles": [
     {
+      "targetFile": "app/page.tsx",
+      "hits": 3,
+      "lastSeenAt": "2026-05-31T18:59:50.579Z",
+      "lastTaskId": "manual-task-1780253656015",
+      "lastReason": "Generated content validation failed: Possible unclosed JSX tag: <dashboardtask>"
+    },
+    {
       "targetFile": "app/layout.tsx",
       "hits": 3,
       "lastSeenAt": "2026-05-31T18:10:45.157Z",
       "lastTaskId": "manual-task-1780250970027",
       "lastReason": "Generated content validation failed: Possible JSX tag mismatch: expected </nav> before </link>, Possible JSX tag imbalance: 5 unclosed tags"
-    },
-    {
-      "targetFile": "app/page.tsx",
-      "hits": 2,
-      "lastSeenAt": "2026-05-31T09:40:09.789Z",
-      "lastTaskId": "manual-task-1780220394484",
-      "lastReason": "Patch generation failed: Unexpected token 'I', \"I need to \"... is not valid JSON"
     },
     {
       "targetFile": "app/studio/page.tsx",
@@ -330,5 +338,5 @@
       "completedAt": "2026-05-12T07:17:00.114Z"
     }
   ],
-  "updatedAt": "2026-05-31T18:10:48.679Z"
+  "updatedAt": "2026-05-31T18:59:50.648Z"
 }
