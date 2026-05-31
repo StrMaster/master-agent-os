@@ -16,8 +16,8 @@ export async function auditWebsite(input: WebsiteAuditInput): Promise<BusinessAn
   ].filter(Boolean).join("\n\n");
 
   const res = await client.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 600,
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
     system: `You are a conversion rate optimization (CRO) and UX expert. Audit websites for:
 - First impression and hero clarity
 - CTA strength and placement
