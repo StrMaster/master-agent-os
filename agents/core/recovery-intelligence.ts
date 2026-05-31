@@ -43,6 +43,34 @@ function countFailedTargetHits(memory: Awaited<ReturnType<typeof readRuntimeMemo
   );
 }
 
+// Classify error reason into actionable error type
+function classifyErrorType(reason?: string): {
+  type: "patch-not-found" | "patch-ambiguous" | "build-error" | "deploy-error" | "timeout" | "unknown";
+  strategy: "narrow-patch" | "use-more-context" | "split-task" | "retry-later" | "require-approval";
+} {
+  if (!reason) return { type: "unknown", strategy: "retry-later" };
+
+  const r = reason.toLowerCase();
+
+  if (r.includes("not found") || r.includes("find block not found")) {
+    return { type: "patch-not-found", strategy: "use-more-context" };
+  }
+  if (r.includes("matches") || r.includes("must match exactly once") || r.includes("ambiguous")) {
+    return { type: "patch-ambiguous", strategy: "narrow-patch" };
+  }
+  if (r.includes("build") || r.includes("compile") || r.includes("type error") || r.includes("syntax")) {
+    return { type: "build-error", strategy: "split-task" };
+  }
+  if (r.includes("deploy") || r.includes("vercel") || r.includes("production")) {
+    return { type: "deploy-error", strategy: "retry-later" };
+  }
+  if (r.includes("timeout") || r.includes("timed out") || r.includes("econnreset")) {
+    return { type: "timeout", strategy: "retry-later" };
+  }
+
+  return { type: "unknown", strategy: "require-approval" };
+}
+
 export async function analyzeRecoveryIntelligence(options: {
   taskId: string;
   targetFile?: string;
@@ -63,11 +91,13 @@ export async function analyzeRecoveryIntelligence(options: {
   const runnerHealth = state.runnerHealthStatus ?? "healthy";
   const observations: RecoveryIntelligenceObservation[] = [];
 
+  const errorClassification = classifyErrorType(options.reason);
+
   if (options.reason) {
     observations.push({
       code: "failure-reason",
       severity: "low",
-      detail: options.reason,
+      detail: `${options.reason} [classified: ${errorClassification.type}, strategy: ${errorClassification.strategy}]`,
     });
   }
 
@@ -135,6 +165,16 @@ export async function analyzeRecoveryIntelligence(options: {
     recommendation = "retry-later";
   } else if (observability.repeatedRiskyFiles.length > 0) {
     recommendation = "split-task";
+  } else if (errorClassification.type !== "unknown") {
+    // Use error-type specific strategy on first failure
+    const strategyMap: Record<typeof errorClassification.strategy, RecoveryIntelligenceRecommendation> = {
+      "narrow-patch": "create-recovery-task",
+      "use-more-context": "create-recovery-task",
+      "split-task": "split-task",
+      "retry-later": "retry-later",
+      "require-approval": "require-approval",
+    };
+    recommendation = strategyMap[errorClassification.strategy];
   }
 
   await logActivity({
