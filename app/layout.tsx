@@ -16,6 +16,7 @@ const navItems = [
   { href: '/execution', label: 'Execution' },
   { href: '/projects', label: 'Projects' },
   { href: '/studio', label: 'Studio' },
+  { href: '/voxel-demo', label: 'Voxel Demo' },
   { href: '/leads', label: 'Leads' },
 ];
 
