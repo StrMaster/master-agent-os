@@ -110,7 +110,7 @@ export default function OfficeDashboard() {
           <div className="top-actions">
             <div className="system-status"><span /> All systems operational</div>
             <button className="secondary-button">View daily brief</button>
-            <button className="primary-button">＋ New research</button>
+            <a className="primary-button" href="/hunter">＋ New research</a>
           </div>
         </header>
 
