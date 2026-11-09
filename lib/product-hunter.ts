@@ -26,7 +26,7 @@ export const productHunterSources: ProductHunterSource[] = [
     purpose: "Compare search interest over time and by market",
     access: "public_signals",
     state: "not_connected",
-    note: "A supported data access method must be selected before live collection.",
+    note: "Google's official Trends API is limited alpha access; a supported alternative must be selected if access is unavailable.",
   },
   {
     id: "tiktok-creative-center",
@@ -34,7 +34,7 @@ export const productHunterSources: ProductHunterSource[] = [
     purpose: "Find rising products, creatives and public trend signals",
     access: "public_signals",
     state: "not_connected",
-    note: "Use only an approved, reliable source for public trend data.",
+    note: "The public Creative Center is useful for research; do not assume a general-purpose data API is available.",
   },
   {
     id: "meta-ad-library",
@@ -42,7 +42,7 @@ export const productHunterSources: ProductHunterSource[] = [
     purpose: "Review publicly visible ads and advertiser activity",
     access: "public_signals",
     state: "not_connected",
-    note: "This is public ad research, not access to private ad accounts or campaign metrics.",
+    note: "The official API has geographic and ad-category limits; it is not a US-wide commercial-ad research feed.",
   },
   {
     id: "amazon-marketplace",
@@ -50,7 +50,7 @@ export const productHunterSources: ProductHunterSource[] = [
     purpose: "Compare visible listings, prices and review signals",
     access: "public_signals",
     state: "not_connected",
-    note: "Marketplace data access and permitted usage must be confirmed.",
+    note: "Seller APIs do not automatically provide broad competitor research; choose a permitted marketplace data source.",
   },
   {
     id: "supplier-catalog",
