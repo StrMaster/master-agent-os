@@ -23,6 +23,22 @@ type Product = {
   delivery: string;
   stage: string;
   risk: "Low" | "Medium" | "High";
+  verdict: string;
+  demand: number;
+  competition: number;
+  quality: number;
+  supplier: string;
+  supplierScore: string;
+  productCost: string;
+  shippingCost: string;
+  salePrice: string;
+  profit: string;
+  trend: string;
+  confidence: string;
+  sources: number;
+  recommendation: string;
+  positives: string[];
+  risks: string[];
 };
 
 const agents: Agent[] = [
@@ -34,10 +50,10 @@ const agents: Agent[] = [
 ];
 
 const products: Product[] = [
-  { name: "Grip Strength Sensor", category: "Longevity", score: 86, margin: "31%", delivery: "4–7 days", stage: "Deep review", risk: "Low" },
-  { name: "Circadian Light Bar", category: "Sleep", score: 78, margin: "27%", delivery: "6–9 days", stage: "Quality check", risk: "Medium" },
-  { name: "Mobility Recovery Kit", category: "Movement", score: 74, margin: "34%", delivery: "3–6 days", stage: "Finance", risk: "Low" },
-  { name: "Smart Hydration Cap", category: "Habits", score: 62, margin: "19%", delivery: "10–16 days", stage: "At risk", risk: "High" },
+  { name: "Grip Strength Sensor", category: "Longevity", score: 86, margin: "31%", delivery: "4–7 days", stage: "Deep review", risk: "Low", verdict: "Strong candidate", demand: 91, competition: 68, quality: 84, supplier: "Nordic Health Devices", supplierScore: "4.8 / 5", productCost: "€21.40", shippingCost: "€4.80", salePrice: "€49.90", profit: "€15.47", trend: "+38% in 90 days", confidence: "89%", sources: 24, recommendation: "Order three samples and start a focused creative test for the 35–55 health audience.", positives: ["Clear longevity use case", "EU supplier with fast delivery", "Healthy contribution margin"], risks: ["Medical claims must be avoided", "Requires a strong education-led ad"] },
+  { name: "Circadian Light Bar", category: "Sleep", score: 78, margin: "27%", delivery: "6–9 days", stage: "Quality check", risk: "Medium", verdict: "Continue review", demand: 87, competition: 76, quality: 71, supplier: "LumaWell EU", supplierScore: "4.5 / 5", productCost: "€29.20", shippingCost: "€6.30", salePrice: "€64.90", profit: "€17.52", trend: "+24% in 90 days", confidence: "81%", sources: 19, recommendation: "Complete compliance checks and compare two additional EU suppliers before ordering samples.", positives: ["Growing sleep category", "High perceived product value", "Good visual content potential"], risks: ["Crowded advertising market", "Electrical compliance needs verification"] },
+  { name: "Mobility Recovery Kit", category: "Movement", score: 74, margin: "34%", delivery: "3–6 days", stage: "Finance", risk: "Low", verdict: "Promising economics", demand: 74, competition: 59, quality: 79, supplier: "MoveCore Logistics", supplierScore: "4.7 / 5", productCost: "€16.10", shippingCost: "€4.10", salePrice: "€39.90", profit: "€13.57", trend: "+17% in 90 days", confidence: "83%", sources: 17, recommendation: "Approve unit economics and test the product as a bundled recovery solution.", positives: ["Low landed cost", "Bundle supports upsells", "Fast delivery to Norway"], risks: ["Differentiation depends on branding", "Multiple components increase return risk"] },
+  { name: "Smart Hydration Cap", category: "Habits", score: 62, margin: "19%", delivery: "10–16 days", stage: "At risk", risk: "High", verdict: "Do not launch yet", demand: 69, competition: 72, quality: 55, supplier: "HydraTech Global", supplierScore: "3.9 / 5", productCost: "€18.80", shippingCost: "€7.40", salePrice: "€34.90", profit: "€6.63", trend: "+8% in 90 days", confidence: "76%", sources: 15, recommendation: "Pause this candidate until a faster supplier and a margin above 25% are found.", positives: ["Easy habit-building message", "Broad customer audience", "Potential recurring accessories"], risks: ["Slow delivery", "Weak margin after returns", "Supplier quality complaints"] },
 ];
 
 const tabs = ["Office", "Products", "Approvals", "Agents"] as const;
@@ -196,6 +212,12 @@ export default function OfficeDashboard() {
 }
 
 function ProductsView() {
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  if (selectedProduct) {
+    return <ProductReport product={selectedProduct} onBack={() => setSelectedProduct(null)} />;
+  }
+
   return (
     <section className="data-page">
       <div className="metric-grid">
@@ -207,15 +229,79 @@ function ProductsView() {
       <div className="table-card">
         <div className="table-title"><div><p>PRODUCT PIPELINE</p><h2>Research candidates</h2></div><button className="secondary-button">Filter products</button></div>
         <div className="product-table">
-          <div className="table-row table-header"><span>Product</span><span>Score</span><span>Margin</span><span>Delivery</span><span>Stage</span><span>Risk</span></div>
+          <div className="table-row table-header"><span>Product</span><span>Score</span><span>Margin</span><span>Delivery</span><span>Stage</span><span>Risk</span><span>Report</span></div>
           {products.map((product) => (
             <div className="table-row" key={product.name}>
               <span><strong>{product.name}</strong><small>{product.category}</small></span>
               <span><b className="score-ring">{product.score}</b></span><span>{product.margin}</span><span>{product.delivery}</span>
               <span><em>{product.stage}</em></span><span><i className={`risk ${product.risk.toLowerCase()}`}>{product.risk}</i></span>
+              <span><button className="report-link" onClick={() => setSelectedProduct(product)}>View report →</button></span>
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductReport({ product, onBack }: { product: Product; onBack: () => void }) {
+  const signals = [
+    ["Market demand", product.demand],
+    ["Competition", product.competition],
+    ["Product quality", product.quality],
+  ] as const;
+
+  return (
+    <section className="data-page report-page">
+      <button className="report-back" onClick={onBack}>← Back to products</button>
+      <div className="report-hero">
+        <div>
+          <p className="eyebrow">AI PRODUCT REPORT · {product.category.toUpperCase()}</p>
+          <h2>{product.name}</h2>
+          <span className="report-verdict">● {product.verdict}</span>
+        </div>
+        <div className="report-score"><strong>{product.score}</strong><span>OVERALL SCORE</span><small>{product.confidence} confidence</small></div>
+      </div>
+
+      <div className="report-grid">
+        <article className="report-card signal-card">
+          <div className="report-card-title"><p>MARKET SIGNALS</p><span>{product.trend}</span></div>
+          {signals.map(([label, value]) => (
+            <div className="signal-row" key={label}>
+              <div><span>{label}</span><strong>{value}/100</strong></div>
+              <div className="signal-track"><i style={{ width: `${value}%` }} /></div>
+            </div>
+          ))}
+        </article>
+
+        <article className="report-card economics-card">
+          <div className="report-card-title"><p>UNIT ECONOMICS</p><span>{product.margin} margin</span></div>
+          <dl>
+            <div><dt>Product cost</dt><dd>{product.productCost}</dd></div>
+            <div><dt>Shipping</dt><dd>{product.shippingCost}</dd></div>
+            <div><dt>Recommended price</dt><dd>{product.salePrice}</dd></div>
+            <div className="profit-line"><dt>Estimated profit</dt><dd>{product.profit}</dd></div>
+          </dl>
+        </article>
+
+        <article className="report-card supplier-card">
+          <div className="report-card-title"><p>SUPPLIER</p><span>Verified</span></div>
+          <h3>{product.supplier}</h3>
+          <div className="supplier-meta"><span>Rating<strong>{product.supplierScore}</strong></span><span>Delivery<strong>{product.delivery}</strong></span><span>Risk<strong className={`risk-text ${product.risk.toLowerCase()}`}>{product.risk}</strong></span></div>
+        </article>
+
+        <article className="report-card evidence-card">
+          <div className="report-card-title"><p>RESEARCH EVIDENCE</p><span>{product.sources} sources</span></div>
+          <div className="evidence-lists">
+            <div><h4>Why it could win</h4>{product.positives.map((item) => <p key={item}><i>✓</i>{item}</p>)}</div>
+            <div><h4>Risks to solve</h4>{product.risks.map((item) => <p key={item}><i>!</i>{item}</p>)}</div>
+          </div>
+        </article>
+
+        <article className="report-card recommendation-card">
+          <div><p>CEO RECOMMENDATION</p><h3>{product.recommendation}</h3><span>Generated from market, supplier, quality and financial agent reports.</span></div>
+          <button>Send to approval →</button>
+        </article>
       </div>
     </section>
   );
