@@ -42,11 +42,16 @@ type Product = {
 };
 
 const agents: Agent[] = [
-  { id: "scout", name: "Nova", role: "Product Scout", icon: "⌕", status: "working", task: "Scanning 126 product signals", progress: 68, eta: "24 min", room: "Research", accent: "cyan" },
+  { id: "scout", name: "Nova", role: "Product Hunter", icon: "⌕", status: "working", task: "Scanning 126 product signals", progress: 68, eta: "24 min", room: "Research", accent: "cyan" },
+  { id: "supplier", name: "Eli", role: "Supplier Scout", icon: "♢", status: "working", task: "Comparing 8 EU suppliers", progress: 52, eta: "31 min", room: "Sourcing", accent: "blue" },
   { id: "quality", name: "Ari", role: "Quality Analyst", icon: "◇", status: "working", task: "Verifying supplier evidence", progress: 42, eta: "38 min", room: "Quality Lab", accent: "violet" },
   { id: "finance", name: "Milo", role: "Finance Analyst", icon: "₿", status: "review", task: "Calculating landed margin", progress: 84, eta: "7 min", room: "Finance", accent: "amber" },
-  { id: "growth", name: "Iris", role: "Growth Strategist", icon: "↗", status: "working", task: "Reviewing ad saturation", progress: 57, eta: "19 min", room: "Marketing", accent: "pink" },
-  { id: "data", name: "Atlas", role: "Performance Analyst", icon: "▥", status: "idle", task: "Waiting for live store data", progress: 0, eta: "Idle", room: "Analytics", accent: "blue" },
+  { id: "copy", name: "Luna", role: "Copywriter", icon: "✎", status: "working", task: "Writing three product angles", progress: 76, eta: "12 min", room: "Creative", accent: "pink" },
+  { id: "ugc", name: "Kai", role: "UGC Producer", icon: "▶", status: "review", task: "Rendering six ad concepts", progress: 61, eta: "18 min", room: "Creative", accent: "violet" },
+  { id: "meta", name: "Maya", role: "Meta Ads Buyer", icon: "M", status: "working", task: "Optimizing four live ad sets", progress: 73, eta: "Live", room: "Paid Media", accent: "blue" },
+  { id: "google", name: "Theo", role: "Google Ads Buyer", icon: "G", status: "working", task: "Expanding high-intent keywords", progress: 66, eta: "Live", room: "Paid Media", accent: "cyan" },
+  { id: "tiktok", name: "Zoe", role: "TikTok Ads Buyer", icon: "T", status: "working", task: "Testing two new hooks", progress: 48, eta: "Live", room: "Paid Media", accent: "pink" },
+  { id: "support", name: "Atlas", role: "Customer Support", icon: "◎", status: "idle", task: "Monitoring customer conversations", progress: 0, eta: "On call", room: "Support", accent: "amber" },
 ];
 
 const products: Product[] = [
@@ -109,11 +114,11 @@ export default function OfficeDashboard() {
 
         {activeTab === "Office" && (
           <div className="office-layout">
-            <section className="office-card">
+            <section className="office-card command-center">
               <div className="office-head">
                 <div>
-                  <span className="live-pill"><i /> LIVE OFFICE</span>
-                  <h2>Night shift in progress</h2>
+                  <span className="live-pill"><i /> STORE OPERATIONS LIVE</span>
+                  <h2>10 AI employees running one online store</h2>
                 </div>
                 <div className="depth-control">
                   {(["Quick", "Standard", "Deep"] as const).map((mode) => (
@@ -122,55 +127,45 @@ export default function OfficeDashboard() {
                 </div>
               </div>
 
-              <div className="office-floor">
-                <div className="city-glow" />
-                <button className="room research" onClick={() => setSelectedAgent(agents[0])}>
-                  <span className="room-label">PRODUCT RESEARCH</span>
-                  <div className="screen product-screen"><i /><i /><i /></div>
-                  <AgentAvatar agent={agents[0]} />
-                  <div className="desk" />
-                </button>
+              <div className="store-kpis">
+                <div><span>REVENUE TODAY</span><strong>€8,640</strong><small>↗ 18.3%</small></div>
+                <div><span>BLENDED ROAS</span><strong>3.21×</strong><small>above target</small></div>
+                <div><span>NET PROFIT</span><strong>€2,184</strong><small>↗ 22.6%</small></div>
+                <div><span>CONVERSION</span><strong>3.8%</strong><small>↗ 0.3 pt</small></div>
+              </div>
 
-                <button className="room quality" onClick={() => setSelectedAgent(agents[1])}>
-                  <span className="room-label">QUALITY LAB</span>
-                  <div className="lab-boxes"><i /><i /><i /></div>
-                  <AgentAvatar agent={agents[1]} />
-                  <div className="desk" />
-                </button>
+              <div className="operations-board">
+                <aside className="ops-feed">
+                  <p>LIVE WORKFLOW</p>
+                  <div><i className="green" /><span>New winner found<small>Grip Sensor · 86 score</small></span></div>
+                  <div><i className="violet" /><span>Creative approved<small>UGC hook #04</small></span></div>
+                  <div><i className="amber" /><span>Budget raised<small>Meta · €100 → €160</small></span></div>
+                  <div><i className="cyan" /><span>Supplier verified<small>EU warehouse ready</small></span></div>
+                  <button>{pending} approvals waiting →</button>
+                </aside>
 
-                <button className="room finance" onClick={() => setSelectedAgent(agents[2])}>
-                  <span className="room-label">FINANCE</span>
-                  <div className="screen chart-screen"><i /><i /><i /><i /></div>
-                  <AgentAvatar agent={agents[2]} />
-                  <div className="desk" />
-                </button>
+                <div className="agent-operations">
+                  <div className="department-strip"><span>RESEARCH & PRODUCT</span><span>CREATIVE & GROWTH</span><span>LIVE COMMERCE</span></div>
+                  <div className="worker-grid">
+                    {agents.map((agent, index) => (
+                      <button key={agent.id} className={`worker-station ${selectedAgent.id === agent.id ? "selected" : ""}`} onClick={() => setSelectedAgent(agent)}>
+                        <div className="worker-monitor"><i /><span>{agent.status === "idle" ? "ON CALL" : `${agent.progress}%`}</span></div>
+                        <div className={`worker-character ${agent.accent}`}><b>{agent.icon}</b><i /></div>
+                        <div className="worker-desk"><i /><i /></div>
+                        <strong>{agent.role}</strong>
+                        <small><StatusDot status={agent.status} /> {agent.status === "review" ? "needs review" : agent.status}</small>
+                        {index < 9 && <em className="handoff">→</em>}
+                      </button>
+                    ))}
+                  </div>
 
-                <button className="room marketing" onClick={() => setSelectedAgent(agents[3])}>
-                  <span className="room-label">MARKETING</span>
-                  <div className="screen media-screen"><i /><i /></div>
-                  <AgentAvatar agent={agents[3]} />
-                  <div className="desk" />
-                </button>
-
-                <div className="command-hub">
-                  <span>CEO ORCHESTRATOR</span>
-                  <div className="ceo-core">AI</div>
-                  <p>Coordinating {agents.filter((agent) => agent.status !== "idle").length} active specialists</p>
+                  <div className="scanner-panel">
+                    <div><span>PRODUCT SCANNER</span><strong>Scanning live demand · 5 signals/sec</strong></div>
+                    <div className="scanner-products">
+                      {products.map((product) => <span key={product.name}><b>{product.name}</b><i>{product.margin} margin</i><em className={product.score >= 74 ? "test" : "skip"}>{product.score >= 74 ? "TEST" : "SKIP"}</em></span>)}
+                    </div>
+                  </div>
                 </div>
-
-                <button className="room analytics" onClick={() => setSelectedAgent(agents[4])}>
-                  <span className="room-label">ANALYTICS</span>
-                  <div className="screen analytics-screen"><i /><i /><i /></div>
-                  <AgentAvatar agent={agents[4]} />
-                  <div className="desk" />
-                </button>
-
-                <div className="approval-room">
-                  <span className="room-label">HUMAN APPROVAL</span>
-                  <div className="approval-stack"><i /><i /><i /></div>
-                  <strong>{pending} decisions waiting</strong>
-                </div>
-                <div className="flow-line line-a" /><div className="flow-line line-b" /><div className="flow-line line-c" />
               </div>
             </section>
 
