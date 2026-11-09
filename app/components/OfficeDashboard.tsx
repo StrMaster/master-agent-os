@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { agentToolsets, connections, toolsForAgent } from "@/lib/agent-system";
+import { nicheProfile } from "@/lib/niche-profile";
 
 type Agent = {
   id: string;
@@ -218,6 +219,18 @@ function ProductsView() {
 
   return (
     <section className="data-page">
+      <div className="niche-profile-card">
+        <div className="niche-main">
+          <p>ACTIVE NICHE PROFILE</p>
+          <h2>{nicheProfile.name}</h2>
+          <span>{nicheProfile.positioning}</span>
+        </div>
+        <div className="niche-rule"><small>PRIMARY MARKET</small><strong>{nicheProfile.markets.primary}</strong><span>＋ {nicheProfile.markets.secondary.length} secondary</span></div>
+        <div className="niche-rule"><small>AUDIENCE</small><strong>{nicheProfile.audience.minimumAge}+</strong><span>{nicheProfile.audience.segments.length} segments scored</span></div>
+        <div className="niche-rule"><small>GROSS MARGIN</small><strong>{nicheProfile.economics.targetGrossMarginPercent}% target</strong><span>{nicheProfile.economics.minimumGrossMarginPercent}% minimum</span></div>
+        <div className="niche-rule"><small>DELIVERY</small><strong>≤ {nicheProfile.delivery.preferredMaximumDays} days</strong><span>{nicheProfile.delivery.absoluteMaximumDays}-day hard limit</span></div>
+        <div className="niche-categories">{nicheProfile.categories.map((category) => <span className={"phase" in category ? "later" : ""} key={category.id}>{category.name}{"phase" in category ? " · later" : ""}</span>)}</div>
+      </div>
       <div className="metric-grid">
         <Metric label="Scanned today" value="126" detail="+34 since yesterday" />
         <Metric label="In deep review" value="03" detail="2 finish within an hour" />
