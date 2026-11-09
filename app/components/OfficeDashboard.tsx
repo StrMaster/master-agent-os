@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { agentToolsets, connections, toolsForAgent } from "@/lib/agent-system";
 
 type Agent = {
   id: string;
@@ -61,7 +62,7 @@ const products: Product[] = [
   { name: "Smart Hydration Cap", category: "Habits", score: 62, margin: "19%", delivery: "10–16 days", stage: "At risk", risk: "High", verdict: "Do not launch yet", demand: 69, competition: 72, quality: 55, supplier: "HydraTech Global", supplierScore: "3.9 / 5", productCost: "€18.80", shippingCost: "€7.40", salePrice: "€34.90", profit: "€6.63", trend: "+8% in 90 days", confidence: "76%", sources: 15, recommendation: "Pause this candidate until a faster supplier and a margin above 25% are found.", positives: ["Easy habit-building message", "Broad customer audience", "Potential recurring accessories"], risks: ["Slow delivery", "Weak margin after returns", "Supplier quality complaints"] },
 ];
 
-const tabs = ["Office", "Products", "Approvals", "Agents"] as const;
+const tabs = ["Office", "Products", "Approvals", "Agents", "Connections"] as const;
 type Tab = (typeof tabs)[number];
 
 function StatusDot({ status }: { status: Agent["status"] }) {
@@ -90,7 +91,7 @@ export default function OfficeDashboard() {
         <nav aria-label="Primary navigation">
           {tabs.map((tab) => (
             <button key={tab} className={activeTab === tab ? "active" : ""} onClick={() => setActiveTab(tab)} title={tab}>
-              <span>{tab === "Office" ? "⌂" : tab === "Products" ? "□" : tab === "Approvals" ? "✓" : "◉"}</span>
+              <span>{tab === "Office" ? "⌂" : tab === "Products" ? "□" : tab === "Approvals" ? "✓" : tab === "Agents" ? "◉" : "⚙"}</span>
               <small>{tab}</small>
               {tab === "Approvals" && <b>{pending}</b>}
             </button>
@@ -184,9 +185,10 @@ export default function OfficeDashboard() {
               <dl className="agent-stats">
                 <div><dt>Research depth</dt><dd>{depth}</dd></div>
                 <div><dt>Office</dt><dd>{selectedAgent.room}</dd></div>
-                <div><dt>Sources checked</dt><dd>{selectedAgent.status === "idle" ? "—" : 14}</dd></div>
-                <div><dt>Confidence</dt><dd>{selectedAgent.status === "idle" ? "—" : "82%"}</dd></div>
+                <div><dt>Assigned tools</dt><dd>{toolsForAgent(selectedAgent.id).length}</dd></div>
+                <div><dt>Tools ready</dt><dd>{toolsForAgent(selectedAgent.id).filter((tool) => tool.state === "ready").length}</dd></div>
               </dl>
+              <div className="mini-tools">{toolsForAgent(selectedAgent.id).map((tool) => <span className={tool.state} key={tool.id}>{tool.name}</span>)}</div>
               <button className="agent-action">Open work log →</button>
               <div className="activity-list">
                 <p>LATEST ACTIVITY</p>
@@ -201,6 +203,7 @@ export default function OfficeDashboard() {
         {activeTab === "Products" && <ProductsView />}
         {activeTab === "Approvals" && <ApprovalsView />}
         {activeTab === "Agents" && <AgentsView onSelect={(agent) => { setSelectedAgent(agent); setActiveTab("Office"); }} />}
+        {activeTab === "Connections" && <ConnectionsView />}
       </section>
     </main>
   );
@@ -324,11 +327,35 @@ function AgentsView({ onSelect }: { onSelect: (agent: Agent) => void }) {
         {agents.map((agent) => (
           <button className="agent-card" key={agent.id} onClick={() => onSelect(agent)}>
             <AgentAvatar agent={agent} />
-            <div><span><StatusDot status={agent.status} /> {agent.status}</span><h3>{agent.name}</h3><p>{agent.role}</p><small>{agent.task}</small></div>
+            <div><span><StatusDot status={agent.status} /> {agent.status}</span><h3>{agent.name}</h3><p>{agent.role}</p><small>{agent.task}</small><em>{agentToolsets[agent.id]?.length ?? 0} tools assigned</em></div>
             <b>→</b>
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+function ConnectionsView() {
+  const ready = connections.filter((connection) => connection.state === "ready").length;
+  const waiting = connections.filter((connection) => connection.state === "needs_connection").length;
+
+  return (
+    <section className="data-page connections-page">
+      <div className="connection-summary">
+        <div><p>AGENT TOOL LAYER</p><h2>{ready} tools ready · {waiting} accounts to connect</h2><span>Every agent only receives the tools required for its role.</span></div>
+        <div className="connection-health"><strong>{Math.round((ready / connections.length) * 100)}%</strong><span>FOUNDATION READY</span></div>
+      </div>
+      <div className="connections-grid">
+        {connections.map((connection) => (
+          <article className="connection-card" key={connection.id}>
+            <div className={`connection-icon ${connection.state}`}>{connection.state === "ready" ? "✓" : connection.state === "planned" ? "○" : "+"}</div>
+            <div><span>{connection.category}</span><h3>{connection.name}</h3><p>{connection.purpose}</p></div>
+            <b className={connection.state}>{connection.state === "ready" ? "READY" : connection.state === "planned" ? "PLANNED" : "CONNECT ACCOUNT"}</b>
+          </article>
+        ))}
+      </div>
+      <div className="permission-note"><strong>Human approval remains mandatory</strong><span>Agents can prepare work. Spending, refunds, supplier orders, campaign launches and store launches remain blocked until you approve them.</span></div>
     </section>
   );
 }
