@@ -1,33 +1,24 @@
 {
-  "name": "master-agent-os",
+  "name": "ecommerce-agent-os",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint ."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.54.0",
-    "@sparticuz/chromium": "^133.0.0",
-    "@supabase/supabase-js": "^2.56.0",
-    "@upstash/redis": "^1.35.3",
     "next": "16.2.4",
-    "openai": "^6.34.0",
-    "puppeteer-core": "^24.32.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "resend": "^4.0.0"
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
-    "tailwindcss": "^4",
     "typescript": "^5"
   }
 }
