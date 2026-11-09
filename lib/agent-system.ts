@@ -9,7 +9,7 @@ export type ToolConnection = {
 };
 
 export const connections: ToolConnection[] = [
-  { id: "web-research", name: "Web Research", category: "Research", state: "ready", purpose: "Market, competitor and demand research" },
+  { id: "web-research", name: "Web Research", category: "Research", state: "planned", purpose: "Market, competitor and demand research" },
   { id: "product-score", name: "Product Scoring", category: "Internal", state: "ready", purpose: "Scores demand, margin, risk and delivery" },
   { id: "margin-engine", name: "Margin Engine", category: "Finance", state: "ready", purpose: "Landed cost, MVA, fees and profit calculations" },
   { id: "approval-gate", name: "Human Approval Gate", category: "Safety", state: "ready", purpose: "Blocks spending, refunds and launches until approved" },
